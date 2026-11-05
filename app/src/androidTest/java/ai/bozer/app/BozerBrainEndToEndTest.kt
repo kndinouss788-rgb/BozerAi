@@ -65,7 +65,7 @@ class BozerBrainEndToEndTest {
     }
 
     @Test
-    fun realLocalModelAnswersTwoTurnsAndHistorySurvivesRestart() {
+    fun realLocalModelCarriesContextAcrossTurnsAndHistorySurvivesRestart() {
         device.executeShellCommand("am force-stop ai.bozer.app")
         device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
         assertNotNull(
@@ -73,11 +73,17 @@ class BozerBrainEndToEndTest {
             device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 600_000)
         )
 
-        val (firstReply, firstMs) = sendMessage("Bonjour BOZER. Réponds en une phrase courte.")
+        val firstPrompt = "Mon animal préféré est le chat. Garde cette information pour la suite et réponds uniquement : OK."
+        val secondPrompt = "Quel animal ai-je dit préférer ? Réponds par un seul mot."
+        val (firstReply, firstMs) = sendMessage(firstPrompt)
         Log.i("BOZER_E2E", "turn_1_latency_ms=$firstMs; reply_chars=${firstReply.length}")
-        val (secondReply, secondMs) = sendMessage("Donne-moi maintenant un conseil simple pour apprendre chaque jour.")
-        Log.i("BOZER_E2E", "turn_2_latency_ms=$secondMs; reply_chars=${secondReply.length}")
+        val (secondReply, secondMs) = sendMessage(secondPrompt)
+        Log.i("BOZER_E2E", "turn_2_latency_ms=$secondMs; reply_chars=${secondReply.length}; context_check=${secondReply.contains("chat", ignoreCase = true)}")
         assertTrue("La deuxième réponse est vide", secondReply.isNotBlank())
+        assertTrue(
+            "BOZER n'a pas réutilisé l'information du premier tour : $secondReply",
+            secondReply.contains("chat", ignoreCase = true)
+        )
 
         device.executeShellCommand("am force-stop ai.bozer.app")
         device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
@@ -85,9 +91,9 @@ class BozerBrainEndToEndTest {
             "BOZER ne retrouve pas son modèle après redémarrage",
             device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 180_000)
         )
-        assertNotNull("Le premier message n'a pas été restauré", device.wait(Until.findObject(By.text("Bonjour BOZER. Réponds en une phrase courte.")), 20_000))
-        assertNotNull("Le deuxième message n'a pas été restauré", device.wait(Until.findObject(By.text("Donne-moi maintenant un conseil simple pour apprendre chaque jour.")), 20_000))
+        assertNotNull("Le premier message n'a pas été restauré", device.wait(Until.findObject(By.text(firstPrompt)), 20_000))
+        assertNotNull("Le deuxième message n'a pas été restauré", device.wait(Until.findObject(By.text(secondPrompt)), 20_000))
         assertTrue("L'historique ne contient pas deux réponses réelles", assistantCount() >= 2)
-        Log.i("BOZER_E2E", "PASS: two real local inferences, non-empty replies, persistent history; total_assistant_replies=${assistantCount()}")
+        Log.i("BOZER_E2E", "PASS: two real local inference turns, context recall, latency measurements and persistent history; total_assistant_replies=${assistantCount()}")
     }
 }
