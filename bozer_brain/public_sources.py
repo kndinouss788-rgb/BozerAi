@@ -4,12 +4,13 @@ Wikimedia uses public APIs. Brave Search uses its documented Web Search API
 and requires a user-supplied subscription token. No HTML search-page scraping.
 """
 import json
+import os
 import re
 from html import unescape
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
-from .eye_search import SearchResult
+from .eye_search import EyeSearch, SearchResult
 
 
 _USER_AGENT = "BOZER-EYE-SEARCH/0.2 (public research)"
@@ -107,14 +108,20 @@ class BraveSearchSource:
 
     ENDPOINT = "https://api.search.brave.com/res/v1/web/search"
 
-    def __init__(self, api_key, timeout=8.0, opener=None):
+    def __init__(self, api_key, timeout=8.0, opener=None, country="BF", search_lang="fr"):
         if not isinstance(api_key, str) or not api_key.strip():
             raise ValueError("Brave Search API key is required")
         if timeout <= 0:
             raise ValueError("timeout must be positive")
+        if not re.fullmatch(r"[A-Z]{2}", country):
+            raise ValueError("country must be a two-letter uppercase code")
+        if not re.fullmatch(r"[a-z]{2,3}", search_lang):
+            raise ValueError("search_lang must be a short lowercase language code")
         self._api_key = api_key.strip()
         self.timeout = timeout
         self._opener = opener or urlopen
+        self.country = country
+        self.search_lang = search_lang
 
     @property
     def source_name(self):
@@ -123,9 +130,12 @@ class BraveSearchSource:
     def search(self, query, limit):
         if not isinstance(query, str) or not query.strip():
             raise ValueError("query must not be empty")
+        if len(query) > 600 or len(query.split()) > 75:
+            raise ValueError("query exceeds Brave Search limits")
         if not 1 <= limit <= 10:
             raise ValueError("limit must be between 1 and 10")
-        params = urlencode({"q": query, "count": limit})
+        params = urlencode({"q": query, "count": limit, "country": self.country,
+                            "search_lang": self.search_lang})
         request = Request(self.ENDPOINT + "?" + params, headers={
             "Accept": "application/json",
             "X-Subscription-Token": self._api_key,
@@ -145,3 +155,19 @@ class BraveSearchSource:
             if title and isinstance(url, str) and url.startswith("https://") and snippet:
                 results.append(SearchResult(title, url, snippet, self.source_name))
         return results
+
+
+def eye_search_from_env(environ=None, language="fr", country="BF"):
+    """Create a French-first EYE_SEARCH stack; Brave is optional and key-backed."""
+    values = os.environ if environ is None else environ
+    sources = []
+    brave_key = values.get("BOZER_BRAVE_SEARCH_API_KEY", "").strip()
+    if brave_key:
+        sources.append(BraveSearchSource(
+            brave_key, country=country, search_lang=language
+        ))
+    sources.extend((
+        WikipediaSearchSource(language=language),
+        WikidataSearchSource(language=language),
+    ))
+    return EyeSearch(sources)

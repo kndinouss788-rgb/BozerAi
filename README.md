@@ -31,17 +31,10 @@ Brave is a genuine web-search API, not HTML scraping of a search page. Its token
 
 ```python
 import os
-from bozer_brain.eye_search import EyeSearch
-from bozer_brain.public_sources import (
-    BraveSearchSource, WikipediaSearchSource, WikidataSearchSource,
-)
+from bozer_brain.public_sources import eye_search_from_env
 
-sources = [
-    BraveSearchSource(os.environ["BOZER_BRAVE_SEARCH_API_KEY"]),
-    WikipediaSearchSource(language="fr"),
-    WikidataSearchSource(language="fr"),
-]
-research = EyeSearch(sources).search("actualité scientifique", enabled=True)
+search = eye_search_from_env()  # Brave (si clé présente) + Wikipédia + Wikidata
+research = search.search("actualité scientifique", enabled=True)
 ```
 
 The coordinator limits source count, result count, and snippet length. External text is marked as untrusted evidence, never instructions. Brave's API access and pricing depend on the user's own Brave Search plan.

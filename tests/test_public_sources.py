@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from bozer_brain.public_sources import (
     BraveSearchSource, WikipediaSearchSource, WikidataSearchSource,
+    eye_search_from_env,
 )
 
 
@@ -46,15 +47,29 @@ class PublicSourceTests(unittest.TestCase):
         results = BraveSearchSource("brave-test-token").search("climat Burkina", 3)
         request = mocked.call_args.args[0]
         self.assertEqual(request.get_header("X-subscription-token"), "brave-test-token")
-        self.assertIn("climat", request.full_url)
+        self.assertIn("country=BF", request.full_url)
+        self.assertIn("search_lang=fr", request.full_url)
         self.assertEqual(results[0].title, "Example")
         self.assertEqual(results[0].source, "Brave Web Search")
 
-    def test_brave_requires_key_and_rejects_http_result_links(self):
+    @patch("bozer_brain.public_sources.urlopen")
+    def test_brave_discards_non_https_result_links(self, mocked):
+        mocked.return_value = FakeResponse(json.dumps({"web": {"results": [
+            {"title": "Unsafe", "url": "http://example.org", "description": "snippet"}
+        ]}}).encode())
+        self.assertEqual(BraveSearchSource("key").search("q", 1), [])
+
+    def test_brave_requires_key_and_validates_query(self):
         with self.assertRaises(ValueError):
             BraveSearchSource("")
-        source = BraveSearchSource("key")
-        self.assertEqual(source.search if False else source.source_name, "Brave Web Search")
+        with self.assertRaises(ValueError):
+            BraveSearchSource("key").search("x" * 601, 1)
+
+    def test_environment_factory_prefers_brave_then_french_sources(self):
+        stack = eye_search_from_env({"BOZER_BRAVE_SEARCH_API_KEY": "brave-secret"})
+        self.assertEqual([source.source_name for source in stack.sources],
+                         ["Brave Web Search", "Wikipedia (fr)", "Wikidata (fr)"])
+        self.assertEqual(len(eye_search_from_env({}).sources), 2)
 
     def test_invalid_language_and_limit_rejected(self):
         with self.assertRaises(ValueError):
