@@ -286,7 +286,7 @@ private fun BozerOrb(size: androidx.compose.ui.unit.Dp, active: Boolean) {
         val radius = this.size.minDimension * 0.43f * pulse
         drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFEDE5FA), Color(0xFFD8C8F1)), center, radius * 1.55f), radius * 1.55f, center)
         drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFE9DDF8), Color(0xFFBDA0E8)), center, radius), radius, center)
-        drawCircle(Color.White.copy(alpha = 0.72f), radius * 0.72f, center, style = Stroke(width = size.minDimension * 0.018f))
+        drawCircle(Color.White.copy(alpha = 0.72f), radius * 0.72f, center, style = Stroke(width = this.size.minDimension * 0.018f))
         drawCircle(Color.White.copy(alpha = 0.62f), radius * 0.23f, Offset(center.x - radius * 0.25f, center.y - radius * 0.3f))
     }
 }
