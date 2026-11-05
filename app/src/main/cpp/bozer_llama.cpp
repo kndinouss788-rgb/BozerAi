@@ -71,7 +71,7 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
-    if (needed <= 0 || needed > 1800) {
+    if (needed <= 0 || needed > 1792) {
         throw_java(env, "La conversation est trop longue pour le contexte local.");
         return nullptr;
     }
@@ -103,15 +103,18 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     std::string output;
     llama_batch batch = llama_batch_get_one(tokens.data(), token_count);
     int32_t generated = 0;
+    // llama_batch_get_one keeps a pointer to the supplied token. Keep this
+    // token alive across loop iterations instead of pointing at a block local.
+    llama_token next_token = 0;
     while (generated < std::min(static_cast<int>(max_tokens), 256)) {
         if (llama_decode(ctx, batch) != 0) break;
-        const llama_token token = llama_sampler_sample(sampler, ctx, -1);
-        if (llama_vocab_is_eog(vocab, token)) break;
+        next_token = llama_sampler_sample(sampler, ctx, -1);
+        if (llama_vocab_is_eog(vocab, next_token)) break;
 
         char piece[256];
-        const int32_t length = llama_token_to_piece(vocab, token, piece, sizeof(piece), 0, false);
+        const int32_t length = llama_token_to_piece(vocab, next_token, piece, sizeof(piece), 0, false);
         if (length > 0) output.append(piece, static_cast<size_t>(length));
-        batch = llama_batch_get_one(const_cast<llama_token *>(&token), 1);
+        batch = llama_batch_get_one(&next_token, 1);
         ++generated;
     }
 
