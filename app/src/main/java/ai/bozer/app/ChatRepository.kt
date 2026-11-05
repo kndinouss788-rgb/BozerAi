@@ -1,15 +1,27 @@
 package ai.bozer.app
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 class ChatRepository(
     private val database: ChatDatabase,
-    private val model: LocalLlamaClient
+    private val model: LocalLlamaEngine
 ) {
+    private val inferenceLock = Mutex()
+
     fun history(): List<ChatMessage> = database.history()
     fun save(message: ChatMessage) = database.save(message)
 
-    fun reply(history: List<ChatMessage>): String = try {
-        model.complete(history)
-    } catch (_: Exception) {
-        "Je n'arrive pas encore à joindre mon cerveau local. Le chat et son historique fonctionnent, mais le moteur IA Android n'est pas encore démarré sur cet appareil."
+    suspend fun reply(history: List<ChatMessage>): String = inferenceLock.withLock {
+        val transcript = buildString {
+            history.takeLast(12).forEach { item ->
+                when (item.role) {
+                    "user" -> append("Utilisateur : ").append(item.content).append('\n')
+                    "assistant" -> append("BOZER : ").append(item.content).append('\n')
+                }
+            }
+            append("Réponds au dernier message de l'utilisateur.")
+        }
+        model.generate(transcript)
     }
 }
