@@ -10,76 +10,82 @@ This repository currently contains a portable Python decision core. It is **not 
 
 - `bozer_brain/models.py`: typed intent and action models.
 - `bozer_brain/intent.py`: deterministic French/English intent extraction.
-- `bozer_brain/planner.py`: converts intents into safe action proposals.
-- `bozer_brain/safety.py`: confirmation and permission gates.
-- `bozer_brain/tools.py`: explicit tool contracts and authorization checks.
-- `bozer_brain/task_planner.py`: dependency validation, topological ordering, and per-step authorization.
-- `bozer_brain/memory.py`: local SQLite conversation history and explicitly stored facts.
-- `bozer_brain/context.py`: bounded recent-history context for a model integration.
-- `bozer_brain/model_gateway.py`: provider-neutral model contract, explicit opt-in, response validation, and safe errors.
-- `bozer_brain/eye_search.py`: bounded multi-source research orchestration and untrusted-source context.
-- `bozer_brain/public_sources.py`: real public Wikipedia and Wikidata search adapters using Python's standard library.
-- `bozer_brain/dialogue.py`: conversation orchestration with optional research context and injected responder.
+- `bozer_brain/planner.py`: safe action proposals.
+- `bozer_brain/safety.py` and `tools.py`: permission, confirmation, and tool contracts.
+- `bozer_brain/task_planner.py`: dependency validation and task ordering.
+- `bozer_brain/memory.py` and `context.py`: local SQLite history and bounded prompt context.
+- `bozer_brain/model_gateway.py`: provider gateway and real OpenAI-compatible HTTPS adapter.
+- `bozer_brain/eye_search.py`: bounded multi-source research orchestration.
+- `bozer_brain/public_sources.py`: Wikipedia, Wikidata, and Brave Web Search adapters.
+- `bozer_brain/dialogue.py`: optional research/model dialogue orchestration.
 - `tests/`: automated tests.
 
-## EYE_SEARCH public sources
+## EYE_SEARCH: encyclopedic and wider-web sources
 
-Two read-only public sources are implemented:
-- Wikipedia via the MediaWiki Action API search module.
-- Wikidata via its public `wbsearchentities` API.
+Available adapters:
+- Wikipedia MediaWiki search API (public, no key).
+- Wikidata entity search API (public, no key).
+- Brave Web Search API (requires a Brave Search subscription token).
 
-Both use fixed HTTPS endpoints, a descriptive User-Agent, bounded results, a 5-second default network timeout, and a 1 MB response ceiling. No API key, paid service, crawler, or arbitrary URL fetch is used. Language defaults to English and can be set to another short language code (for example `fr`).
-
-Example:
+Brave is a genuine web-search API, not HTML scraping of a search page. Its token is sent only in the HTTPS request header. Configure it on the trusted host as `BOZER_BRAVE_SEARCH_API_KEY`; never embed it in an Android APK or commit it. Use French Wikimedia sources alongside Brave for broader coverage:
 
 ```python
+import os
 from bozer_brain.eye_search import EyeSearch
-from bozer_brain.public_sources import WikipediaSearchSource, WikidataSearchSource
+from bozer_brain.public_sources import (
+    BraveSearchSource, WikipediaSearchSource, WikidataSearchSource,
+)
 
-research = EyeSearch([
+sources = [
+    BraveSearchSource(os.environ["BOZER_BRAVE_SEARCH_API_KEY"]),
     WikipediaSearchSource(language="fr"),
     WikidataSearchSource(language="fr"),
-]).search("histoire du Burkina Faso", enabled=True)
+]
+research = EyeSearch(sources).search("actualité scientifique", enabled=True)
 ```
 
-EYE_SEARCH output is explicitly marked as untrusted external data. It is evidence to verify, not instructions to follow.
+The coordinator limits source count, result count, and snippet length. External text is marked as untrusted evidence, never instructions. Brave's API access and pricing depend on the user's own Brave Search plan.
+
+## Connect a real language model
+
+`OpenAICompatibleProvider` sends an HTTPS `POST /chat/completions` request with Bearer authentication. It can target OpenAI or another provider implementing the same API contract. The model identifier and API key are supplied by the host environment:
+
+- `BOZER_MODEL_API_KEY` — secret API key.
+- `BOZER_MODEL_NAME` — exact model identifier enabled for that key.
+- `BOZER_MODEL_BASE_URL` — optional; defaults to `https://api.openai.com/v1`.
+- `BOZER_MODEL_TIMEOUT` — optional; defaults to 25 seconds.
+
+```python
+from bozer_brain.model_gateway import ModelGateway, openai_provider_from_env
+
+gateway = ModelGateway(openai_provider_from_env())
+# DialogueEngine calls the gateway only when allow_model=True.
+```
+
+**Security rule:** do not put provider keys in Android source code, app resources, logs, or the APK. A production Android app should call a small authenticated BOZER backend; that backend keeps the provider key, applies user quotas and consent, and then calls the model. A real API request can incur charges. The adapter is implemented, but it is not activated until the owner supplies a provider key and model name.
 
 ## Dialogue integration
 
-Pass an `EyeSearch` instance to `DialogueEngine`. A normal chat turn only searches when the caller explicitly uses `allow_search=True`; the model still requires its separate `allow_model=True` opt-in. Phone-action intents never trigger research.
-
 ```python
-engine = DialogueEngine(
-    memory,
-    model_gateway=model_gateway,
-    eye_search=EyeSearch([
-        WikipediaSearchSource(language="fr"),
-        WikidataSearchSource(language="fr"),
-    ]),
-)
+from bozer_brain.dialogue import DialogueEngine
+from bozer_brain.eye_search import EyeSearch
+
+engine = DialogueEngine(memory, model_gateway=gateway, eye_search=EyeSearch(sources))
 result = engine.respond(
-    "Explique le sujet", allow_search=True, allow_model=True
+    "Explique ce sujet", allow_search=True, allow_model=True
 )
 ```
 
-The dialogue layer attaches the bounded research context to the model prompt and returns the research object in `DialogueResult.research`. It does not claim sources prove the answer.
+Phone-action intents still bypass research/model generation and remain proposals; Android must independently validate permissions, targets, and confirmations before execution.
 
-## Privacy and model integration
+## Privacy and execution boundaries
 
-The application chooses the SQLite database path. History stays in that local database unless a separate integration sends context elsewhere. The model gateway refuses provider calls unless explicitly enabled. No AI provider or API key is bundled by default. Provider credentials, network calls, retention rules, and user consent must be implemented separately.
+Conversation history remains in the configured local SQLite database unless the host explicitly sends prompt context to a remote model. Remote model calls and web searches require explicit opt-in. Search results are not treated as instructions. No provider credential is bundled in the repository.
 
-## Planning and execution boundary
-
-The task planner validates dependencies and orders steps. Each step must pass the tool registry's argument, permission, and confirmation gates. A ready step is only authorized for a future Android adapter; it is **not executed** by this Python core. Android must independently validate permissions, targets, confirmation, and execution results.
-
-Unknown or ambiguous requests stay unplanned rather than being converted into guessed actions.
+The Python decision core is not yet the Android application: Android UI, floating overlay, secure backend deployment, and real device execution remain separate work.
 
 ## Run tests
 
 ```bash
 python -m unittest discover -s tests -v
 ```
-
-## Current status
-
-Decision core, local memory, bounded conversation context, tool authorization, dependency-aware task planning, provider-neutral model gateway, live public-source adapters, and dialogue research integration are implemented as foundations. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate work.

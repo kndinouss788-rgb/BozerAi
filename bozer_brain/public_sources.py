@@ -1,25 +1,26 @@
-"""Real public-source adapters for BOZER EYE_SEARCH.
+"""Public-source adapters for BOZER EYE_SEARCH.
 
-Uses only Python's standard library and fixed Wikimedia HTTPS endpoints.
-No API key, third-party package, arbitrary URL, or page crawler is used.
+Wikimedia uses public APIs. Brave Search uses its documented Web Search API
+and requires a user-supplied subscription token. No HTML search-page scraping.
 """
 import json
 import re
 from html import unescape
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 from .eye_search import SearchResult
 
 
-_USER_AGENT = "BOZER-EYE-SEARCH/0.1 (public knowledge lookup)"
+_USER_AGENT = "BOZER-EYE-SEARCH/0.2 (public research)"
 _MAX_RESPONSE_BYTES = 1_000_000
 
 
-def _request_json(url, timeout):
-    request = Request(url, headers={
+def _request_json(url, timeout, headers=None, data=None):
+    request = Request(url, data=data, headers={
         "Accept": "application/json",
         "User-Agent": _USER_AGENT,
+        **(headers or {}),
     })
     with urlopen(request, timeout=timeout) as response:
         payload = response.read(_MAX_RESPONSE_BYTES + 1)
@@ -36,15 +37,14 @@ def _plain_text(value):
 
 
 class WikipediaSearchSource:
-    """Searches public Wikipedia pages through the MediaWiki Action API."""
+    """Searches Wikipedia through the MediaWiki Action API."""
 
     def __init__(self, language="en", timeout=5.0):
         if not re.fullmatch(r"[a-z]{2,3}", language):
             raise ValueError("language must be a short lowercase language code")
         if timeout <= 0:
             raise ValueError("timeout must be positive")
-        self.language = language
-        self.timeout = timeout
+        self.language, self.timeout = language, timeout
 
     @property
     def source_name(self):
@@ -53,45 +53,33 @@ class WikipediaSearchSource:
     def search(self, query, limit):
         if not 1 <= limit <= 10:
             raise ValueError("limit must be between 1 and 10")
-        params = urlencode({
-            "action": "query",
-            "list": "search",
-            "srsearch": query,
-            "srlimit": limit,
-            "srprop": "snippet",
-            "format": "json",
-            "formatversion": 2,
-        })
-        endpoint = f"https://{self.language}.wikipedia.org/w/api.php?{params}"
-        data = _request_json(endpoint, self.timeout)
-        items = data.get("query", {}).get("search", [])
+        params = urlencode({"action": "query", "list": "search", "srsearch": query,
+                            "srlimit": limit, "srprop": "snippet", "format": "json",
+                            "formatversion": 2})
+        data = _request_json(
+            f"https://{self.language}.wikipedia.org/w/api.php?{params}", self.timeout
+        )
         results = []
-        for item in items[:limit]:
+        for item in data.get("query", {}).get("search", [])[:limit]:
             title = _plain_text(item.get("title", ""))
             snippet = _plain_text(item.get("snippet", ""))
-            if not title:
-                continue
-            page = title.replace(" ", "_")
-            from urllib.parse import quote
-            results.append(SearchResult(
-                title=title,
-                url=f"https://{self.language}.wikipedia.org/wiki/{quote(page)}",
-                snippet=snippet or title,
-                source=self.source_name,
-            ))
+            if title:
+                results.append(SearchResult(
+                    title, f"https://{self.language}.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}",
+                    snippet or title, self.source_name
+                ))
         return results
 
 
 class WikidataSearchSource:
-    """Searches Wikidata's public entity index via wbsearchentities."""
+    """Searches Wikidata entities using wbsearchentities."""
 
     def __init__(self, language="en", timeout=5.0):
         if not re.fullmatch(r"[a-z]{2,3}", language):
             raise ValueError("language must be a short lowercase language code")
         if timeout <= 0:
             raise ValueError("timeout must be positive")
-        self.language = language
-        self.timeout = timeout
+        self.language, self.timeout = language, timeout
 
     @property
     def source_name(self):
@@ -100,15 +88,9 @@ class WikidataSearchSource:
     def search(self, query, limit):
         if not 1 <= limit <= 10:
             raise ValueError("limit must be between 1 and 10")
-        params = urlencode({
-            "action": "wbsearchentities",
-            "search": query,
-            "language": self.language,
-            "uselang": self.language,
-            "type": "item",
-            "limit": limit,
-            "format": "json",
-        })
+        params = urlencode({"action": "wbsearchentities", "search": query,
+                            "language": self.language, "uselang": self.language,
+                            "type": "item", "limit": limit, "format": "json"})
         data = _request_json(f"https://www.wikidata.org/w/api.php?{params}", self.timeout)
         results = []
         for item in data.get("search", [])[:limit]:
@@ -116,10 +98,50 @@ class WikidataSearchSource:
             description = _plain_text(item.get("description", ""))
             url = item.get("concepturi", "")
             if title and description and isinstance(url, str):
-                results.append(SearchResult(
-                    title=title,
-                    url=url,
-                    snippet=description,
-                    source=self.source_name,
-                ))
+                results.append(SearchResult(title, url, description, self.source_name))
+        return results
+
+
+class BraveSearchSource:
+    """Searches the wider public web through Brave's official Web Search API."""
+
+    ENDPOINT = "https://api.search.brave.com/res/v1/web/search"
+
+    def __init__(self, api_key, timeout=8.0, opener=None):
+        if not isinstance(api_key, str) or not api_key.strip():
+            raise ValueError("Brave Search API key is required")
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
+        self._api_key = api_key.strip()
+        self.timeout = timeout
+        self._opener = opener or urlopen
+
+    @property
+    def source_name(self):
+        return "Brave Web Search"
+
+    def search(self, query, limit):
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query must not be empty")
+        if not 1 <= limit <= 10:
+            raise ValueError("limit must be between 1 and 10")
+        params = urlencode({"q": query, "count": limit})
+        request = Request(self.ENDPOINT + "?" + params, headers={
+            "Accept": "application/json",
+            "X-Subscription-Token": self._api_key,
+            "User-Agent": _USER_AGENT,
+        })
+        with self._opener(request, timeout=self.timeout) as response:
+            payload = response.read(_MAX_RESPONSE_BYTES + 1)
+        if len(payload) > _MAX_RESPONSE_BYTES:
+            raise ValueError("public search response too large")
+        data = json.loads(payload.decode("utf-8"))
+        web = data.get("web", {}).get("results", [])
+        results = []
+        for item in web[:limit]:
+            title = _plain_text(item.get("title", ""))
+            url = item.get("url", "")
+            snippet = _plain_text(item.get("description", ""))
+            if title and isinstance(url, str) and url.startswith("https://") and snippet:
+                results.append(SearchResult(title, url, snippet, self.source_name))
         return results
