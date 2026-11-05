@@ -25,6 +25,10 @@ class LocalModelManager(context: Context) {
     suspend fun download(onProgress: suspend (Long, Long) -> Unit = { _, _ -> }): File =
         withContext(Dispatchers.IO) {
             if (verifyInstalled()) return@withContext modelFile
+            val requiredBytes = MODEL_BYTES + MINIMUM_FREE_SPACE_BYTES
+            check(modelDir.usableSpace >= requiredBytes) {
+                "Espace insuffisant : BOZER a besoin d'environ 600 Mo libres pour installer son cerveau."
+            }
             partialFile.delete()
 
             val connection = (URL(MODEL_URL).openConnection() as HttpURLConnection).apply {
@@ -95,6 +99,7 @@ class LocalModelManager(context: Context) {
     companion object {
         const val MODEL_FILENAME = "qwen2.5-0.5b-instruct-q4_k_m.gguf"
         const val MODEL_BYTES = 491_400_032L
+        const val MINIMUM_FREE_SPACE_BYTES = 128L * 1024L * 1024L
         const val MODEL_SHA256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
         const val MODEL_URL =
             "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/12145bd1d629190a4d44254073650877954d02c9/qwen2.5-0.5b-instruct-q4_k_m.gguf"

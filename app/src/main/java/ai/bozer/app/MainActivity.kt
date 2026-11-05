@@ -79,12 +79,17 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
         modelStatus = "Téléchargement du modèle Qwen…"
         scope.launch {
             try {
+                var lastReportedPercent = -1
                 val file = modelManager.download { downloaded, total ->
-                    withContext(Dispatchers.Main) {
-                        downloadProgress = if (total > 0L) downloaded.toFloat() / total else 0f
-                        val downloadedMb = downloaded / (1024L * 1024L)
-                        val totalMb = total / (1024L * 1024L)
-                        modelStatus = "Téléchargement : $downloadedMb / $totalMb Mo"
+                    val percent = if (total > 0L) ((downloaded * 100L) / total).toInt() else 0
+                    if (percent != lastReportedPercent || downloaded == total) {
+                        lastReportedPercent = percent
+                        withContext(Dispatchers.Main) {
+                            downloadProgress = if (total > 0L) downloaded.toFloat() / total else 0f
+                            val downloadedMb = downloaded / (1024L * 1024L)
+                            val totalMb = total / (1024L * 1024L)
+                            modelStatus = "Téléchargement : $downloadedMb / $totalMb Mo"
+                        }
                     }
                 }
                 modelStatus = "Modèle vérifié. Chargement du cerveau…"
