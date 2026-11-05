@@ -13,16 +13,17 @@ This repository contains a portable Python decision core. It is **not yet the An
 - `bozer_brain/planner.py`: converts intents into safe action proposals.
 - `bozer_brain/safety.py`: confirmation and permission gates.
 - `bozer_brain/memory.py`: local SQLite conversation history and explicit key/value facts.
+- `bozer_brain/context.py`: bounded recent-history context for a model integration.
 - `bozer_brain/dialogue.py`: conversation orchestration and optional injected model-responder boundary.
 - `tests/`: automated tests.
 
 ## Memory and privacy
 
-The application chooses the SQLite database path. Conversation history and explicitly stored facts remain in that local database; this module does not upload them. Facts are stored only when the caller explicitly invokes `remember_fact`. The API supports reading, updating, and forgetting a fact, plus clearing conversation history.
+The application chooses the SQLite database path. Conversation history and explicitly stored facts remain in that local database; this module does not upload them. Facts are stored only when the caller explicitly invokes `remember_fact`. The context builder includes only a bounded number of recent conversation turns; it does not automatically include stored facts.
 
 ## Model integration status
 
-The dialogue engine accepts an injected responder, but no AI provider is connected by default. Without one, BOZER states this limitation honestly rather than inventing answers. Provider credentials, network calls, retention rules, and user consent must be implemented in a separate integration layer.
+The dialogue engine accepts an injected responder and supplies bounded conversation context. No AI provider is connected by default. Without one, BOZER states this limitation honestly rather than inventing answers. Provider credentials, network calls, retention rules, and user consent must be implemented in a separate integration layer.
 
 ## Safety boundary
 
@@ -38,4 +39,4 @@ python -m unittest discover -s tests -v
 
 ## Current status
 
-Decision core, local memory, and dialogue orchestration foundation. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate integration work.
+Decision core, local memory, bounded conversation context, and dialogue orchestration foundation. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate integration work.

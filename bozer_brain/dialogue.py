@@ -1,12 +1,9 @@
-"""Conversation orchestration boundary for BOZER.
+"""Conversation orchestration boundary for BOZER."""
 
-Without a configured language-model responder, this module is intentionally honest:
-it can route explicit actions and maintain history, but it does not pretend to be an
-open-domain AI model.
-"""
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from .context import build_context
 from .intent import parse_intent
 from .memory import ConversationMemory
 from .models import ActionProposal, IntentKind
@@ -25,9 +22,13 @@ class DialogueEngine:
         self,
         memory: ConversationMemory,
         responder: Optional[Callable[[str], str]] = None,
+        history_limit: int = 8,
     ):
+        if history_limit < 0:
+            raise ValueError("history_limit must be non-negative")
         self.memory = memory
         self.responder = responder
+        self.history_limit = history_limit
 
     def respond(self, user_text: str) -> DialogueResult:
         text = (user_text or "").strip()
@@ -41,9 +42,10 @@ class DialogueEngine:
             reply = self._action_reply(intent.kind, proposal.requires_confirmation)
             used_model = False
         elif self.responder is not None:
-            # The responder is an injected integration; credentials and network
-            # configuration belong outside this core.
-            reply = self.responder(text)
+            context = build_context(
+                self.memory, text, history_limit=self.history_limit
+            )
+            reply = self.responder(context.prompt)
             if not isinstance(reply, str) or not reply.strip():
                 raise ValueError("responder must return a non-empty string")
             used_model = True
