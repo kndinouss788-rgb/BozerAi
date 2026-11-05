@@ -47,13 +47,9 @@ class DialogueEngine:
             reply = self._action_reply(intent.kind, proposal.requires_confirmation)
             used_model = False
         else:
-            context = build_context(
-                self.memory, text, history_limit=self.history_limit
-            )
+            context = build_context(self.memory, text, history_limit=self.history_limit)
             if self.model_gateway is not None:
-                result = self.model_gateway.generate(
-                    context.prompt, enabled=allow_model
-                )
+                result = self.model_gateway.generate(context.prompt, enabled=allow_model)
                 if result.ok:
                     reply = result.text
                     used_model = True
@@ -62,7 +58,6 @@ class DialogueEngine:
                     used_model = False
                     model_error = result.error
             elif self.responder is not None:
-                # Legacy injected responder remains available to trusted local tests/adapters.
                 if not allow_model:
                     reply = self._model_unavailable_reply()
                     used_model = False

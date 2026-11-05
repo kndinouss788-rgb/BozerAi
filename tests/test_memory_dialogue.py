@@ -59,9 +59,7 @@ class DialogueTests(unittest.TestCase):
         self.assertEqual(len(self.memory.recent_turns()), 2)
 
     def test_model_gateway_requires_per_call_opt_in(self):
-        engine = DialogueEngine(
-            self.memory, model_gateway=ModelGateway(FakeProvider())
-        )
+        engine = DialogueEngine(self.memory, model_gateway=ModelGateway(FakeProvider()))
         blocked = engine.respond("Explique la gravité")
         self.assertFalse(blocked.used_language_model)
         self.assertEqual(blocked.model_error, "provider_use_not_enabled")
