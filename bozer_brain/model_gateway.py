@@ -21,8 +21,6 @@ class ModelResponse:
 
 
 class LanguageModelProvider(Protocol):
-    """Minimal contract implemented by a local or remote model adapter."""
-
     @property
     def provider_name(self) -> str:
         ...
@@ -67,7 +65,6 @@ class ModelGateway:
                 ModelRequest(prompt=prompt, max_output_chars=max_output_chars)
             )
         except Exception:
-            # Do not leak credentials, provider payloads, or internal exception text.
             return ModelResult(False, "", self.provider.provider_name, None, "provider_error")
 
         if not isinstance(response, ModelResponse):
@@ -75,9 +72,10 @@ class ModelGateway:
         if not isinstance(response.text, str) or not response.text.strip():
             return ModelResult(False, "", response.provider_name, response.model_name, "empty_provider_response")
 
+        bounded_text = response.text.strip()[:max_output_chars].rstrip()
         return ModelResult(
             True,
-            response.text.strip()[:max_output_chars],
+            bounded_text,
             response.provider_name,
             response.model_name,
             None,
