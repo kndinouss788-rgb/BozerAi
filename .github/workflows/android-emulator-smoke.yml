@@ -78,10 +78,17 @@ jobs:
             adb shell am force-stop ai.bozer.app
             adb shell am start -n ai.bozer.app/.MainActivity
             sleep 8
-            adb shell pidof ai.bozer.app
-            adb logcat -d -s BOZER_E2E:I AndroidRuntime:E > bozer-emulator-test.log
-            adb shell screencap -p /sdcard/bozer-smoke.png
-            adb pull /sdcard/bozer-smoke.png bozer-smoke.png
+            pid="$(adb shell pidof ai.bozer.app | tr -d '\r')"
+            test -n "$pid"
+            echo "BOZER_PID=$pid"
+            adb logcat -d -v brief -s BOZER_E2E:I AndroidRuntime:E > bozer-emulator-test.log
+            if grep -Eq 'FATAL EXCEPTION|E/AndroidRuntime|Process: ai\\.bozer\\.app' bozer-emulator-test.log; then
+              cat bozer-emulator-test.log
+              echo "AndroidRuntime reported a fatal application error."
+              exit 1
+            fi
+            adb exec-out screencap -p > bozer-smoke.png
+            test -s bozer-smoke.png
       - name: Upload emulator screenshot and brain test logs
         if: always()
         uses: actions/upload-artifact@v4
