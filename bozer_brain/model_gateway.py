@@ -51,6 +51,9 @@ class _HttpsJsonProvider:
 
 class OpenAIResponsesProvider(_HttpsJsonProvider):
     """Native OpenAI Responses API adapter; response storage is disabled."""
+    def __init__(self, api_key, model, base_url="https://api.openai.com/v1", timeout=25.0, opener=None):
+        super().__init__(api_key, model, base_url, timeout, opener)
+
     @property
     def provider_name(self): return "openai-responses"
     def generate(self, request):
@@ -71,6 +74,9 @@ class OpenAIResponsesProvider(_HttpsJsonProvider):
 
 class OpenAICompatibleProvider(_HttpsJsonProvider):
     """Adapter for endpoints exposing the /chat/completions contract."""
+    def __init__(self, api_key, model, base_url="https://api.openai.com/v1", timeout=25.0, opener=None):
+        super().__init__(api_key, model, base_url, timeout, opener)
+
     @property
     def provider_name(self): return "openai-compatible"
     def generate(self, request):
