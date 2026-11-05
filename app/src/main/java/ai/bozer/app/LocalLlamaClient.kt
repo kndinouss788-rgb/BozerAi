@@ -3,6 +3,7 @@ package ai.bozer.app
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 
 class LocalLlamaClient(
@@ -10,7 +11,9 @@ class LocalLlamaClient(
     private val model: String = "qwen-local"
 ) {
     fun complete(history: List<ChatMessage>): String {
-        require(endpoint.startsWith("http://127.0.0.1:") || endpoint.startsWith("http://[::1]:")) {
+        val uri = URI(endpoint)
+        require(uri.scheme == "http" && uri.host in setOf("127.0.0.1", "localhost", "::1") &&
+            uri.userInfo == null && uri.query == null && uri.fragment == null) {
             "Le moteur local doit rester accessible uniquement depuis cet appareil."
         }
         val messages = JSONArray().put(JSONObject()
