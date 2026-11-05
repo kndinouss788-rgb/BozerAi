@@ -64,6 +64,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_2
+          emulator-boot-timeout: 900
           script: |
             set -euo pipefail
             adb install -r app/build/outputs/apk/debug/app-debug.apk
@@ -82,7 +83,7 @@ jobs:
             test -n "$pid"
             echo "BOZER_PID=$pid"
             adb logcat -d -v brief -s BOZER_E2E:I AndroidRuntime:E > bozer-emulator-test.log
-            if grep -Eq 'FATAL EXCEPTION|E/AndroidRuntime|Process: ai\\.bozer\\.app' bozer-emulator-test.log; then
+            if grep -Eq 'FATAL EXCEPTION|E/AndroidRuntime|Process: ai[.]bozer[.]app' bozer-emulator-test.log; then
               cat bozer-emulator-test.log
               echo "AndroidRuntime reported a fatal application error."
               exit 1
