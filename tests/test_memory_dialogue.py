@@ -79,6 +79,19 @@ class DialogueTests(unittest.TestCase):
         self.assertIn("Je préfère les réponses en français.", captured[0])
         self.assertIn("Et peux-tu expliquer la gravité ?", captured[0])
 
+    def test_from_environment_wires_native_provider_into_dialogue(self):
+        engine = DialogueEngine.from_environment(
+            self.memory,
+            environ={"BOZER_MODEL_API_KEY": "test-secret", "BOZER_MODEL_NAME": "test-model"},
+        )
+        self.assertEqual(engine.model_gateway.provider.provider_name, "openai-responses")
+
+    def test_from_environment_without_credentials_stays_honest(self):
+        engine = DialogueEngine.from_environment(self.memory, environ={})
+        result = engine.respond("Explique la gravité", allow_model=True)
+        self.assertFalse(result.used_language_model)
+        self.assertEqual(result.model_error, "provider_not_configured")
+
     def test_without_model_does_not_fake_ai(self):
         result = DialogueEngine(self.memory).respond("Explique la gravité")
         self.assertFalse(result.used_language_model)

@@ -7,7 +7,7 @@ from .context import build_context
 from .eye_search import EyeSearch, ResearchContext
 from .intent import parse_intent
 from .memory import ConversationMemory
-from .model_gateway import ModelGateway
+from .model_gateway import ModelGateway, openai_provider_from_env
 from .models import ActionProposal, IntentKind
 from .planner import plan_action
 
@@ -37,6 +37,19 @@ class DialogueEngine:
         self.history_limit = history_limit
         self.model_gateway = model_gateway
         self.eye_search = eye_search
+
+    @classmethod
+    def from_environment(cls, memory, *, responder=None, history_limit=8,
+                         eye_search=None, environ=None):
+        """Create the dialogue brain with a server-configured real model provider."""
+        provider = openai_provider_from_env(environ)
+        return cls(
+            memory,
+            responder=responder,
+            history_limit=history_limit,
+            model_gateway=ModelGateway(provider),
+            eye_search=eye_search,
+        )
 
     def respond(
         self,
