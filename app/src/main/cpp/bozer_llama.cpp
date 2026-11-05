@@ -64,15 +64,16 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     const std::string user_prompt = from_jstring(env, input);
     const std::string prompt =
         "<|im_start|>system\nTu es BOZER, un assistant francophone naturel, chaleureux, direct et honnête. "
-        "Réponds clairement. N'invente jamais une action que tu n'as pas exécutée.<|im_end|>\n"
+        "Réponds de façon concise et adaptée à la question. N'invente jamais une action ou une information actuelle.<|im_end|>\n"
         "<|im_start|>user\n" + user_prompt + "<|im_end|>\n"
         "<|im_start|>assistant\n";
 
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
-    if (needed <= 0 || needed > 1792) {
-        throw_java(env, "La conversation est trop longue pour le contexte local.");
+    // The smaller context is intentional for responsive inference on modest phones.
+    if (needed <= 0 || needed > 896) {
+        throw_java(env, "La conversation est trop longue pour le contexte local. Raccourcis le dernier message.");
         return nullptr;
     }
 
@@ -85,8 +86,8 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     }
 
     llama_context_params context_params = llama_context_default_params();
-    context_params.n_ctx = 2048;
-    context_params.n_batch = 2048;
+    context_params.n_ctx = 1024;
+    context_params.n_batch = 256;
     const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
     context_params.n_threads = threads;
     context_params.n_threads_batch = threads;
@@ -103,10 +104,8 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     std::string output;
     llama_batch batch = llama_batch_get_one(tokens.data(), token_count);
     int32_t generated = 0;
-    // llama_batch_get_one keeps a pointer to the supplied token. Keep this
-    // token alive across loop iterations instead of pointing at a block local.
     llama_token next_token = 0;
-    while (generated < std::min(static_cast<int>(max_tokens), 256)) {
+    while (generated < std::min(static_cast<int>(max_tokens), 96)) {
         if (llama_decode(ctx, batch) != 0) break;
         next_token = llama_sampler_sample(sampler, ctx, -1);
         if (llama_vocab_is_eog(vocab, next_token)) break;
