@@ -1,14 +1,12 @@
-"""Conversation orchestration boundary for BOZER.
+"""Conversation orchestration boundary for BOZER."""
 
-Without a configured language-model responder, this module is intentionally honest:
-it can route explicit actions and maintain history, but it does not pretend to be an
-open-domain AI model.
-"""
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from .context import build_context
 from .intent import parse_intent
 from .memory import ConversationMemory
+from .model_gateway import ModelGateway
 from .models import ActionProposal, IntentKind
 from .planner import plan_action
 
@@ -18,6 +16,7 @@ class DialogueResult:
     reply: str
     proposal: ActionProposal
     used_language_model: bool
+    model_error: Optional[str] = None
 
 
 class DialogueEngine:
@@ -25,38 +24,69 @@ class DialogueEngine:
         self,
         memory: ConversationMemory,
         responder: Optional[Callable[[str], str]] = None,
+        history_limit: int = 8,
+        model_gateway: Optional[ModelGateway] = None,
     ):
+        if history_limit < 0:
+            raise ValueError("history_limit must be non-negative")
         self.memory = memory
         self.responder = responder
+        self.history_limit = history_limit
+        self.model_gateway = model_gateway
 
-    def respond(self, user_text: str) -> DialogueResult:
+    def respond(self, user_text: str, *, allow_model: bool = False) -> DialogueResult:
         text = (user_text or "").strip()
         if not text:
             raise ValueError("user_text must not be empty")
 
         intent = parse_intent(text)
         proposal = plan_action(intent)
+        model_error = None
 
         if proposal.safe_to_execute:
             reply = self._action_reply(intent.kind, proposal.requires_confirmation)
             used_model = False
-        elif self.responder is not None:
-            # The responder is an injected integration; credentials and network
-            # configuration belong outside this core.
-            reply = self.responder(text)
-            if not isinstance(reply, str) or not reply.strip():
-                raise ValueError("responder must return a non-empty string")
-            used_model = True
         else:
-            reply = (
-                "Je peux conserver notre échange et préparer certaines actions, "
-                "mais mon moteur de réponse IA n'est pas encore connecté."
+            context = build_context(
+                self.memory, text, history_limit=self.history_limit
             )
-            used_model = False
+            if self.model_gateway is not None:
+                result = self.model_gateway.generate(
+                    context.prompt, enabled=allow_model
+                )
+                if result.ok:
+                    reply = result.text
+                    used_model = True
+                else:
+                    reply = self._model_unavailable_reply()
+                    used_model = False
+                    model_error = result.error
+            elif self.responder is not None:
+                # Legacy injected responder remains available to trusted local tests/adapters.
+                if not allow_model:
+                    reply = self._model_unavailable_reply()
+                    used_model = False
+                    model_error = "provider_use_not_enabled"
+                else:
+                    reply = self.responder(context.prompt)
+                    if not isinstance(reply, str) or not reply.strip():
+                        raise ValueError("responder must return a non-empty string")
+                    used_model = True
+            else:
+                reply = self._model_unavailable_reply()
+                used_model = False
+                model_error = "provider_not_configured"
 
         self.memory.add_turn("user", text)
         self.memory.add_turn("assistant", reply)
-        return DialogueResult(reply, proposal, used_model)
+        return DialogueResult(reply, proposal, used_model, model_error)
+
+    @staticmethod
+    def _model_unavailable_reply() -> str:
+        return (
+            "Je peux conserver notre échange et préparer certaines actions, "
+            "mais mon moteur de réponse IA n'est pas encore connecté."
+        )
 
     @staticmethod
     def _action_reply(kind: IntentKind, confirmation: bool) -> str:
