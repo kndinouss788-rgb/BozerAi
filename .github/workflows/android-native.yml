@@ -1,4 +1,4 @@
-name: BOZER Android native validation
+name: BOZER Android APK build
 
 on:
   push:
@@ -19,8 +19,11 @@ on:
       - ".github/workflows/android-native.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  android-compile:
+  android-apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,5 +39,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Compile Kotlin and native llama.cpp library (no APK)
-        run: gradle :app:compileDebugKotlin :app:externalNativeBuildDebug --no-daemon
+      - name: Build debug APK with native llama.cpp
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Verify APK output
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozer-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
