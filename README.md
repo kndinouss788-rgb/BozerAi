@@ -1,10 +1,10 @@
 # BOZER AI
 
-BOZER is a privacy-conscious Android assistant designed to turn natural-language intentions into safe, understandable actions.
+BOZER is a privacy-conscious assistant project designed to turn natural-language intentions into safe, understandable actions.
 
 ## Repository foundation
 
-This repository contains a portable Python decision core. It is **not yet the Android application** and does not execute phone actions by itself.
+This repository currently contains a portable Python decision core. It is **not yet the Android application** and does not execute phone actions by itself.
 
 ### Core modules
 
@@ -12,25 +12,22 @@ This repository contains a portable Python decision core. It is **not yet the An
 - `bozer_brain/intent.py`: deterministic French/English intent extraction.
 - `bozer_brain/planner.py`: converts intents into safe action proposals.
 - `bozer_brain/safety.py`: confirmation and permission gates.
-- `bozer_brain/tools.py`: explicit tool contracts and authorization checks; no tool execution.
-- `bozer_brain/memory.py`: local SQLite conversation history and explicit key/value facts.
+- `bozer_brain/tools.py`: explicit tool contracts and authorization checks.
+- `bozer_brain/task_planner.py`: dependency validation, topological ordering, and per-step authorization.
+- `bozer_brain/memory.py`: local SQLite conversation history and explicitly stored facts.
 - `bozer_brain/context.py`: bounded recent-history context for a model integration.
-- `bozer_brain/dialogue.py`: conversation orchestration and optional injected model-responder boundary.
+- `bozer_brain/dialogue.py`: conversation orchestration and optional injected responder.
 - `tests/`: automated tests.
 
-## Memory and privacy
+## Privacy and model integration
 
-The application chooses the SQLite database path. Conversation history and explicitly stored facts remain in that local database; this module does not upload them. Facts are stored only when the caller explicitly invokes `remember_fact`. The context builder includes only a bounded number of recent conversation turns; it does not automatically include stored facts.
+The application chooses the SQLite database path. History stays in that local database unless a separate integration sends context elsewhere. The context builder sends only a bounded number of recent turns to an injected responder. No AI provider is connected by default. Provider credentials, network calls, retention rules, and user consent must be implemented separately.
 
-## Model integration status
+## Planning and execution boundary
 
-The dialogue engine accepts an injected responder and supplies bounded conversation context. No AI provider is connected by default. Without one, BOZER states this limitation honestly rather than inventing answers. Provider credentials, network calls, retention rules, and user consent must be implemented in a separate integration layer.
+The task planner validates dependencies and orders steps. Each step must pass the tool registry's argument, permission, and confirmation gates. A ready step is only authorized for a future Android adapter; it is **not executed** by this Python core. Android must independently validate permissions, targets, confirmation, and execution results.
 
-## Tool and execution boundary
-
-The tool registry describes capabilities an Android adapter may implement. Authorization checks reject unknown tools, missing arguments, missing permissions, and unconfirmed sensitive actions. An "allowed" decision only means an adapter may be invoked; this Python core still performs no device action. Android must independently validate runtime permissions, targets, confirmation, and execution results.
-
-Unknown or ambiguous requests stay in chat and are never converted into guessed actions.
+Unknown or ambiguous requests stay unplanned rather than being converted into guessed actions.
 
 ## Run tests
 
@@ -40,4 +37,4 @@ python -m unittest discover -s tests -v
 
 ## Current status
 
-Decision core, local memory, bounded conversation context, dialogue orchestration, and tool authorization contracts. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate integration work.
+Decision core, local memory, bounded conversation context, tool authorization, and dependency-aware task planning are implemented as foundations. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate work.
