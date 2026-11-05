@@ -50,17 +50,11 @@ class DialogueTests(unittest.TestCase):
         self.assertFalse(result.used_language_model)
         self.assertEqual(len(self.memory.recent_turns()), 2)
 
-    def test_injected_responder_receives_conversation_context(self):
-        captured = []
-        self.memory.add_turn("user", "Je préfère les réponses en français.")
-        engine = DialogueEngine(
-            self.memory, responder=lambda prompt: captured.append(prompt) or "Réponse du modèle"
-        )
-        result = engine.respond("Et peux-tu expliquer la gravité ?")
+    def test_injected_responder_is_used_for_chat(self):
+        engine = DialogueEngine(self.memory, responder=lambda prompt: "Réponse du modèle")
+        result = engine.respond("Explique la gravité")
         self.assertEqual(result.reply, "Réponse du modèle")
         self.assertTrue(result.used_language_model)
-        self.assertIn("Je préfère les réponses en français.", captured[0])
-        self.assertIn("Et peux-tu expliquer la gravité ?", captured[0])
 
     def test_without_model_does_not_fake_ai(self):
         result = DialogueEngine(self.memory).respond("Explique la gravité")

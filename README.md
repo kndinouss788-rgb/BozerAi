@@ -16,12 +16,13 @@ This repository currently contains a portable Python decision core. It is **not 
 - `bozer_brain/task_planner.py`: dependency validation, topological ordering, and per-step authorization.
 - `bozer_brain/memory.py`: local SQLite conversation history and explicitly stored facts.
 - `bozer_brain/context.py`: bounded recent-history context for a model integration.
+- `bozer_brain/model_gateway.py`: provider-neutral model contract, explicit opt-in, response validation, and safe errors.
 - `bozer_brain/dialogue.py`: conversation orchestration and optional injected responder.
 - `tests/`: automated tests.
 
 ## Privacy and model integration
 
-The application chooses the SQLite database path. History stays in that local database unless a separate integration sends context elsewhere. The context builder sends only a bounded number of recent turns to an injected responder. No AI provider is connected by default. Provider credentials, network calls, retention rules, and user consent must be implemented separately.
+The application chooses the SQLite database path. History stays in that local database unless a separate integration sends context elsewhere. The context builder sends only a bounded number of recent turns to an injected responder. The model gateway refuses provider calls unless explicitly enabled. No AI provider or API key is bundled by default. Provider credentials, network calls, retention rules, and user consent must be implemented separately.
 
 ## Planning and execution boundary
 
@@ -37,4 +38,4 @@ python -m unittest discover -s tests -v
 
 ## Current status
 
-Decision core, local memory, bounded conversation context, tool authorization, and dependency-aware task planning are implemented as foundations. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate work.
+Decision core, local memory, bounded conversation context, tool authorization, dependency-aware task planning, and a provider-neutral model gateway are implemented as foundations. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate work.
