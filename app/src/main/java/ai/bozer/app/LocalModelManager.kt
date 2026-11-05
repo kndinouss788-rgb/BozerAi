@@ -15,11 +15,17 @@ class LocalModelManager(context: Context) {
     private val modelDir = File(context.filesDir, "models").apply { mkdirs() }
     private val modelFile = File(modelDir, MODEL_FILENAME)
     private val partialFile = File(modelDir, "$MODEL_FILENAME.part")
+    private val verifiedMarker = File(modelDir, "$MODEL_FILENAME.sha256")
 
     fun installedModel(): File? = modelFile.takeIf { it.isFile && it.length() == MODEL_BYTES }
 
     suspend fun verifyInstalled(): Boolean = withContext(Dispatchers.IO) {
-        modelFile.isFile && modelFile.length() == MODEL_BYTES && sha256(modelFile) == MODEL_SHA256
+        if (!modelFile.isFile || modelFile.length() != MODEL_BYTES) return@withContext false
+        // Checksum is verified after download; this marker avoids hashing 491 MB on every launch.
+        if (verifiedMarker.isFile && verifiedMarker.readText() == MODEL_SHA256) return@withContext true
+        val valid = sha256(modelFile) == MODEL_SHA256
+        if (valid) verifiedMarker.writeText(MODEL_SHA256) else verifiedMarker.delete()
+        valid
     }
 
     suspend fun download(onProgress: suspend (Long, Long) -> Unit = { _, _ -> }): File =
@@ -74,6 +80,7 @@ class LocalModelManager(context: Context) {
                 check(partialFile.renameTo(modelFile)) {
                     "Impossible de finaliser le stockage privé du modèle."
                 }
+                verifiedMarker.writeText(MODEL_SHA256)
                 modelFile
             } catch (error: Exception) {
                 partialFile.delete()
