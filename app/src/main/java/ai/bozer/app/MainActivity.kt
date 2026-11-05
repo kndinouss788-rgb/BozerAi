@@ -32,15 +32,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val repository = ChatRepository(ChatDatabase(applicationContext), LocalLlamaClient())
-        setContent { BozerChat(repository) }
+        val modelManager = LocalModelManager(applicationContext)
+        setContent { BozerChat(repository, modelManager) }
     }
 }
 
 @Composable
-private fun BozerChat(repository: ChatRepository) {
+private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
+    var downloadingModel by remember { mutableStateOf(false) }
+    var modelProgress by remember { mutableStateOf(0) }
+    var modelStatus by remember {
+        mutableStateOf(if (modelManager.installedModel() != null) "Modèle téléchargé · prêt à charger" else "Cerveau local non installé")
+    }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
@@ -83,6 +89,41 @@ private fun BozerChat(repository: ChatRepository) {
                     }
                     Spacer(Modifier.weight(1f))
                     Text("LOCAL", fontSize = 10.sp, letterSpacing = 1.5.sp, color = Color(0xFF8B929B))
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        modelStatus,
+                        modifier = Modifier.weight(1f),
+                        color = Color(0xFF858B94),
+                        fontSize = 11.sp
+                    )
+                    if (downloadingModel) {
+                        Text("$modelProgress%", color = Color(0xFF687482), fontSize = 11.sp)
+                    } else {
+                        TextButton(
+                            onClick = {
+                                downloadingModel = true
+                                modelStatus = "Téléchargement du modèle…"
+                                scope.launch {
+                                    try {
+                                        modelManager.download { received, total ->
+                                            modelProgress = ((received * 100L) / total).toInt()
+                                        }
+                                        modelStatus = "Modèle téléchargé · stockage privé vérifié"
+                                    } catch (error: Exception) {
+                                        modelStatus = error.message ?: "Échec du téléchargement"
+                                    } finally {
+                                        downloadingModel = false
+                                    }
+                                }
+                            },
+                            enabled = modelManager.installedModel() == null
+                        ) { Text("Installer le cerveau") }
+                    }
                 }
 
                 if (messages.isEmpty()) {
