@@ -17,8 +17,15 @@ This repository currently contains a portable Python decision core. It is **not 
 - `bozer_brain/memory.py`: local SQLite conversation history and explicitly stored facts.
 - `bozer_brain/context.py`: bounded recent-history context for a model integration.
 - `bozer_brain/model_gateway.py`: provider-neutral model contract, explicit opt-in, response validation, and safe errors.
+- `bozer_brain/eye_search.py`: bounded multi-source research orchestration, URL deduplication, sanitized errors, and untrusted-source context.
 - `bozer_brain/dialogue.py`: conversation orchestration and optional injected responder.
 - `tests/`: automated tests.
+
+## EYE_SEARCH
+
+EYE_SEARCH is a research layer for the BOZER brain, not a replacement for its reasoning. It accepts injected public-search adapters, can query at most three configured sources by default, deduplicates URLs, bounds result count and text size, and builds a temporary research context. External page text is explicitly labelled as untrusted data and must never be followed as instructions.
+
+Search is disabled unless the caller explicitly passes `enabled=True`. No network adapter, crawler, API key, or paid search service is bundled yet. This keeps the core testable and prevents unexpected external requests; concrete public-source adapters and their privacy/availability rules are a separate integration step.
 
 ## Privacy and model integration
 
@@ -38,4 +45,4 @@ python -m unittest discover -s tests -v
 
 ## Current status
 
-Decision core, local memory, bounded conversation context, tool authorization, dependency-aware task planning, and a provider-neutral model gateway are implemented as foundations. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate work.
+Decision core, local memory, bounded conversation context, tool authorization, dependency-aware task planning, provider-neutral model gateway, and the EYE_SEARCH orchestration framework are implemented as foundations. Android UI, floating overlay, connected language-model provider, real public-search adapters, persistent Android integration, and real device execution remain separate work.
