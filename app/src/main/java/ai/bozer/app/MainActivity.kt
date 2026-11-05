@@ -193,7 +193,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                                     color = Accent, trackColor = Color(0xFFEDE7F7))
                             } else if (modelBusy) {
                                 Spacer(Modifier.height(8.dp))
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Violet,
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Accent,
                                     trackColor = Color(0xFFEDE7F7))
                             }
                             Spacer(Modifier.height(12.dp))
