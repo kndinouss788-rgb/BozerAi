@@ -3,7 +3,14 @@ package ai.bozer.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,7 +25,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -27,6 +37,11 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private val Pearl = Color(0xFFF7F8FC)
+private val Ink = Color(0xFF242631)
+private val Muted = Color(0xFF9295A3)
+private val Violet = Color(0xFF9871D9)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
@@ -56,6 +71,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
 
     LaunchedEffect(Unit) {
         if (modelManager.verifyInstalled()) {
@@ -123,60 +139,55 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     }
 
     MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF7F8FA)) {
-            Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Pearl) {
+            Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        Modifier.size(42.dp).shadow(8.dp, CircleShape)
-                            .background(Color.White, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("B", color = Color(0xFF252A31), fontSize = 22.sp, fontWeight = FontWeight.Light)
-                    }
-                    Spacer(Modifier.width(12.dp))
+                    BozerOrb(size = 48.dp, active = sending || modelBusy)
+                    Spacer(Modifier.width(13.dp))
                     Column {
-                        Text("BOZER", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF20242A))
-                        Text(if (modelReady) "Cerveau local actif" else "Assistant IA local", fontSize = 12.sp, color = Color(0xFF858B94))
+                        Text("BOZER", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Ink, letterSpacing = 0.4.sp)
+                        Text(if (sending) "Je réfléchis avec toi" else if (modelReady) "Ton compagnon IA local" else "Ton espace intelligent",
+                            fontSize = 12.sp, color = Muted)
                     }
                     Spacer(Modifier.weight(1f))
-                    Text(if (modelReady) "HORS LIGNE" else "IA LOCALE", fontSize = 10.sp,
-                        letterSpacing = 1.2.sp, color = Color(0xFF8B929B))
+                    Surface(color = Color.White.copy(alpha = 0.72f), shape = CircleShape) {
+                        Text(if (modelReady) "LOCAL" else "CONFIGURATION", modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            fontSize = 9.sp, letterSpacing = 1.sp, color = Color(0xFF777482))
+                    }
                 }
 
                 if (!modelReady) {
                     Surface(
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 14.dp),
-                        color = Color.White,
-                        shape = RoundedCornerShape(22.dp),
-                        shadowElevation = 2.dp
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
+                        color = Color.White.copy(alpha = 0.82f),
+                        shape = RoundedCornerShape(24.dp),
+                        shadowElevation = 3.dp
                     ) {
                         Column(Modifier.padding(18.dp)) {
-                            Text("Installer le cerveau de BOZER", fontSize = 17.sp,
-                                fontWeight = FontWeight.SemiBold, color = Color(0xFF252A31))
+                            Text("Réveillons le cerveau de BOZER", fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold, color = Ink)
                             Spacer(Modifier.height(6.dp))
                             Text("Qwen 0.5B · environ 491 Mo · stockage privé · fonctionne ensuite sans Internet.",
-                                fontSize = 13.sp, lineHeight = 19.sp, color = Color(0xFF858B94))
+                                fontSize = 13.sp, lineHeight = 19.sp, color = Muted)
                             Spacer(Modifier.height(12.dp))
-                            Text(modelStatus, fontSize = 12.sp, color = Color(0xFF626B76))
+                            Text(modelStatus, fontSize = 12.sp, color = Color(0xFF686777))
                             if (modelBusy && downloadProgress > 0f) {
                                 Spacer(Modifier.height(8.dp))
-                                LinearProgressIndicator(progress = { downloadProgress }, modifier = Modifier.fillMaxWidth())
+                                LinearProgressIndicator(progress = { downloadProgress }, modifier = Modifier.fillMaxWidth(),
+                                    color = Violet, trackColor = Color(0xFFEDE7F7))
                             } else if (modelBusy) {
                                 Spacer(Modifier.height(8.dp))
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Violet,
+                                    trackColor = Color(0xFFEDE7F7))
                             }
                             Spacer(Modifier.height(12.dp))
-                            Button(
-                                onClick = { installAndLoad() },
-                                enabled = !modelBusy,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF252A31))
-                            ) {
-                                Text(if (modelBusy) "Installation en cours…" else "Télécharger et installer")
+                            Button(onClick = { installAndLoad() }, enabled = !modelBusy,
+                                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Ink)) {
+                                Text(if (modelBusy) "Préparation en cours…" else "Installer le cerveau")
                             }
                         }
                     }
@@ -188,42 +199,62 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Bonjour.", fontSize = 30.sp, fontWeight = FontWeight.Light, color = Color(0xFF252A31))
+                        BozerOrb(size = 154.dp, active = modelReady)
+                        Spacer(Modifier.height(24.dp))
+                        Text(if (modelReady) "Content de te retrouver." else "Un espace à toi.",
+                            fontSize = 25.sp, fontWeight = FontWeight.Light, color = Ink)
                         Spacer(Modifier.height(8.dp))
-                        Text(if (modelReady) "Je suis BOZER. Que veux-tu faire ?" else "Installe mon cerveau pour commencer à discuter.",
-                            color = Color(0xFF858B94), fontSize = 14.sp)
+                        Text(if (modelReady) "Qu'est-ce qu'on construit aujourd'hui ?" else "Installe mon cerveau pour commencer.",
+                            color = Muted, fontSize = 14.sp)
+                        Spacer(Modifier.height(28.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            ContextChip("Réfléchir ensemble", Modifier.weight(1f)) { draft = "Aide-moi à réfléchir à une idée." }
+                            ContextChip("M'organiser", Modifier.weight(1f)) { draft = "Aide-moi à organiser ma journée." }
+                        }
                     }
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         state = listState,
                         contentPadding = PaddingValues(vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         items(messages) { message -> MessageBubble(message) }
                         if (sending) item {
-                            Text("BOZER réfléchit…", color = Color(0xFF9299A2), fontSize = 12.sp,
-                                modifier = Modifier.padding(start = 8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp, top = 2.dp)) {
+                                BozerOrb(size = 25.dp, active = true)
+                                Spacer(Modifier.width(9.dp))
+                                Text("BOZER prend le temps de réfléchir…", color = Muted, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+
+                if (messages.isNotEmpty() && !sending) {
+                    val suggestions = contextualSuggestions(lastUserText)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                        suggestions.forEach { suggestion ->
+                            ContextChip(suggestion, Modifier.weight(1f)) { draft = suggestion }
                         }
                     }
                 }
 
                 Row(
-                    Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)
-                        .shadow(8.dp, RoundedCornerShape(26.dp))
-                        .background(Color.White.copy(alpha = 0.96f), RoundedCornerShape(26.dp))
-                        .padding(start = 18.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                    Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp)
+                        .shadow(12.dp, RoundedCornerShape(30.dp))
+                        .background(Brush.linearGradient(listOf(Color.White, Color(0xFFFDFBFF))), RoundedCornerShape(30.dp))
+                        .padding(start = 19.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BasicTextField(
                         value = draft,
                         onValueChange = { draft = it },
-                        modifier = Modifier.weight(1f).padding(vertical = 10.dp),
-                        textStyle = TextStyle(color = Color(0xFF242932), fontSize = 15.sp),
-                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF687482)),
+                        modifier = Modifier.weight(1f).padding(vertical = 11.dp),
+                        textStyle = TextStyle(color = Ink, fontSize = 15.sp),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Violet),
                         decorationBox = { inner ->
-                            if (draft.isEmpty()) Text(if (modelReady) "Écris à BOZER…" else "Installe d'abord le cerveau…",
-                                color = Color(0xFFA0A6AE), fontSize = 15.sp)
+                            if (draft.isEmpty()) Text(if (modelReady) "Parle-moi, je t'écoute…" else "Installe d'abord le cerveau…",
+                                color = Color(0xFFA0A2AD), fontSize = 15.sp)
                             inner()
                         },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -231,14 +262,11 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         singleLine = false
                     )
                     Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = { send() },
-                        enabled = draft.isNotBlank() && !sending && modelReady,
-                        shape = CircleShape,
-                        contentPadding = PaddingValues(0.dp),
-                        modifier = Modifier.size(44.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF252A31))
-                    ) { Text("↑", fontSize = 21.sp, color = Color.White) }
+                    Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && modelReady,
+                        shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(46.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Violet, disabledContainerColor = Color(0xFFE8E5ED))) {
+                        Text("↑", fontSize = 22.sp, color = Color.White)
+                    }
                 }
             }
         }
@@ -246,21 +274,66 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
 }
 
 @Composable
+private fun BozerOrb(size: androidx.compose.ui.unit.Dp, active: Boolean) {
+    val transition = rememberInfiniteTransition(label = "bozer-orb")
+    val pulse by transition.animateFloat(
+        initialValue = 0.94f, targetValue = if (active) 1.08f else 1.02f,
+        animationSpec = infiniteRepeatable(animation = tween(if (active) 1050 else 2200), repeatMode = RepeatMode.Reverse),
+        label = "orb-pulse"
+    )
+    Canvas(Modifier.size(size)) {
+        val center = Offset(this.size.width / 2f, this.size.height / 2f)
+        val radius = this.size.minDimension * 0.43f * pulse
+        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFEDE5FA), Color(0xFFD8C8F1)), center, radius * 1.55f), radius * 1.55f, center)
+        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFE9DDF8), Color(0xFFBDA0E8)), center, radius), radius, center)
+        drawCircle(Color.White.copy(alpha = 0.72f), radius * 0.72f, center, style = Stroke(width = size.minDimension * 0.018f))
+        drawCircle(Color.White.copy(alpha = 0.62f), radius * 0.23f, Offset(center.x - radius * 0.25f, center.y - radius * 0.3f))
+    }
+}
+
+@Composable
+private fun ContextChip(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(modifier = modifier.clickable(onClick = onClick), color = Color.White.copy(alpha = 0.82f),
+        shape = RoundedCornerShape(18.dp), shadowElevation = 1.dp) {
+        Text(label, modifier = Modifier.padding(horizontal = 11.dp, vertical = 10.dp),
+            color = Color(0xFF777482), fontSize = 11.sp, maxLines = 1)
+    }
+}
+
+private fun contextualSuggestions(lastMessage: String): List<String> {
+    val value = lastMessage.lowercase()
+    return when {
+        listOf("travail", "projet", "bozer", "construire").any(value::contains) ->
+            listOf("Fais un plan", "Quelle est la suite ?")
+        listOf("apprendre", "comprendre", "explique", "étudier").any(value::contains) ->
+            listOf("Donne un exemple", "Explique plus simplement")
+        listOf("problème", "bloqué", "erreur", "marche pas").any(value::contains) ->
+            listOf("Aide-moi à corriger", "Quelles sont les causes ?")
+        else -> listOf("Développe ton idée", "Donne un exemple")
+    }
+}
+
+@Composable
 private fun MessageBubble(message: ChatMessage) {
     val isUser = message.role == "user"
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom) {
+        if (!isUser) {
+            BozerOrb(size = 27.dp, active = false)
+            Spacer(Modifier.width(8.dp))
+        }
         Surface(
-            color = if (isUser) Color(0xFFE8EDF2) else Color.White,
+            color = if (isUser) Color(0xFFECE8F3).copy(alpha = 0.92f) else Color.White.copy(alpha = 0.94f),
             shape = RoundedCornerShape(
-                topStart = 20.dp, topEnd = 20.dp,
-                bottomEnd = if (isUser) 6.dp else 20.dp,
-                bottomStart = if (isUser) 20.dp else 6.dp
+                topStart = 22.dp, topEnd = 22.dp,
+                bottomEnd = if (isUser) 7.dp else 22.dp,
+                bottomStart = if (isUser) 22.dp else 7.dp
             ),
             shadowElevation = if (isUser) 0.dp else 2.dp,
             modifier = Modifier.widthIn(max = 310.dp)
         ) {
-            Text(message.content, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                color = Color(0xFF272C34), fontSize = 15.sp, lineHeight = 22.sp)
+            Text(message.content, modifier = Modifier.padding(horizontal = 17.dp, vertical = 13.dp),
+                color = Ink, fontSize = 15.sp, lineHeight = 22.sp)
         }
     }
 }
