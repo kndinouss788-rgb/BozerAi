@@ -17,19 +17,56 @@ This repository currently contains a portable Python decision core. It is **not 
 - `bozer_brain/memory.py`: local SQLite conversation history and explicitly stored facts.
 - `bozer_brain/context.py`: bounded recent-history context for a model integration.
 - `bozer_brain/model_gateway.py`: provider-neutral model contract, explicit opt-in, response validation, and safe errors.
-- `bozer_brain/eye_search.py`: bounded multi-source research orchestration, URL deduplication, sanitized errors, and untrusted-source context.
-- `bozer_brain/dialogue.py`: conversation orchestration and optional injected responder.
+- `bozer_brain/eye_search.py`: bounded multi-source research orchestration and untrusted-source context.
+- `bozer_brain/public_sources.py`: real public Wikipedia and Wikidata search adapters using Python's standard library.
+- `bozer_brain/dialogue.py`: conversation orchestration with optional research context and injected responder.
 - `tests/`: automated tests.
 
-## EYE_SEARCH
+## EYE_SEARCH public sources
 
-EYE_SEARCH is a research layer for the BOZER brain, not a replacement for its reasoning. It accepts injected public-search adapters, can query at most three configured sources by default, deduplicates URLs, bounds result count and text size, and builds a temporary research context. External page text is explicitly labelled as untrusted data and must never be followed as instructions.
+Two read-only public sources are implemented:
+- Wikipedia via the MediaWiki Action API search module.
+- Wikidata via its public `wbsearchentities` API.
 
-Search is disabled unless the caller explicitly passes `enabled=True`. No network adapter, crawler, API key, or paid search service is bundled yet. This keeps the core testable and prevents unexpected external requests; concrete public-source adapters and their privacy/availability rules are a separate integration step.
+Both use fixed HTTPS endpoints, a descriptive User-Agent, bounded results, a 5-second default network timeout, and a 1 MB response ceiling. No API key, paid service, crawler, or arbitrary URL fetch is used. Language defaults to English and can be set to another short language code (for example `fr`).
+
+Example:
+
+```python
+from bozer_brain.eye_search import EyeSearch
+from bozer_brain.public_sources import WikipediaSearchSource, WikidataSearchSource
+
+research = EyeSearch([
+    WikipediaSearchSource(language="fr"),
+    WikidataSearchSource(language="fr"),
+]).search("histoire du Burkina Faso", enabled=True)
+```
+
+EYE_SEARCH output is explicitly marked as untrusted external data. It is evidence to verify, not instructions to follow.
+
+## Dialogue integration
+
+Pass an `EyeSearch` instance to `DialogueEngine`. A normal chat turn only searches when the caller explicitly uses `allow_search=True`; the model still requires its separate `allow_model=True` opt-in. Phone-action intents never trigger research.
+
+```python
+engine = DialogueEngine(
+    memory,
+    model_gateway=model_gateway,
+    eye_search=EyeSearch([
+        WikipediaSearchSource(language="fr"),
+        WikidataSearchSource(language="fr"),
+    ]),
+)
+result = engine.respond(
+    "Explique le sujet", allow_search=True, allow_model=True
+)
+```
+
+The dialogue layer attaches the bounded research context to the model prompt and returns the research object in `DialogueResult.research`. It does not claim sources prove the answer.
 
 ## Privacy and model integration
 
-The application chooses the SQLite database path. History stays in that local database unless a separate integration sends context elsewhere. The context builder sends only a bounded number of recent turns to an injected responder. The model gateway refuses provider calls unless explicitly enabled. No AI provider or API key is bundled by default. Provider credentials, network calls, retention rules, and user consent must be implemented separately.
+The application chooses the SQLite database path. History stays in that local database unless a separate integration sends context elsewhere. The model gateway refuses provider calls unless explicitly enabled. No AI provider or API key is bundled by default. Provider credentials, network calls, retention rules, and user consent must be implemented separately.
 
 ## Planning and execution boundary
 
@@ -45,4 +82,4 @@ python -m unittest discover -s tests -v
 
 ## Current status
 
-Decision core, local memory, bounded conversation context, tool authorization, dependency-aware task planning, provider-neutral model gateway, and the EYE_SEARCH orchestration framework are implemented as foundations. Android UI, floating overlay, connected language-model provider, real public-search adapters, persistent Android integration, and real device execution remain separate work.
+Decision core, local memory, bounded conversation context, tool authorization, dependency-aware task planning, provider-neutral model gateway, live public-source adapters, and dialogue research integration are implemented as foundations. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate work.
