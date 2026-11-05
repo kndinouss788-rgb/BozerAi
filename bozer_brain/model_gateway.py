@@ -102,6 +102,74 @@ def openai_provider_from_env(environ=None):
     if style == "chat_completions": return OpenAICompatibleProvider(key, model, base, timeout)
     raise ValueError("BOZER_MODEL_API_STYLE must be responses or chat_completions")
 
+
+
+
+class LocalLlamaCppProvider:
+    """Zero-API-cost adapter for a llama.cpp server bound to loopback only.
+
+    Run the GGUF model locally (for example inside the Android app process),
+    expose its OpenAI-compatible endpoint on 127.0.0.1, then configure
+    BOZER_LOCAL_MODEL_URL. No API key or remote service is used.
+    """
+
+    def __init__(self, base_url="http://127.0.0.1:8080/v1",
+                 model="local-model", timeout=90.0, opener=None):
+        parsed = urlsplit(base_url)
+        if parsed.scheme != "http" or parsed.hostname not in ("127.0.0.1", "::1", "localhost"):
+            raise ValueError("local model endpoint must use loopback HTTP only")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("invalid local model endpoint")
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.timeout = timeout
+        self._opener = opener or urlopen
+
+    @property
+    def provider_name(self):
+        return "local-llama-cpp"
+
+    def generate(self, request):
+        if not isinstance(request, ModelRequest) or not request.prompt.strip():
+            raise ValueError("valid model request required")
+        payload = json.dumps({
+            "model": self.model,
+            "messages": [{"role": "user", "content": request.prompt}],
+            "max_tokens": max(64, min(1024, request.max_output_chars // 4)),
+            "stream": False,
+        }).encode("utf-8")
+        req = Request(
+            self.base_url + "/chat/completions",
+            data=payload,
+            method="POST",
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
+        with self._opener(req, timeout=self.timeout) as response:
+            raw = response.read(1_000_001)
+        if len(raw) > 1_000_000:
+            raise ValueError("local model response too large")
+        data = json.loads(raw.decode("utf-8"))
+        choices = data.get("choices", []) if isinstance(data, dict) else []
+        message = choices[0].get("message", {}) if choices else {}
+        content = message.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("local model response has no text content")
+        return ModelResponse(content, self.provider_name, data.get("model") or self.model)
+
+
+def local_llama_provider_from_env(environ=None):
+    """Return a local-only provider when a loopback model endpoint is configured."""
+    values = os.environ if environ is None else environ
+    endpoint = values.get("BOZER_LOCAL_MODEL_URL", "").strip()
+    if not endpoint:
+        return None
+    model = values.get("BOZER_LOCAL_MODEL_NAME", "local-model").strip()
+    timeout = float(values.get("BOZER_LOCAL_MODEL_TIMEOUT", "90"))
+    return LocalLlamaCppProvider(endpoint, model, timeout)
+
+
 class ModelGateway:
     """Validates model calls and makes provider use an explicit opt-in."""
     def __init__(self, provider: Optional[LanguageModelProvider] = None): self.provider = provider

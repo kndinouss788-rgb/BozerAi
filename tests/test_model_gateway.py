@@ -43,6 +43,33 @@ class ModelGatewayTests(unittest.TestCase):
         with self.assertRaises(ValueError): OpenAIResponsesProvider("key","model","http://example.com/v1")
     def test_env_defaults_to_responses_api(self):
         self.assertIsNone(openai_provider_from_env({})); p=openai_provider_from_env({"BOZER_MODEL_API_KEY":"secret","BOZER_MODEL_NAME":"gpt-model"}); self.assertIsInstance(p,OpenAIResponsesProvider)
+    @patch("bozer_brain.model_gateway.urlopen")
+    def test_local_llama_cpp_provider_uses_loopback_without_api_key(self, mocked):
+        mocked.return_value = FakeResponse(json.dumps({
+            "model": "qwen-local",
+            "choices": [{"message": {"content": "Bonjour, je suis BOZER."}}],
+        }).encode())
+        provider = LocalLlamaCppProvider(model="qwen-local")
+        response = provider.generate(ModelRequest("Salut"))
+        request = mocked.call_args.args[0]
+        self.assertEqual(request.full_url, "http://127.0.0.1:8080/v1/chat/completions")
+        self.assertIsNone(request.get_header("Authorization"))
+        self.assertEqual(response.text, "Bonjour, je suis BOZER.")
+        self.assertEqual(response.provider_name, "local-llama-cpp")
+
+    def test_local_provider_rejects_remote_endpoint(self):
+        with self.assertRaises(ValueError):
+            LocalLlamaCppProvider("http://example.com/v1")
+
+    def test_local_provider_environment_is_optional(self):
+        self.assertIsNone(local_llama_provider_from_env({}))
+        provider = local_llama_provider_from_env({
+            "BOZER_LOCAL_MODEL_URL": "http://127.0.0.1:8080/v1",
+            "BOZER_LOCAL_MODEL_NAME": "qwen-local",
+        })
+        self.assertIsInstance(provider, LocalLlamaCppProvider)
+        self.assertEqual(provider.model, "qwen-local")
+
     def test_env_can_select_compatible_api(self):
         p=openai_provider_from_env({"BOZER_MODEL_API_KEY":"secret","BOZER_MODEL_NAME":"demo","BOZER_MODEL_API_STYLE":"chat_completions"}); self.assertIsInstance(p,OpenAICompatibleProvider)
 

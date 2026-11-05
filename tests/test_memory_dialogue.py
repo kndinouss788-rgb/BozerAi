@@ -79,6 +79,17 @@ class DialogueTests(unittest.TestCase):
         self.assertIn("Je préfère les réponses en français.", captured[0])
         self.assertIn("Et peux-tu expliquer la gravité ?", captured[0])
 
+    def test_from_environment_prefers_local_model_over_remote_credentials(self):
+        engine = DialogueEngine.from_environment(
+            self.memory,
+            environ={
+                "BOZER_LOCAL_MODEL_URL": "http://127.0.0.1:8080/v1",
+                "BOZER_MODEL_API_KEY": "remote-secret",
+                "BOZER_MODEL_NAME": "remote-model",
+            },
+        )
+        self.assertEqual(engine.model_gateway.provider.provider_name, "local-llama-cpp")
+
     def test_from_environment_wires_native_provider_into_dialogue(self):
         engine = DialogueEngine.from_environment(
             self.memory,

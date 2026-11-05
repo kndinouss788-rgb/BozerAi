@@ -31,3 +31,15 @@ Conversation history remains local unless the host explicitly sends prompt conte
 The Android UI, floating overlay, secure backend deployment, and real device execution remain separate work.
 
 Run tests with: python -m unittest discover -s tests -v
+
+
+## Zero-cost local conversation model
+
+BOZER supports a local llama.cpp OpenAI-compatible endpoint with no API key:
+- Download a compatible GGUF instruction model such as Qwen2.5-0.5B-Instruct Q4_K_M (about 491 MB) from its official Hugging Face model repository.
+- Run llama.cpp locally on the device and bind its HTTP server to loopback only (127.0.0.1), not 0.0.0.0.
+- Set BOZER_LOCAL_MODEL_URL=http://127.0.0.1:8080/v1 and optionally BOZER_LOCAL_MODEL_NAME=qwen-local.
+- DialogueEngine.from_environment() prefers this local provider over a configured remote provider.
+- Model calls still require allow_model=True. Local inference uses device CPU/RAM/battery and does not require paid API credits.
+
+This repository currently adds the provider bridge and tests; it does not yet embed/build llama.cpp in the Android app or bundle/download a model automatically. Android JNI/runtime integration and a real-device inference test remain required. A 0.5B model is a modest starter, not ChatGPT-level intelligence.
