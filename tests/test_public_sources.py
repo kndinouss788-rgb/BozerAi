@@ -28,7 +28,7 @@ class PublicSourceTests(unittest.TestCase):
         self.assertEqual(results[0].title, "Open AI")
         self.assertEqual(results[0].snippet, "An AI lab")
         self.assertEqual(results[0].url, "https://en.wikipedia.org/wiki/Open_AI")
-        self.assertIn("User-Agent", mocked.call_args.args[0].headers)
+        self.assertIn("user-agent", {key.lower() for key in mocked.call_args.args[0].headers})
 
     @patch("bozer_brain.public_sources.urlopen")
     def test_wikidata_maps_entity_results(self, mocked):
