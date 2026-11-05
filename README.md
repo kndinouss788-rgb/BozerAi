@@ -12,6 +12,7 @@ This repository contains a portable Python decision core. It is **not yet the An
 - `bozer_brain/intent.py`: deterministic French/English intent extraction.
 - `bozer_brain/planner.py`: converts intents into safe action proposals.
 - `bozer_brain/safety.py`: confirmation and permission gates.
+- `bozer_brain/tools.py`: explicit tool contracts and authorization checks; no tool execution.
 - `bozer_brain/memory.py`: local SQLite conversation history and explicit key/value facts.
 - `bozer_brain/context.py`: bounded recent-history context for a model integration.
 - `bozer_brain/dialogue.py`: conversation orchestration and optional injected model-responder boundary.
@@ -25,9 +26,9 @@ The application chooses the SQLite database path. Conversation history and expli
 
 The dialogue engine accepts an injected responder and supplies bounded conversation context. No AI provider is connected by default. Without one, BOZER states this limitation honestly rather than inventing answers. Provider credentials, network calls, retention rules, and user consent must be implemented in a separate integration layer.
 
-## Safety boundary
+## Tool and execution boundary
 
-This core never sends messages, places calls, launches apps, or creates alarms. It only returns proposals. Android must check runtime permissions, validate targets, obtain confirmation for sensitive actions, and report execution results truthfully.
+The tool registry describes capabilities an Android adapter may implement. Authorization checks reject unknown tools, missing arguments, missing permissions, and unconfirmed sensitive actions. An "allowed" decision only means an adapter may be invoked; this Python core still performs no device action. Android must independently validate runtime permissions, targets, confirmation, and execution results.
 
 Unknown or ambiguous requests stay in chat and are never converted into guessed actions.
 
@@ -39,4 +40,4 @@ python -m unittest discover -s tests -v
 
 ## Current status
 
-Decision core, local memory, bounded conversation context, and dialogue orchestration foundation. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate integration work.
+Decision core, local memory, bounded conversation context, dialogue orchestration, and tool authorization contracts. Android UI, floating overlay, connected language-model provider, persistent Android integration, and real device execution remain separate integration work.
