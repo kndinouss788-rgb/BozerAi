@@ -20,7 +20,7 @@ class LocalLlamaEngine {
     fun load(modelPath: String) {
         if (loaded) return
         nativeAttempted = true
-        check(nativeLoadModel(modelPath, 2048)) {
+        check(nativeLoadModel(modelPath, 1024)) {
             "Le moteur n'a pas réussi à charger le modèle."
         }
         loaded = true
@@ -29,7 +29,9 @@ class LocalLlamaEngine {
     @Synchronized
     fun generate(prompt: String): String {
         check(loaded) { "Le modèle BOZER n'est pas chargé." }
-        return nativeGenerate(prompt, 256).trim().also {
+        // Most conversational replies are short; cap generation to avoid
+        // spending CPU and battery on unnecessarily long continuations.
+        return nativeGenerate(prompt, 96).trim().also {
             check(it.isNotBlank()) { "Le modèle a renvoyé une réponse vide." }
         }
     }
