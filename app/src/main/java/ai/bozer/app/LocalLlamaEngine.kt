@@ -2,7 +2,7 @@ package ai.bozer.app
 
 /**
  * JNI facade for the bundled llama.cpp runtime.
- * All inference calls are serialized by ChatRepository.
+ * ChatRepository serializes generation requests.
  */
 class LocalLlamaEngine {
     companion object {
@@ -14,10 +14,12 @@ class LocalLlamaEngine {
     private external fun nativeRelease()
 
     @Volatile private var loaded = false
+    @Volatile private var nativeAttempted = false
 
     @Synchronized
     fun load(modelPath: String) {
         if (loaded) return
+        nativeAttempted = true
         check(nativeLoadModel(modelPath, 2048)) {
             "Le moteur n'a pas réussi à charger le modèle."
         }
@@ -34,8 +36,9 @@ class LocalLlamaEngine {
 
     @Synchronized
     fun close() {
-        if (loaded) {
+        if (nativeAttempted) {
             nativeRelease()
+            nativeAttempted = false
             loaded = false
         }
     }
