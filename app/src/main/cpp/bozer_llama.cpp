@@ -3,6 +3,7 @@
 #include <vector>
 #include <mutex>
 #include <algorithm>
+#include <thread>
 #include "llama.h"
 
 namespace {
@@ -26,7 +27,7 @@ std::string from_jstring(JNIEnv * env, jstring value) {
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
-        JNIEnv * env, jobject, jstring path, jint context_size) {
+        JNIEnv * env, jobject, jstring path, jint) {
     std::lock_guard<std::mutex> lock(engine_mutex);
     if (model) return JNI_TRUE;
 
@@ -41,15 +42,13 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
         backend_initialized = true;
     }
 
-    llama_model_params model_params = llama_model_default_params();
-    model_params.n_gpu_layers = 0;
-    model = llama_model_load_from_file(model_path.c_str(), model_params);
+    llama_model_params params = llama_model_default_params();
+    params.n_gpu_layers = 0;
+    model = llama_model_load_from_file(model_path.c_str(), params);
     if (!model) {
         throw_java(env, "llama.cpp n'a pas pu ouvrir le fichier GGUF.");
         return JNI_FALSE;
     }
-
-    (void) context_size;
     return JNI_TRUE;
 }
 
@@ -88,8 +87,9 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     llama_context_params context_params = llama_context_default_params();
     context_params.n_ctx = 2048;
     context_params.n_batch = 2048;
-    context_params.n_threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
-    context_params.n_threads_batch = context_params.n_threads;
+    const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
+    context_params.n_threads = threads;
+    context_params.n_threads_batch = threads;
     llama_context * ctx = llama_init_from_model(model, context_params);
     if (!ctx) {
         throw_java(env, "Mémoire insuffisante pour préparer le contexte du modèle.");

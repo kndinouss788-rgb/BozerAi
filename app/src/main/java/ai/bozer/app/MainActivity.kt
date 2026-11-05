@@ -29,30 +29,79 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
+    private lateinit var engine: LocalLlamaEngine
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val repository = ChatRepository(ChatDatabase(applicationContext), LocalLlamaClient())
+        engine = LocalLlamaEngine()
+        val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(repository, modelManager) }
+        setContent { BozerChat(repository, modelManager, engine) }
+    }
+
+    override fun onDestroy() {
+        if (::engine.isInitialized) engine.close()
+        super.onDestroy()
     }
 }
 
 @Composable
-private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager) {
+private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
-    var downloadingModel by remember { mutableStateOf(false) }
-    var modelProgress by remember { mutableStateOf(0) }
-    var modelStatus by remember {
-        mutableStateOf(if (modelManager.installedModel() != null) "Modèle téléchargé · prêt à charger" else "Cerveau local non installé")
-    }
+    var modelReady by remember { mutableStateOf(false) }
+    var modelBusy by remember { mutableStateOf(false) }
+    var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
+    var downloadProgress by remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
+    LaunchedEffect(Unit) {
+        if (modelManager.verifyInstalled()) {
+            modelStatus = "Modèle trouvé. Chargement du cerveau…"
+            modelBusy = true
+            try {
+                withContext(Dispatchers.IO) { engine.load(modelManager.installedModel()!!.absolutePath) }
+                modelReady = true
+                modelStatus = "Cerveau local prêt — hors ligne."
+            } catch (error: Exception) {
+                modelStatus = "Chargement impossible : ${error.message ?: "erreur inconnue"}"
+            } finally {
+                modelBusy = false
+            }
+        }
+    }
+
+    fun installAndLoad() {
+        if (modelBusy || modelReady) return
+        modelBusy = true
+        modelStatus = "Téléchargement du modèle Qwen…"
+        scope.launch {
+            try {
+                val file = modelManager.download { downloaded, total ->
+                    withContext(Dispatchers.Main) {
+                        downloadProgress = if (total > 0L) downloaded.toFloat() / total else 0f
+                        val downloadedMb = downloaded / (1024L * 1024L)
+                        val totalMb = total / (1024L * 1024L)
+                        modelStatus = "Téléchargement : $downloadedMb / $totalMb Mo"
+                    }
+                }
+                modelStatus = "Modèle vérifié. Chargement du cerveau…"
+                withContext(Dispatchers.IO) { engine.load(file.absolutePath) }
+                modelReady = true
+                modelStatus = "Cerveau local prêt — tes messages sont traités sur ce téléphone."
+            } catch (error: Exception) {
+                modelStatus = "Installation impossible : ${error.message ?: "erreur inconnue"}"
+            } finally {
+                modelBusy = false
+            }
+        }
+    }
+
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty() || sending) return
+        if (text.isEmpty() || sending || !modelReady) return
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
@@ -85,44 +134,46 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text("BOZER", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF20242A))
-                        Text("Ton assistant", fontSize = 12.sp, color = Color(0xFF858B94))
+                        Text(if (modelReady) "Cerveau local actif" else "Assistant IA local", fontSize = 12.sp, color = Color(0xFF858B94))
                     }
                     Spacer(Modifier.weight(1f))
-                    Text("LOCAL", fontSize = 10.sp, letterSpacing = 1.5.sp, color = Color(0xFF8B929B))
+                    Text(if (modelReady) "HORS LIGNE" else "IA LOCALE", fontSize = 10.sp,
+                        letterSpacing = 1.2.sp, color = Color(0xFF8B929B))
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        modelStatus,
-                        modifier = Modifier.weight(1f),
-                        color = Color(0xFF858B94),
-                        fontSize = 11.sp
-                    )
-                    if (downloadingModel) {
-                        Text("$modelProgress%", color = Color(0xFF687482), fontSize = 11.sp)
-                    } else {
-                        TextButton(
-                            onClick = {
-                                downloadingModel = true
-                                modelStatus = "Téléchargement du modèle…"
-                                scope.launch {
-                                    try {
-                                        modelManager.download { received, total ->
-                                            modelProgress = ((received * 100L) / total).toInt()
-                                        }
-                                        modelStatus = "Modèle téléchargé · stockage privé vérifié"
-                                    } catch (error: Exception) {
-                                        modelStatus = error.message ?: "Échec du téléchargement"
-                                    } finally {
-                                        downloadingModel = false
-                                    }
-                                }
-                            },
-                            enabled = modelManager.installedModel() == null
-                        ) { Text("Installer le cerveau") }
+                if (!modelReady) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 14.dp),
+                        color = Color.White,
+                        shape = RoundedCornerShape(22.dp),
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(Modifier.padding(18.dp)) {
+                            Text("Installer le cerveau de BOZER", fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold, color = Color(0xFF252A31))
+                            Spacer(Modifier.height(6.dp))
+                            Text("Qwen 0.5B · environ 491 Mo · stockage privé · fonctionne ensuite sans Internet.",
+                                fontSize = 13.sp, lineHeight = 19.sp, color = Color(0xFF858B94))
+                            Spacer(Modifier.height(12.dp))
+                            Text(modelStatus, fontSize = 12.sp, color = Color(0xFF626B76))
+                            if (modelBusy && downloadProgress > 0f) {
+                                Spacer(Modifier.height(8.dp))
+                                LinearProgressIndicator(progress = { downloadProgress }, modifier = Modifier.fillMaxWidth())
+                            } else if (modelBusy) {
+                                Spacer(Modifier.height(8.dp))
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Button(
+                                onClick = { installAndLoad() },
+                                enabled = !modelBusy,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF252A31))
+                            ) {
+                                Text(if (modelBusy) "Installation en cours…" else "Télécharger et installer")
+                            }
+                        }
                     }
                 }
 
@@ -134,7 +185,8 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     ) {
                         Text("Bonjour.", fontSize = 30.sp, fontWeight = FontWeight.Light, color = Color(0xFF252A31))
                         Spacer(Modifier.height(8.dp))
-                        Text("Je suis BOZER. Que veux-tu faire ?", color = Color(0xFF858B94), fontSize = 14.sp)
+                        Text(if (modelReady) "Je suis BOZER. Que veux-tu faire ?" else "Installe mon cerveau pour commencer à discuter.",
+                            color = Color(0xFF858B94), fontSize = 14.sp)
                     }
                 } else {
                     LazyColumn(
@@ -165,7 +217,8 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         textStyle = TextStyle(color = Color(0xFF242932), fontSize = 15.sp),
                         cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF687482)),
                         decorationBox = { inner ->
-                            if (draft.isEmpty()) Text("Écris à BOZER…", color = Color(0xFFA0A6AE), fontSize = 15.sp)
+                            if (draft.isEmpty()) Text(if (modelReady) "Écris à BOZER…" else "Installe d'abord le cerveau…",
+                                color = Color(0xFFA0A6AE), fontSize = 15.sp)
                             inner()
                         },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -175,7 +228,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = { send() },
-                        enabled = draft.isNotBlank() && !sending,
+                        enabled = draft.isNotBlank() && !sending && modelReady,
                         shape = CircleShape,
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.size(44.dp),

@@ -22,6 +22,10 @@ class ChatRepository(
             }
             append("Réponds au dernier message de l'utilisateur.")
         }
-        model.generate(transcript)
+        try {
+            model.generate(transcript)
+        } catch (error: Exception) {
+            "Je n'ai pas pu générer cette réponse avec mon moteur local : ${error.message ?: "erreur inconnue"}. Réessaie après avoir vérifié que le modèle est chargé."
+        }
     }
 }

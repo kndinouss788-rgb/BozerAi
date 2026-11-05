@@ -2,28 +2,30 @@ package ai.bozer.app
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import kotlin.coroutines.coroutineContext
 
-/**
- * Downloads the pinned Qwen GGUF into app-private storage.
- * The final file is only made visible after size and SHA-256 verification.
- */
+/** Downloads the pinned Qwen GGUF into BOZER's private internal storage. */
 class LocalModelManager(context: Context) {
     private val modelDir = File(context.filesDir, "models").apply { mkdirs() }
     private val modelFile = File(modelDir, MODEL_FILENAME)
     private val partialFile = File(modelDir, "$MODEL_FILENAME.part")
 
-    fun installedModel(): File? =
-        modelFile.takeIf { it.isFile && it.length() == MODEL_BYTES }
+    fun installedModel(): File? = modelFile.takeIf { it.isFile && it.length() == MODEL_BYTES }
 
-    suspend fun download(onProgress: (Long, Long) -> Unit = { _, _ -> }): File =
+    suspend fun verifyInstalled(): Boolean = withContext(Dispatchers.IO) {
+        modelFile.isFile && modelFile.length() == MODEL_BYTES && sha256(modelFile) == MODEL_SHA256
+    }
+
+    suspend fun download(onProgress: suspend (Long, Long) -> Unit = { _, _ -> }): File =
         withContext(Dispatchers.IO) {
-            installedModel()?.let { return@withContext it }
-            if (partialFile.exists()) partialFile.delete()
+            if (verifyInstalled()) return@withContext modelFile
+            partialFile.delete()
 
             val connection = (URL(MODEL_URL).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 20_000
@@ -45,8 +47,9 @@ class LocalModelManager(context: Context) {
                 var received = 0L
                 connection.inputStream.use { input ->
                     partialFile.outputStream().buffered().use { output ->
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        val buffer = ByteArray(256 * 1024)
                         while (true) {
+                            coroutineContext.ensureActive()
                             val count = input.read(buffer)
                             if (count < 0) break
                             output.write(buffer, 0, count)
@@ -54,6 +57,7 @@ class LocalModelManager(context: Context) {
                             onProgress(received, MODEL_BYTES)
                             check(received <= MODEL_BYTES) { "Le fichier téléchargé est trop volumineux." }
                         }
+                        output.flush()
                     }
                 }
                 check(received == MODEL_BYTES) {
@@ -63,7 +67,9 @@ class LocalModelManager(context: Context) {
                     "La vérification SHA-256 du modèle a échoué."
                 }
                 if (modelFile.exists()) modelFile.delete()
-                check(partialFile.renameTo(modelFile)) { "Impossible de finaliser le stockage privé du modèle." }
+                check(partialFile.renameTo(modelFile)) {
+                    "Impossible de finaliser le stockage privé du modèle."
+                }
                 modelFile
             } catch (error: Exception) {
                 partialFile.delete()
@@ -76,7 +82,7 @@ class LocalModelManager(context: Context) {
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().buffered().use { input ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            val buffer = ByteArray(1024 * 1024)
             while (true) {
                 val count = input.read(buffer)
                 if (count < 0) break
@@ -91,6 +97,6 @@ class LocalModelManager(context: Context) {
         const val MODEL_BYTES = 491_400_032L
         const val MODEL_SHA256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
         const val MODEL_URL =
-            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/12145bd1d629190a4d44254073650877954d02c9/qwen2.5-0.5b-instruct-q4_k_m.gguf"
     }
 }
