@@ -1,6 +1,6 @@
 import json, unittest
 from unittest.mock import patch
-from bozer_brain.model_gateway import ModelGateway, ModelRequest, ModelResponse, OpenAICompatibleProvider, OpenAIResponsesProvider, openai_provider_from_env
+from bozer_brain.model_gateway import (ModelGateway, ModelRequest, ModelResponse, OpenAICompatibleProvider, OpenAIResponsesProvider, LocalLlamaCppProvider, openai_provider_from_env, local_llama_provider_from_env)
 
 class FakeProvider:
     provider_name = "fake-local"
