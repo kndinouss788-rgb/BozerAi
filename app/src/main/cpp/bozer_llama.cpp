@@ -4,11 +4,14 @@
 #include <mutex>
 #include <algorithm>
 #include <thread>
+#include <chrono>
+#include <android/log.h>
 #include "llama.h"
 
 namespace {
 std::mutex engine_mutex;
 llama_model * model = nullptr;
+llama_context * context = nullptr;
 bool backend_initialized = false;
 
 void throw_java(JNIEnv * env, const char * message) {
@@ -49,6 +52,22 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
         throw_java(env, "llama.cpp n'a pas pu ouvrir le fichier GGUF.");
         return JNI_FALSE;
     }
+
+    // Keep one inference context alive for the whole chat session. Recreating
+    // it for every message adds avoidable allocation and initialization latency.
+    llama_context_params context_params = llama_context_default_params();
+    context_params.n_ctx = 1024;
+    context_params.n_batch = 256;
+    const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
+    context_params.n_threads = threads;
+    context_params.n_threads_batch = threads;
+    context = llama_init_from_model(model, context_params);
+    if (!context) {
+        llama_model_free(model);
+        model = nullptr;
+        throw_java(env, "Mémoire insuffisante pour préparer le contexte du modèle.");
+        return JNI_FALSE;
+    }
     return JNI_TRUE;
 }
 
@@ -56,10 +75,11 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
         JNIEnv * env, jobject, jstring input, jint max_tokens) {
     std::lock_guard<std::mutex> lock(engine_mutex);
-    if (!model) {
+    if (!model || !context) {
         throw_java(env, "Le modèle n'est pas chargé.");
         return nullptr;
     }
+    const auto generation_started = std::chrono::steady_clock::now();
 
     const std::string user_prompt = from_jstring(env, input);
     const std::string prompt =
@@ -85,17 +105,9 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
         return nullptr;
     }
 
-    llama_context_params context_params = llama_context_default_params();
-    context_params.n_ctx = 1024;
-    context_params.n_batch = 256;
-    const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
-    context_params.n_threads = threads;
-    context_params.n_threads_batch = threads;
-    llama_context * ctx = llama_init_from_model(model, context_params);
-    if (!ctx) {
-        throw_java(env, "Mémoire insuffisante pour préparer le contexte du modèle.");
-        return nullptr;
-    }
+    // Reuse the allocated context but discard the previous turn's KV state.
+    // The full recent conversation is already included in the prompt by Kotlin.
+    llama_memory_clear(llama_get_memory(context), true);
 
     llama_sampler_chain_params sampler_params = llama_sampler_chain_default_params();
     llama_sampler * sampler = llama_sampler_chain_init(sampler_params);
@@ -106,8 +118,8 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     int32_t generated = 0;
     llama_token next_token = 0;
     while (generated < std::min(static_cast<int>(max_tokens), 96)) {
-        if (llama_decode(ctx, batch) != 0) break;
-        next_token = llama_sampler_sample(sampler, ctx, -1);
+        if (llama_decode(context, batch) != 0) break;
+        next_token = llama_sampler_sample(sampler, context, -1);
         if (llama_vocab_is_eog(vocab, next_token)) break;
 
         char piece[256];
@@ -118,7 +130,11 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     }
 
     llama_sampler_free(sampler);
-    llama_free(ctx);
+    const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - generation_started).count();
+    __android_log_print(ANDROID_LOG_INFO, "BOZER_PERF",
+        "generation_ms=%lld prompt_tokens=%d generated_tokens=%d",
+        static_cast<long long>(elapsed_ms), token_count, generated);
     if (output.empty()) {
         throw_java(env, "Le moteur local n'a pas produit de texte.");
         return nullptr;
@@ -129,6 +145,10 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
 extern "C" JNIEXPORT void JNICALL
 Java_ai_bozer_app_LocalLlamaEngine_nativeRelease(JNIEnv *, jobject) {
     std::lock_guard<std::mutex> lock(engine_mutex);
+    if (context) {
+        llama_free(context);
+        context = nullptr;
+    }
     if (model) {
         llama_model_free(model);
         model = nullptr;
