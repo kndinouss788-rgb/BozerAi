@@ -29,9 +29,9 @@ class LocalLlamaEngine {
     @Synchronized
     fun generate(prompt: String): String {
         check(loaded) { "Le modèle BOZER n'est pas chargé." }
-        // Most conversational replies are short; cap generation to avoid
-        // spending CPU and battery on unnecessarily long continuations.
-        return nativeGenerate(prompt, 96).trim().also {
+        // Allow fuller conversational answers instead of cutting every reply
+        // at an overly restrictive 96-token limit.
+        return nativeGenerate(prompt, 192).trim().also {
             check(it.isNotBlank()) { "Le modèle a renvoyé une réponse vide." }
         }
     }
