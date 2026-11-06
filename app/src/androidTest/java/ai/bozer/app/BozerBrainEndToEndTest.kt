@@ -137,8 +137,10 @@ class BozerBrainEndToEndTest {
         assertTrue("La recherche Android n'a pas joint de source réelle : " + searchReply,
             searchReply.contains("Sources Internet", ignoreCase = true) &&
                 searchReply.contains("wikipedia.org", ignoreCase = true))
-        Log.i("BOZER_E2E", "search_source_verified=true; url=" +
-            Regex("https://fr\\.wikipedia\\.org/[^\\s]+").find(searchReply)?.value.orEmpty())
+        val sourceLine = searchReply.lineSequence()
+            .firstOrNull { it.contains("https://fr.wikipedia.org/") }.orEmpty()
+        assertTrue("La source de recherche est absente de la réponse", sourceLine.isNotBlank())
+        Log.i("BOZER_E2E", "search_source_verified=true; " + sourceLine)
 
         Log.i(
             "BOZER_E2E",
