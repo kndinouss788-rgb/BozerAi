@@ -98,12 +98,19 @@ class BozerBrainEndToEndTest {
         val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 1)
         assertTrue("La salutation semble être une erreur", greeting.length >= 2)
 
-        val (mathReply, mathMs) = sendMessage("Combien font 7 + 5 ? Réponds clairement.", 2)
+        val (factReply, factMs) = sendMessage(
+            "Quelle est la capitale du Burkina Faso ? Réponds directement.",
+            2
+        )
+        assertTrue("BOZER n'a pas répondu correctement à la question factuelle : " + factReply,
+            factReply.contains("Ouagadougou", ignoreCase = true))
+
+        val (mathReply, mathMs) = sendMessage("Combien font 7 + 5 ? Réponds clairement.", 3)
         assertTrue("BOZER n'a pas répondu correctement au calcul 7 + 5 : " + mathReply, mathReply.contains("12"))
 
         val (memoryReply, memoryMs) = sendMessage(
             "Retiens cette information pour la suite : mon animal préféré est le chat. Réponds uniquement OK.",
-            3
+            4
         )
         assertTrue(
             "BOZER n'a pas confirmé la mémorisation : " + memoryReply,
@@ -113,20 +120,31 @@ class BozerBrainEndToEndTest {
 
         val (recallReply, recallMs) = sendMessage(
             "Quel est mon animal préféré ? Réponds en un seul mot.",
-            4
+            5
         )
         assertTrue("BOZER a oublié l'information précédente : " + recallReply, recallReply.contains("chat", ignoreCase = true))
 
         val (followUpReply, followUpMs) = sendMessage(
             "Pourquoi les chats ronronnent-ils ? Explique-moi simplement.",
-            5
+            6
         )
         assertTrue("La réponse de suivi est trop courte : " + followUpReply, followUpReply.length >= 20)
 
+        val (searchReply, searchMs) = sendMessage(
+            "Recherche sur Internet : capitale du Burkina Faso",
+            7
+        )
+        assertTrue("La recherche Android n'a pas joint de source réelle : " + searchReply,
+            searchReply.contains("Sources Internet", ignoreCase = true) &&
+                searchReply.contains("wikipedia.org", ignoreCase = true))
+        Log.i("BOZER_E2E", "search_source_verified=true; url=" +
+            Regex("https://fr\\.wikipedia\\.org/[^\\s]+").find(searchReply)?.value.orEmpty())
+
         Log.i(
             "BOZER_E2E",
-            "LATENCIES_MS greeting=" + greetingMs + " math=" + mathMs + " memory=" + memoryMs +
-                " recall=" + recallMs + " follow_up=" + followUpMs
+            "LATENCIES_MS greeting=" + greetingMs + " fact=" + factMs + " math=" + mathMs +
+                " memory=" + memoryMs + " recall=" + recallMs + " follow_up=" + followUpMs +
+                " search=" + searchMs
         )
 
         device.executeShellCommand("am force-stop ai.bozer.app")
@@ -143,7 +161,7 @@ class BozerBrainEndToEndTest {
             "Le rappel n'a pas été restauré",
             device.wait(Until.findObject(By.text("Quel est mon animal préféré ? Réponds en un seul mot.")), 20_000)
         )
-        assertTrue("L'historique ne contient pas cinq réponses", assistantCount() >= 5)
+        assertTrue("L'historique ne contient pas sept réponses", assistantCount() >= 7)
         assertTrue("La mémoire explicite n'a pas survécu au redémarrage", rememberedFactCount() >= 1)
         val (persistentRecall, persistentRecallMs) = sendMessage(
             "Quel est mon animal préféré ? Réponds en un seul mot.",
@@ -154,6 +172,6 @@ class BozerBrainEndToEndTest {
             persistentRecall.contains("chat", ignoreCase = true)
         )
         Log.i("BOZER_E2E", "turn_6_persistent_memory_latency_ms=" + persistentRecallMs)
-        Log.i("BOZER_E2E", "PASS: six real local turns, arithmetic, persistent memory recall, follow-up and chat history")
+        Log.i("BOZER_E2E", "PASS: seven local turns, factual answer, arithmetic, persistent memory, follow-up, real network search and restored history")
     }
 }

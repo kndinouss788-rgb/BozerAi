@@ -84,14 +84,20 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     const auto generation_started = std::chrono::steady_clock::now();
 
     const std::string user_prompt = from_jstring(env, input);
-    const std::string prompt =
-        "<|im_start|>system\nTu es BOZER, un assistant IA conversationnel francophone, naturel, chaleureux, "
-        "attentif et honnête. Tu discutes comme un compagnon intelligent : comprends le contexte, "
-        "tiens compte des messages précédents, réponds directement et explique clairement quand on te le demande. "
-        "Adapte la longueur à la question. Si tu ne sais pas, dis-le sans inventer. "
-        "N'affirme jamais avoir effectué une action que tu n'as pas réellement exécutée.<|im_end|>\n"
-        "<|im_start|>user\n" + user_prompt + "<|im_end|>\n"
-        "<|im_start|>assistant\n";
+    // ChatRepository supplies a structured multi-turn ChatML transcript. Keep a
+    // compatibility wrapper for callers that still pass a plain user message.
+    std::string prompt;
+    if (user_prompt.rfind("<|im_start|>system\n", 0) == 0) {
+        prompt = user_prompt;
+    } else {
+        prompt =
+            "<|im_start|>system\nTu es BOZER, un assistant IA conversationnel francophone, naturel, chaleureux, "
+            "attentif et honnête. Comprends le contexte et réponds directement. "
+            "Si tu ne sais pas, dis-le sans inventer. "
+            "N'affirme jamais avoir effectué une action que tu n'as pas réellement exécutée.<|im_end|>\n"
+            "<|im_start|>user\n" + user_prompt + "<|im_end|>\n"
+            "<|im_start|>assistant\n";
+    }
 
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
