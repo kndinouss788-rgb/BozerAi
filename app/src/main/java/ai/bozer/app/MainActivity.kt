@@ -38,13 +38,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val Pearl = Color(0xFFF8F4FF)
-private val Ink = Color(0xFF302640)
-private val Muted = Color(0xFF8D829B)
+private val Pearl = Color(0xFFF8FAFC)
+private val Ink = Color(0xFF26313A)
+private val Muted = Color(0xFF7D8993)
 private val GlassEdge = Color(0xFFFFFFFF)
-private val Accent = Color(0xFF9254D6)
-private val Lavender = Color(0xFFE9D9F8)
-private val SoftLilac = Color(0xFFF1E8FA)
+private val Accent = Color(0xFF718A9A)
+private val Lavender = Color(0xFFE8EEF1)
+private val SoftLilac = Color(0xFFF2F5F7)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
@@ -146,7 +146,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
         Surface(modifier = Modifier.fillMaxSize(), color = Pearl) {
             Box(
                 Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(listOf(Color(0xFFF5F0FF), Color(0xFFF8F3FC), Color(0xFFEDE7FA)))
+                    Brush.verticalGradient(listOf(Color(0xFFF7F9FA), Color(0xFFFBFCFD), Color(0xFFEEF2F4)))
                 )
             ) {
             Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
@@ -192,11 +192,11 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                             if (modelBusy && downloadProgress > 0f) {
                                 Spacer(Modifier.height(8.dp))
                                 LinearProgressIndicator(progress = { downloadProgress }, modifier = Modifier.fillMaxWidth(),
-                                    color = Accent, trackColor = Color(0xFFE9DDF4))
+                                    color = Accent, trackColor = Color(0xFFDDE6EA))
                             } else if (modelBusy) {
                                 Spacer(Modifier.height(8.dp))
                                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Accent,
-                                    trackColor = Color(0xFFEDE7F7))
+                                    trackColor = Color(0xFFE7EDF0))
                             }
                             Spacer(Modifier.height(12.dp))
                             Button(onClick = { installAndLoad() }, enabled = !modelBusy,
@@ -281,7 +281,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                 Row(
                     Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp)
                         .shadow(12.dp, RoundedCornerShape(30.dp))
-                        .background(Brush.linearGradient(listOf(Color.White, Color(0xFFF8F1FF))), RoundedCornerShape(30.dp))
+                        .background(Brush.linearGradient(listOf(Color.White, Color(0xFFF5F8FA))), RoundedCornerShape(30.dp))
                         .padding(start = 19.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -303,7 +303,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     Spacer(Modifier.width(8.dp))
                     Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && modelReady,
                         shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(46.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9254D6), disabledContainerColor = Color(0xFFE9DDF4))) {
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF718A9A), disabledContainerColor = Color(0xFFDDE6EA))) {
                         Text("↑", fontSize = 22.sp, color = Color.White)
                     }
                 }
@@ -313,7 +313,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
         if (settingsOpen) {
             AlertDialog(
                 onDismissRequest = { settingsOpen = false },
-                containerColor = Color(0xFFFAFCFE),
+                containerColor = Color(0xFFFBFCFD),
                 title = { Text("Réglages BOZER", color = Ink, fontWeight = FontWeight.SemiBold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -349,27 +349,27 @@ private fun BozerOrb(size: androidx.compose.ui.unit.Dp, active: Boolean) {
         val headH = h * 0.48f * pulse
         val headTop = h * 0.13f
         // Soft halo behind the little BOZER companion.
-        drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.9f), Color(0xFFDCC5F3).copy(alpha = 0.42f), Color.Transparent),
+        drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.9f), Color(0xFFDCE5E9).copy(alpha = 0.42f), Color.Transparent),
             Offset(cx, h * 0.47f), w * 0.58f), w * 0.58f, Offset(cx, h * 0.47f))
         // Floating side fins.
-        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFC9A5EB), Color(0xFF9C68D0))),
+        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFC7D5DC), Color(0xFF8EA5B2))),
             Offset(w * 0.09f, h * 0.57f), androidx.compose.ui.geometry.Size(w * 0.17f, h * 0.25f))
-        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFC9A5EB), Color(0xFF9C68D0))),
+        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFC7D5DC), Color(0xFF8EA5B2))),
             Offset(w * 0.74f, h * 0.57f), androidx.compose.ui.geometry.Size(w * 0.17f, h * 0.25f))
         // Small glowing body.
-        drawOval(Brush.radialGradient(listOf(Color.White, Color(0xFFE7D4F8), Color(0xFFB78ADD)),
+        drawOval(Brush.radialGradient(listOf(Color.White, Color(0xFFE4EBEF), Color(0xFFA9BBC4)),
             Offset(cx - w * 0.08f, h * 0.75f), w * 0.29f),
             Offset(w * 0.34f, h * 0.62f), androidx.compose.ui.geometry.Size(w * 0.32f, h * 0.30f))
         // Pearl shell and violet glass face.
-        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFEADCF8), Color(0xFFB88BDE))),
+        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFE7EDF0), Color(0xFFAFC0C8))),
             Offset(cx - headW / 2f, headTop), androidx.compose.ui.geometry.Size(headW, headH))
-        drawOval(Brush.linearGradient(listOf(Color(0xFF5B287F), Color(0xFF8D4DBD), Color(0xFF4A226C))),
+        drawOval(Brush.linearGradient(listOf(Color(0xFF465D6A), Color(0xFF78909D), Color(0xFF526875))),
             Offset(cx - headW * 0.39f, headTop + headH * 0.22f),
             androidx.compose.ui.geometry.Size(headW * 0.78f, headH * 0.59f))
         // Two gentle luminous eyes.
-        drawOval(Color(0xFFE8C9FF), Offset(cx - headW * 0.23f, headTop + headH * 0.48f),
+        drawOval(Color(0xFFF5FAFC), Offset(cx - headW * 0.23f, headTop + headH * 0.48f),
             androidx.compose.ui.geometry.Size(headW * 0.13f, headH * 0.13f))
-        drawOval(Color(0xFFE8C9FF), Offset(cx + headW * 0.10f, headTop + headH * 0.48f),
+        drawOval(Color(0xFFF5FAFC), Offset(cx + headW * 0.10f, headTop + headH * 0.48f),
             androidx.compose.ui.geometry.Size(headW * 0.13f, headH * 0.13f))
         // Glass highlight.
         drawOval(Color.White.copy(alpha = 0.62f), Offset(cx - headW * 0.31f, headTop + headH * 0.12f),
@@ -391,7 +391,7 @@ private fun FeatureCard(icon: String, title: String, subtitle: String, modifier:
         Column(Modifier.padding(horizontal = 14.dp, vertical = 15.dp)) {
             Box(
                 Modifier.size(34.dp).background(
-                    Brush.linearGradient(listOf(Color.White, Color(0xFFE8D5F8))),
+                    Brush.linearGradient(listOf(Color.White, Color(0xFFE2EAEE))),
                     CircleShape
                 ),
                 contentAlignment = Alignment.Center
@@ -438,7 +438,7 @@ private fun MessageBubble(message: ChatMessage) {
             Spacer(Modifier.width(8.dp))
         }
         Surface(
-            color = if (isUser) Color(0xFFEFE5FA).copy(alpha = 0.94f) else Color.White.copy(alpha = 0.94f),
+            color = if (isUser) Color(0xFFEAF0F3).copy(alpha = 0.94f) else Color.White.copy(alpha = 0.94f),
             shape = RoundedCornerShape(
                 topStart = 22.dp, topEnd = 22.dp,
                 bottomEnd = if (isUser) 7.dp else 22.dp,
