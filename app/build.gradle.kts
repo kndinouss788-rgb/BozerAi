@@ -7,10 +7,10 @@ plugins {
 android {
     namespace = "ai.bozer.app"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "ai.bozer.app"
-        ndkVersion = "27.2.12479018"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
