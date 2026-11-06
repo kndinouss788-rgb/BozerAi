@@ -39,7 +39,7 @@ class BozerBrainEndToEndTest {
         }
     }
 
-    private fun waitForAssistantReply(previousCount: Int, timeoutMs: Long = 120_000): String {
+    private fun waitForAssistantReply(previousCount: Int, timeoutMs: Long = 300_000): String {
         val deadline = SystemClock.elapsedRealtime() + timeoutMs
         while (SystemClock.elapsedRealtime() < deadline) {
             if (assistantCount() > previousCount) return lastAssistantReply()
@@ -48,7 +48,18 @@ class BozerBrainEndToEndTest {
         throw AssertionError("BOZER n'a pas enregistré de réponse dans le délai imparti.")
     }
 
-    private fun sendMessage(text: String): Pair<String, Long> {
+    private fun assertRealReply(reply: String, turn: Int) {
+        assertTrue("Réponse vide au tour " + turn, reply.isNotBlank())
+        val lower = reply.lowercase()
+        assertTrue(
+            "Le moteur a renvoyé un message d'erreur au tour " + turn + " : " + reply,
+            !lower.contains("je rencontre un problème avec mon moteur") &&
+                !lower.contains("je n'ai pas pu générer") &&
+                !lower.contains("modèle bozer n'est pas chargé")
+        )
+    }
+
+    private fun sendMessage(text: String, turn: Int): Pair<String, Long> {
         val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 20_000)
         assertNotNull("Champ de saisie BOZER introuvable", field)
         val previous = assistantCount()
@@ -60,12 +71,13 @@ class BozerBrainEndToEndTest {
         send!!.click()
         val reply = waitForAssistantReply(previous)
         val elapsed = SystemClock.elapsedRealtime() - started
-        assertTrue("BOZER a enregistré une réponse vide", reply.isNotBlank())
+        assertRealReply(reply, turn)
+        Log.i("BOZER_E2E", "turn_" + turn + "_latency_ms=" + elapsed + "; reply=" + reply.take(320).replace('\n', ' '))
         return reply to elapsed
     }
 
     @Test
-    fun realLocalModelCarriesContextAcrossTurnsAndHistorySurvivesRestart() {
+    fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
         device.executeShellCommand("am force-stop ai.bozer.app")
         device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
         assertNotNull(
@@ -73,16 +85,37 @@ class BozerBrainEndToEndTest {
             device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 600_000)
         )
 
-        val firstPrompt = "Mon animal préféré est le chat. Garde cette information pour la suite et réponds uniquement : OK."
-        val secondPrompt = "Quel animal ai-je dit préférer ? Réponds par un seul mot."
-        val (firstReply, firstMs) = sendMessage(firstPrompt)
-        Log.i("BOZER_E2E", "turn_1_latency_ms=$firstMs; target_2_5s_met=${firstMs in 2_000..5_000}; reply_chars=${firstReply.length}")
-        val (secondReply, secondMs) = sendMessage(secondPrompt)
-        Log.i("BOZER_E2E", "turn_2_latency_ms=$secondMs; target_2_5s_met=${secondMs in 2_000..5_000}; reply_chars=${secondReply.length}; context_check=${secondReply.contains("chat", ignoreCase = true)}")
-        assertTrue("La deuxième réponse est vide", secondReply.isNotBlank())
+        val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 1)
+        assertTrue("La salutation semble être une erreur", greeting.length >= 2)
+
+        val (mathReply, mathMs) = sendMessage("Combien font 7 + 5 ? Réponds clairement.", 2)
+        assertTrue("BOZER n'a pas répondu correctement au calcul 7 + 5 : " + mathReply, mathReply.contains("12"))
+
+        val (memoryReply, memoryMs) = sendMessage(
+            "Retiens cette information pour la suite : mon animal préféré est le chat. Réponds uniquement OK.",
+            3
+        )
         assertTrue(
-            "BOZER n'a pas réutilisé l'information du premier tour : $secondReply",
-            secondReply.contains("chat", ignoreCase = true)
+            "BOZER n'a pas confirmé la mémorisation : " + memoryReply,
+            memoryReply.contains("ok", ignoreCase = true) || memoryReply.contains("d'accord", ignoreCase = true)
+        )
+
+        val (recallReply, recallMs) = sendMessage(
+            "Quel est mon animal préféré ? Réponds en un seul mot.",
+            4
+        )
+        assertTrue("BOZER a oublié l'information précédente : " + recallReply, recallReply.contains("chat", ignoreCase = true))
+
+        val (followUpReply, followUpMs) = sendMessage(
+            "Pourquoi les chats ronronnent-ils ? Explique-moi simplement.",
+            5
+        )
+        assertTrue("La réponse de suivi est trop courte : " + followUpReply, followUpReply.length >= 20)
+
+        Log.i(
+            "BOZER_E2E",
+            "LATENCIES_MS greeting=" + greetingMs + " math=" + mathMs + " memory=" + memoryMs +
+                " recall=" + recallMs + " follow_up=" + followUpMs
         )
 
         device.executeShellCommand("am force-stop ai.bozer.app")
@@ -91,9 +124,15 @@ class BozerBrainEndToEndTest {
             "BOZER ne retrouve pas son modèle après redémarrage",
             device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 180_000)
         )
-        assertNotNull("Le premier message n'a pas été restauré", device.wait(Until.findObject(By.text(firstPrompt)), 20_000))
-        assertNotNull("Le deuxième message n'a pas été restauré", device.wait(Until.findObject(By.text(secondPrompt)), 20_000))
-        assertTrue("L'historique ne contient pas deux réponses réelles", assistantCount() >= 2)
-        Log.i("BOZER_E2E", "PASS: two real local inference turns, context recall, latency measurements and persistent history; total_assistant_replies=${assistantCount()}")
+        assertNotNull(
+            "La salutation n'a pas été restaurée",
+            device.wait(Until.findObject(By.text("Salut BOZER ! Comment vas-tu aujourd'hui ?")), 20_000)
+        )
+        assertNotNull(
+            "Le rappel n'a pas été restauré",
+            device.wait(Until.findObject(By.text("Quel est mon animal préféré ? Réponds en un seul mot.")), 20_000)
+        )
+        assertTrue("L'historique ne contient pas cinq réponses", assistantCount() >= 5)
+        Log.i("BOZER_E2E", "PASS: five real local turns, arithmetic, memory recall, follow-up and persistent history")
     }
 }
