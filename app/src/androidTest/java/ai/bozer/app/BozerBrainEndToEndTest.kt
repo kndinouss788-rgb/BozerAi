@@ -39,7 +39,7 @@ class BozerBrainEndToEndTest {
         }
     }
 
-    private fun waitForAssistantReply(previousCount: Int, timeoutMs: Long = 600_000): String {
+    private fun waitForAssistantReply(previousCount: Int, timeoutMs: Long = 120_000): String {
         val deadline = SystemClock.elapsedRealtime() + timeoutMs
         while (SystemClock.elapsedRealtime() < deadline) {
             if (assistantCount() > previousCount) return lastAssistantReply()
@@ -76,9 +76,9 @@ class BozerBrainEndToEndTest {
         val firstPrompt = "Mon animal préféré est le chat. Garde cette information pour la suite et réponds uniquement : OK."
         val secondPrompt = "Quel animal ai-je dit préférer ? Réponds par un seul mot."
         val (firstReply, firstMs) = sendMessage(firstPrompt)
-        Log.i("BOZER_E2E", "turn_1_latency_ms=$firstMs; reply_chars=${firstReply.length}")
+        Log.i("BOZER_E2E", "turn_1_latency_ms=$firstMs; target_2_5s_met=${firstMs in 2_000..5_000}; reply_chars=${firstReply.length}")
         val (secondReply, secondMs) = sendMessage(secondPrompt)
-        Log.i("BOZER_E2E", "turn_2_latency_ms=$secondMs; reply_chars=${secondReply.length}; context_check=${secondReply.contains("chat", ignoreCase = true)}")
+        Log.i("BOZER_E2E", "turn_2_latency_ms=$secondMs; target_2_5s_met=${secondMs in 2_000..5_000}; reply_chars=${secondReply.length}; context_check=${secondReply.contains("chat", ignoreCase = true)}")
         assertTrue("La deuxième réponse est vide", secondReply.isNotBlank())
         assertTrue(
             "BOZER n'a pas réutilisé l'information du premier tour : $secondReply",
