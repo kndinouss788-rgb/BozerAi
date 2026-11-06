@@ -30,6 +30,16 @@ class BozerBrainEndToEndTest {
         }
     }
 
+    private fun rememberedFactCount(): Int {
+        val dbFile = context.getDatabasePath("bozer_chat.db")
+        return SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            db.rawQuery("SELECT COUNT(*) FROM remembered_facts", null).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                cursor.getInt(0)
+            }
+        }
+    }
+
     private fun lastAssistantReply(): String {
         val dbFile = context.getDatabasePath("bozer_chat.db")
         return SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
@@ -99,6 +109,7 @@ class BozerBrainEndToEndTest {
             "BOZER n'a pas confirmé la mémorisation : " + memoryReply,
             memoryReply.contains("ok", ignoreCase = true) || memoryReply.contains("d'accord", ignoreCase = true)
         )
+        assertTrue("La mémoire persistante n'a pas enregistré le fait explicite", rememberedFactCount() >= 1)
 
         val (recallReply, recallMs) = sendMessage(
             "Quel est mon animal préféré ? Réponds en un seul mot.",
@@ -133,6 +144,16 @@ class BozerBrainEndToEndTest {
             device.wait(Until.findObject(By.text("Quel est mon animal préféré ? Réponds en un seul mot.")), 20_000)
         )
         assertTrue("L'historique ne contient pas cinq réponses", assistantCount() >= 5)
-        Log.i("BOZER_E2E", "PASS: five real local turns, arithmetic, memory recall, follow-up and persistent history")
+        assertTrue("La mémoire explicite n'a pas survécu au redémarrage", rememberedFactCount() >= 1)
+        val (persistentRecall, persistentRecallMs) = sendMessage(
+            "Quel est mon animal préféré ? Réponds en un seul mot.",
+            6
+        )
+        assertTrue(
+            "BOZER n'a pas retrouvé le fait mémorisé après redémarrage : " + persistentRecall,
+            persistentRecall.contains("chat", ignoreCase = true)
+        )
+        Log.i("BOZER_E2E", "turn_6_persistent_memory_latency_ms=" + persistentRecallMs)
+        Log.i("BOZER_E2E", "PASS: six real local turns, arithmetic, persistent memory recall, follow-up and chat history")
     }
 }
