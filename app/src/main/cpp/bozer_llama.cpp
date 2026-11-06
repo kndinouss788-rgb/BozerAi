@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <thread>
 #include <chrono>
+#include <atomic>
 #include <android/log.h>
 #include "llama.h"
 
@@ -13,6 +14,7 @@ std::mutex engine_mutex;
 llama_model * model = nullptr;
 llama_context * context = nullptr;
 bool backend_initialized = false;
+std::atomic<uint32_t> sampler_seed{0xB02E2u};
 
 void throw_java(JNIEnv * env, const char * message) {
     jclass type = env->FindClass("java/lang/IllegalStateException");
@@ -53,11 +55,11 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
         return JNI_FALSE;
     }
 
-    // Keep one inference context alive for the whole chat session. Recreating
-    // it for every message adds avoidable allocation and initialization latency.
+    // Reuse one inference context for the whole session. The full conversation
+    // is rebuilt into the prompt on each turn, so the KV cache can be cleared.
     llama_context_params context_params = llama_context_default_params();
     context_params.n_ctx = 1024;
-    context_params.n_batch = 256;
+    context_params.n_batch = 1024;
     const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
     context_params.n_threads = threads;
     context_params.n_threads_batch = threads;
@@ -83,15 +85,17 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
 
     const std::string user_prompt = from_jstring(env, input);
     const std::string prompt =
-        "<|im_start|>system\nTu es BOZER, un assistant francophone naturel, chaleureux, direct et honnête. "
-        "Réponds de façon concise et adaptée à la question. N'invente jamais une action ou une information actuelle.<|im_end|>\n"
+        "<|im_start|>system\nTu es BOZER, un assistant IA conversationnel francophone, naturel, chaleureux, "
+        "attentif et honnête. Tu discutes comme un compagnon intelligent : comprends le contexte, "
+        "tiens compte des messages précédents, réponds directement et explique clairement quand on te le demande. "
+        "Adapte la longueur à la question. Si tu ne sais pas, dis-le sans inventer. "
+        "N'affirme jamais avoir effectué une action que tu n'as pas réellement exécutée.<|im_end|>\n"
         "<|im_start|>user\n" + user_prompt + "<|im_end|>\n"
         "<|im_start|>assistant\n";
 
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
-    // The smaller context is intentional for responsive inference on modest phones.
     if (needed <= 0 || needed > 896) {
         throw_java(env, "La conversation est trop longue pour le contexte local. Raccourcis le dernier message.");
         return nullptr;
@@ -105,19 +109,22 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
         return nullptr;
     }
 
-    // Reuse the allocated context but discard the previous turn's KV state.
-    // The full recent conversation is already included in the prompt by Kotlin.
     llama_memory_clear(llama_get_memory(context), true);
 
+    // Sampling instead of greedy decoding makes replies less rigid and repetitive.
     llama_sampler_chain_params sampler_params = llama_sampler_chain_default_params();
     llama_sampler * sampler = llama_sampler_chain_init(sampler_params);
-    llama_sampler_chain_add(sampler, llama_sampler_init_greedy());
+    llama_sampler_chain_add(sampler, llama_sampler_init_penalties(64, 1.08f, 0.0f, 0.0f));
+    llama_sampler_chain_add(sampler, llama_sampler_init_top_k(40));
+    llama_sampler_chain_add(sampler, llama_sampler_init_top_p(0.90f, 1));
+    llama_sampler_chain_add(sampler, llama_sampler_init_temp(0.70f));
+    llama_sampler_chain_add(sampler, llama_sampler_init_dist(sampler_seed.fetch_add(1)));
 
     std::string output;
     llama_batch batch = llama_batch_get_one(tokens.data(), token_count);
     int32_t generated = 0;
     llama_token next_token = 0;
-    while (generated < std::min(static_cast<int>(max_tokens), 96)) {
+    while (generated < std::min(static_cast<int>(max_tokens), 192)) {
         if (llama_decode(context, batch) != 0) break;
         next_token = llama_sampler_sample(sampler, context, -1);
         if (llama_vocab_is_eog(vocab, next_token)) break;
