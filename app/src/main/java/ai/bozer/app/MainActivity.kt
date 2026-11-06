@@ -74,7 +74,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var confirmClearMemory by remember { mutableStateOf(false) }
-    var rememberedFactCount by remember { mutableIntStateOf(repository.rememberedFacts().size) }
+    val rememberedFacts = remember { mutableStateListOf<String>().apply { addAll(repository.rememberedFacts()) } }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
@@ -139,6 +139,8 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
             repository.save(assistantMessage)
+            rememberedFacts.clear()
+            rememberedFacts.addAll(repository.rememberedFacts())
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
         }
@@ -323,7 +325,10 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
                         Text("Tes conversations restent enregistrées sur ce téléphone.", color = Muted, fontSize = 12.sp)
-                        Text("Mémoire explicite : $rememberedFactCount information(s) retenue(s).", color = Muted, fontSize = 12.sp)
+                        Text("Mémoire explicite : ${rememberedFacts.size} information(s) retenue(s).", color = Muted, fontSize = 12.sp)
+                        rememberedFacts.asReversed().forEach { fact ->
+                            Text("• $fact", color = Muted, fontSize = 12.sp, lineHeight = 17.sp)
+                        }
                     }
                 },
                 confirmButton = {
@@ -344,14 +349,14 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     title = { Text("Effacer les informations mémorisées ?", color = Ink) },
                     text = {
                         Text(
-                            "BOZER oubliera les $rememberedFactCount information(s) que tu lui as explicitement demandé de retenir. Tes conversations ne seront pas supprimées.",
+                            "BOZER oubliera les ${rememberedFacts.size} information(s) que tu lui as explicitement demandé de retenir. Tes conversations ne seront pas supprimées.",
                             color = Muted
                         )
                     },
                     confirmButton = {
                         TextButton(onClick = {
                             repository.clearRememberedFacts()
-                            rememberedFactCount = 0
+                            rememberedFacts.clear()
                             confirmClearMemory = false
                         }) {
                             Text("Effacer", color = Color(0xFF8A5D5D))
