@@ -21,21 +21,26 @@ class ChatRepository(
             return@withLock "Il est " + LocalTime.now().format(DateTimeFormatter.ofPattern("HH 'h' mm", Locale.FRANCE)) + "."
         }
 
-        // Keep a short recent context: long transcripts make small on-device models
-        // needlessly slow and often reduce answer quality.
+        // Keep several bounded turns so BOZER can follow references and remember recent details.
         val transcript = buildString {
-            history.takeLast(6).forEach { item ->
+            append("Voici les derniers échanges, dans l'ordre chronologique. ")
+            append("Utilise-les pour comprendre le contexte et les références.\n")
+            history.takeLast(8).forEach { item ->
+                val content = item.content.trim().take(480)
                 when (item.role) {
-                    "user" -> append("Utilisateur : ").append(item.content).append('\n')
-                    "assistant" -> append("BOZER : ").append(item.content).append('\n')
+                    "user" -> append("[Utilisateur] ").append(content).append('\n')
+                    "assistant" -> append("[BOZER] ").append(content).append('\n')
                 }
             }
-            append("Réponds simplement au dernier message de l'utilisateur en français.")
+            append("\nLe dernier message utilisateur est la demande à traiter. ")
+            append("Réponds naturellement, directement et avec assez de détails pour être utile. ")
+            append("Si une information manque, pose une question au lieu de l'inventer.")
         }
+
         try {
             model.generate(transcript)
         } catch (error: Exception) {
-            "Je n'ai pas pu générer cette réponse avec mon moteur local : ${error.message ?: "erreur inconnue"}. Réessaie après avoir vérifié que le modèle est chargé."
+            "Je rencontre un problème avec mon moteur local : ${error.message ?: "erreur inconnue"}. Réessaie dans un instant."
         }
     }
 
