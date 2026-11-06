@@ -88,7 +88,7 @@ jobs:
             pid="$(adb shell pidof ai.bozer.app | tr -d '\r')"
             test -n "$pid"
             echo "BOZER_PID=$pid"
-            adb logcat -d -v brief -s BOZER_E2E:I BOZER_PERF:I AndroidRuntime:E > bozer-emulator-test.log
+            adb logcat -d -v brief -s BOZER_E2E:I BOZER_PERF:I BOZER_SEARCH:I AndroidRuntime:E > bozer-emulator-test.log
             if grep -Eq 'FATAL EXCEPTION|E/AndroidRuntime|Process: ai[.]bozer[.]app' bozer-emulator-test.log; then
               cat bozer-emulator-test.log
               echo "AndroidRuntime reported a fatal application error."

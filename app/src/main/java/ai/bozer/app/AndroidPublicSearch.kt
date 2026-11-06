@@ -65,12 +65,13 @@ class AndroidPublicSearch(
                         Html.FROM_HTML_MODE_LEGACY
                     ).toString().replace(Regex("\\s+"), " ").trim()
                     if (title.isNotEmpty() && snippet.isNotEmpty()) {
-                        val articleUrl = "https://fr.wikipedia.org/wiki/\${Uri.encode(title.replace(' ', '_'))}"
+                        val articlePath = Uri.encode(title.replace(' ', '_'))
+                        val articleUrl = "https://fr.wikipedia.org/wiki/" + articlePath
                         add(InternetSearchResult(title, articleUrl, snippet.take(MAX_SNIPPET_CHARS)))
                     }
                 }
             }
-            Log.i("BOZER_SEARCH", "wikipedia_results=\${results.size}")
+            Log.i("BOZER_SEARCH", "wikipedia_results=" + results.size)
             return results
         } finally {
             connection.disconnect()

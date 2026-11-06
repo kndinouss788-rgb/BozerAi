@@ -50,7 +50,7 @@ class ChatRepository(
                 }
             }
         } catch (error: Exception) {
-            "Je rencontre un problème avec mon moteur local : \${error.message ?: "erreur inconnue"}. Réessaie dans un instant."
+            "Je rencontre un problème avec mon moteur local : " + (error.message ?: "erreur inconnue") + ". Réessaie dans un instant."
         }
     }
 

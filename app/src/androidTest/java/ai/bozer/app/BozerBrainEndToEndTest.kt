@@ -165,13 +165,13 @@ class BozerBrainEndToEndTest {
         assertTrue("La mémoire explicite n'a pas survécu au redémarrage", rememberedFactCount() >= 1)
         val (persistentRecall, persistentRecallMs) = sendMessage(
             "Quel est mon animal préféré ? Réponds en un seul mot.",
-            6
+            8
         )
         assertTrue(
             "BOZER n'a pas retrouvé le fait mémorisé après redémarrage : " + persistentRecall,
             persistentRecall.contains("chat", ignoreCase = true)
         )
-        Log.i("BOZER_E2E", "turn_6_persistent_memory_latency_ms=" + persistentRecallMs)
+        Log.i("BOZER_E2E", "turn_8_persistent_memory_latency_ms=" + persistentRecallMs)
         Log.i("BOZER_E2E", "PASS: seven local turns, factual answer, arithmetic, persistent memory, follow-up, real network search and restored history")
     }
 }
