@@ -73,6 +73,8 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var confirmClearMemory by remember { mutableStateOf(false) }
+    var rememberedFactCount by remember { mutableIntStateOf(repository.rememberedFacts().size) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
@@ -321,14 +323,47 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
                         Text("Tes conversations restent enregistrées sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        Text("Mémoire explicite : $rememberedFactCount information(s) retenue(s).", color = Muted, fontSize = 12.sp)
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { settingsOpen = false }) {
-                        Text("Fermer", color = Ink)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { confirmClearMemory = true }) {
+                            Text("Effacer la mémoire", color = Color(0xFF8A5D5D))
+                        }
+                        TextButton(onClick = { settingsOpen = false }) {
+                            Text("Fermer", color = Ink)
+                        }
                     }
                 }
             )
+            if (confirmClearMemory) {
+                AlertDialog(
+                    onDismissRequest = { confirmClearMemory = false },
+                    containerColor = Color(0xFFFBFCFD),
+                    title = { Text("Effacer les informations mémorisées ?", color = Ink) },
+                    text = {
+                        Text(
+                            "BOZER oubliera les $rememberedFactCount information(s) que tu lui as explicitement demandé de retenir. Tes conversations ne seront pas supprimées.",
+                            color = Muted
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            repository.clearRememberedFacts()
+                            rememberedFactCount = 0
+                            confirmClearMemory = false
+                        }) {
+                            Text("Effacer", color = Color(0xFF8A5D5D))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmClearMemory = false }) {
+                            Text("Annuler", color = Ink)
+                        }
+                    }
+                )
+            }
         }
     }
 }
