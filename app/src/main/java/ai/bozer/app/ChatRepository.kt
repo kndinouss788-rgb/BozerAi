@@ -9,11 +9,15 @@ import kotlinx.coroutines.sync.withLock
 class ChatRepository(
     private val database: ChatDatabase,
     private val model: LocalLlamaEngine,
-    private val internetSearch: AndroidPublicSearch = AndroidPublicSearch()
+    private val internetSearch: AndroidPublicSearch = AndroidPublicSearch(),
+    private val remoteBrain: RemoteBrainClient? = null
 ) {
     private val inferenceLock = Mutex()
+    val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
     fun save(message: ChatMessage) = database.save(message)
+    fun rememberedFacts(): List<String> = database.rememberedFacts()
+    fun clearRememberedFacts() = database.clearRememberedFacts()
 
     suspend fun reply(history: List<ChatMessage>): String = inferenceLock.withLock {
         val latestUserText = history.lastOrNull { it.role == "user" }?.content.orEmpty()
@@ -39,8 +43,27 @@ class ChatRepository(
         }
 
         val prompt = buildChatMlPrompt(history, database.rememberedFacts().asReversed(), searchResults)
+        val extraContext = buildString {
+            val facts = database.rememberedFacts().takeLast(20)
+            if (facts.isNotEmpty()) append("Mémoire explicitement autorisée : ").append(facts.joinToString("; ")).append("\n")
+            if (searchResults.isNotEmpty()) {
+                append("Résultats EYE_SEARCH réellement récupérés :\n")
+                searchResults.forEach { append("- ").append(it.title).append(" | ").append(it.url)
+                    .append(" | ").append(it.snippet).append("\n") }
+            }
+        }
         try {
-            val answer = model.generate(prompt)
+            val answer = if (remoteBrain?.isConfigured == true) {
+                try {
+                    remoteBrain.reply(history, extraContext)
+                } catch (remoteError: Exception) {
+                    try { model.generate(prompt) } catch (localError: Exception) {
+                        "Le cerveau distant est indisponible et le cerveau local n'est pas prêt. " +
+                            "Distant : " + (remoteError.message ?: "erreur réseau") +
+                            ". Local : " + (localError.message ?: "modèle non chargé") + "."
+                    }
+                }
+            } else model.generate(prompt)
             if (searchResults.isEmpty()) answer else buildString {
                 append(answer)
                 append("\n\nSources Internet (Wikipedia) :\n")

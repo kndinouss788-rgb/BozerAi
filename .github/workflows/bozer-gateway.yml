@@ -1,0 +1,31 @@
+name: BOZER gateway typecheck
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cloudflare/bozer-gateway/**"
+      - ".github/workflows/bozer-gateway.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "cloudflare/bozer-gateway/**"
+      - ".github/workflows/bozer-gateway.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare/bozer-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npm run typecheck

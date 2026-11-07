@@ -1,6 +1,10 @@
 package ai.bozer.app
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.RepeatMode
@@ -49,12 +53,39 @@ private val SoftLilac = Color(0xFFF2F5F7)
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
 
+    private val overlayPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (Settings.canDrawOverlays(this)) startFloatingBubbleService()
+        }
+
+    private fun enableFloatingBubble() {
+        if (Settings.canDrawOverlays(this)) {
+            startFloatingBubbleService()
+        } else {
+            val permissionIntent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            overlayPermissionLauncher.launch(permissionIntent)
+        }
+    }
+
+    private fun startFloatingBubbleService() {
+        startService(Intent(this, BozerFloatingService::class.java))
+    }
+
+    private fun disableFloatingBubble() {
+        stopService(Intent(this, BozerFloatingService::class.java))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
-        val repository = ChatRepository(ChatDatabase(applicationContext), engine)
+        val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, applicationContext)
+        val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(repository, modelManager, engine) }
+        val actionExecutor = AndroidActionExecutor(this)
+        setContent { BozerChat(repository, modelManager, engine, actionExecutor, ::enableFloatingBubble, ::disableFloatingBubble) }
     }
 
     override fun onDestroy() {
@@ -64,7 +95,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
+private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine, actionExecutor: AndroidActionExecutor, onEnableFloatingBubble: () -> Unit, onDisableFloatingBubble: () -> Unit) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -73,6 +104,8 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var confirmClearMemory by remember { mutableStateOf(false) }
+    val rememberedFacts = remember { mutableStateListOf<String>().apply { addAll(repository.rememberedFacts()) } }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
@@ -126,17 +159,21 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
 
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty() || sending || !modelReady) return
+        if (text.isEmpty() || sending) return
+        val actionReply = actionExecutor.execute(text)
+        if (actionReply == null && !modelReady && !repository.remoteConfigured) return
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
         repository.save(userMessage)
         sending = true
         scope.launch {
-            val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
+            val answer = actionReply ?: withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
             repository.save(assistantMessage)
+            rememberedFacts.clear()
+            rememberedFacts.addAll(repository.rememberedFacts())
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
         }
@@ -182,10 +219,10 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         shadowElevation = 3.dp
                     ) {
                         Column(Modifier.padding(18.dp)) {
-                            Text("Réveillons le cerveau de BOZER", fontSize = 17.sp,
+                            Text(if (repository.remoteConfigured) "Le cerveau distant de BOZER est configuré" else "Réveillons le cerveau de BOZER", fontSize = 17.sp,
                                 fontWeight = FontWeight.SemiBold, color = Ink)
                             Spacer(Modifier.height(6.dp))
-                            Text("Qwen 0.5B · environ 491 Mo · stockage privé · fonctionne ensuite sans Internet.",
+                            Text(if (repository.remoteConfigured) "Les réponses utilisent la passerelle IA distante. Installe aussi le cerveau local pour le mode de secours hors ligne." else "Qwen 0.5B · environ 491 Mo · stockage privé · fonctionne ensuite sans Internet.",
                                 fontSize = 13.sp, lineHeight = 19.sp, color = Muted)
                             Spacer(Modifier.height(12.dp))
                             Text(modelStatus, fontSize = 12.sp, color = Color(0xFF686777))
@@ -321,14 +358,62 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
                         Text("Tes conversations restent enregistrées sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        Text("Accès rapide : une petite bulle BOZER peut rester au-dessus de tes applications.", color = Muted, fontSize = 12.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                onEnableFloatingBubble()
+                                settingsOpen = false
+                            }) {
+                                Text("Activer la bulle", color = Accent)
+                            }
+                            TextButton(onClick = onDisableFloatingBubble) {
+                                Text("Arrêter la bulle", color = Color(0xFF8A5D5D))
+                            }
+                        }
+                        Text("Mémoire explicite : ${rememberedFacts.size} information(s) retenue(s).", color = Muted, fontSize = 12.sp)
+                        rememberedFacts.asReversed().forEach { fact ->
+                            Text("• $fact", color = Muted, fontSize = 12.sp, lineHeight = 17.sp)
+                        }
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { settingsOpen = false }) {
-                        Text("Fermer", color = Ink)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { confirmClearMemory = true }) {
+                            Text("Effacer la mémoire", color = Color(0xFF8A5D5D))
+                        }
+                        TextButton(onClick = { settingsOpen = false }) {
+                            Text("Fermer", color = Ink)
+                        }
                     }
                 }
             )
+            if (confirmClearMemory) {
+                AlertDialog(
+                    onDismissRequest = { confirmClearMemory = false },
+                    containerColor = Color(0xFFFBFCFD),
+                    title = { Text("Effacer les informations mémorisées ?", color = Ink) },
+                    text = {
+                        Text(
+                            "BOZER oubliera les ${rememberedFacts.size} information(s) que tu lui as explicitement demandé de retenir. Tes conversations ne seront pas supprimées.",
+                            color = Muted
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            repository.clearRememberedFacts()
+                            rememberedFacts.clear()
+                            confirmClearMemory = false
+                        }) {
+                            Text("Effacer", color = Color(0xFF8A5D5D))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmClearMemory = false }) {
+                            Text("Annuler", color = Ink)
+                        }
+                    }
+                )
+            }
         }
     }
 }
