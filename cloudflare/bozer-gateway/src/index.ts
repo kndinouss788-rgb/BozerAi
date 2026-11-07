@@ -7,6 +7,7 @@ export interface Env {
   GEMINI_DAILY_REQUEST_CAP?: string;
   GROQ_DAILY_REQUEST_CAP?: string;
   USER_DAILY_REQUEST_CAP?: string;
+  DAILY_PROVIDER_ATTEMPT_BUDGET?: string;
 }
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -43,10 +44,10 @@ async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number):
     parts: [{ text: m.content }]
   }));
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY!)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY! },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents,
@@ -126,6 +127,11 @@ export default {
     ].filter(p => !!p.key && p.cap > 0);
 
     if (providers.length === 0) return json({ error: "no_provider_configured" }, 503);
+    const attemptBudget = positiveInt(env.DAILY_PROVIDER_ATTEMPT_BUDGET, 45_000);
+    const configuredDailyTotal = providers.reduce((sum, provider) => sum + provider.cap, 0);
+    if (configuredDailyTotal > attemptBudget) {
+      return json({ error: "provider_caps_exceed_gateway_safety_budget", max_daily_provider_attempts: attemptBudget }, 503);
+    }
 
     const failures: string[] = [];
     for (const provider of providers) {
