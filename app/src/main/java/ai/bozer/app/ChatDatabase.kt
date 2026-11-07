@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db", null, 2) {
+class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : SQLiteOpenHelper(context, databaseName, null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """CREATE TABLE messages (
@@ -83,7 +83,56 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         return facts
     }
 
+    /** Update one explicitly stored fact without silently overwriting another fact. */
+    fun updateRememberedFact(oldContent: String, newContent: String): Boolean {
+        val oldValue = oldContent.trim()
+        val newValue = newContent.trim().take(240)
+        if (oldValue.isBlank() || newValue.isBlank()) return false
+        if (oldValue.equals(newValue, ignoreCase = true)) {
+            return rememberedFacts(Int.MAX_VALUE).any { it.equals(oldValue, ignoreCase = true) }
+        }
+        val values = ContentValues().apply {
+            put("content", newValue)
+            put("created_at", System.currentTimeMillis())
+        }
+        return try {
+            writableDatabase.updateWithOnConflict(
+                "remembered_facts",
+                values,
+                "content = ?",
+                arrayOf(oldValue),
+                SQLiteDatabase.CONFLICT_IGNORE
+            ) > 0
+        } catch (_: android.database.sqlite.SQLiteConstraintException) {
+            false
+        }
+    }
+
+    /** Forget only the matching explicit fact. */
+    fun forgetRememberedFact(content: String): Boolean {
+        val value = content.trim()
+        if (value.isBlank()) return false
+        return writableDatabase.delete("remembered_facts", "content = ?", arrayOf(value)) > 0
+    }
+
+    /** Clear chat turns while preserving explicitly remembered facts. */
+    fun clearHistory() {
+        writableDatabase.delete("messages", null, null)
+    }
+
     fun clearRememberedFacts() {
         writableDatabase.delete("remembered_facts", null, null)
+    }
+
+    /** Clear all local conversation data in one atomic transaction. */
+    fun clearAllLocalData() {
+        writableDatabase.beginTransaction()
+        try {
+            writableDatabase.delete("messages", null, null)
+            writableDatabase.delete("remembered_facts", null, null)
+            writableDatabase.setTransactionSuccessful()
+        } finally {
+            writableDatabase.endTransaction()
+        }
     }
 }
