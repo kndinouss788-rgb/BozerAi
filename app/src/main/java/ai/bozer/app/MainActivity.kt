@@ -81,7 +81,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
-        val repository = ChatRepository(ChatDatabase(applicationContext), engine)
+        val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, applicationContext)
+        val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
         val modelManager = LocalModelManager(applicationContext)
         val actionExecutor = AndroidActionExecutor(this)
         setContent { BozerChat(repository, modelManager, engine, actionExecutor, ::enableFloatingBubble, ::disableFloatingBubble) }
@@ -160,7 +161,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
         val text = draft.trim()
         if (text.isEmpty() || sending) return
         val actionReply = actionExecutor.execute(text)
-        if (actionReply == null && !modelReady) return
+        if (actionReply == null && !modelReady && !repository.remoteConfigured) return
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
@@ -218,10 +219,10 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         shadowElevation = 3.dp
                     ) {
                         Column(Modifier.padding(18.dp)) {
-                            Text("Réveillons le cerveau de BOZER", fontSize = 17.sp,
+                            Text(if (repository.remoteConfigured) "Le cerveau distant de BOZER est configuré" else "Réveillons le cerveau de BOZER", fontSize = 17.sp,
                                 fontWeight = FontWeight.SemiBold, color = Ink)
                             Spacer(Modifier.height(6.dp))
-                            Text("Qwen 0.5B · environ 491 Mo · stockage privé · fonctionne ensuite sans Internet.",
+                            Text(if (repository.remoteConfigured) "Les réponses utilisent la passerelle IA distante. Installe aussi le cerveau local pour le mode de secours hors ligne." else "Qwen 0.5B · environ 491 Mo · stockage privé · fonctionne ensuite sans Internet.",
                                 fontSize = 13.sp, lineHeight = 19.sp, color = Muted)
                             Spacer(Modifier.height(12.dp))
                             Text(modelStatus, fontSize = 12.sp, color = Color(0xFF686777))
