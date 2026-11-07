@@ -1,6 +1,10 @@
 package ai.bozer.app
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.RepeatMode
@@ -49,13 +53,38 @@ private val SoftLilac = Color(0xFFF2F5F7)
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
 
+    private val overlayPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (Settings.canDrawOverlays(this)) startFloatingBubbleService()
+        }
+
+    private fun enableFloatingBubble() {
+        if (Settings.canDrawOverlays(this)) {
+            startFloatingBubbleService()
+        } else {
+            val permissionIntent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            overlayPermissionLauncher.launch(permissionIntent)
+        }
+    }
+
+    private fun startFloatingBubbleService() {
+        startService(Intent(this, BozerFloatingService::class.java))
+    }
+
+    private fun disableFloatingBubble() {
+        stopService(Intent(this, BozerFloatingService::class.java))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
         val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
         val actionExecutor = AndroidActionExecutor(this)
-        setContent { BozerChat(repository, modelManager, engine, actionExecutor) }
+        setContent { BozerChat(repository, modelManager, engine, actionExecutor, ::enableFloatingBubble, ::disableFloatingBubble) }
     }
 
     override fun onDestroy() {
@@ -65,7 +94,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine, actionExecutor: AndroidActionExecutor) {
+private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine, actionExecutor: AndroidActionExecutor, onEnableFloatingBubble: () -> Unit, onDisableFloatingBubble: () -> Unit) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -328,6 +357,18 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
                         Text("Tes conversations restent enregistrées sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        Text("Accès rapide : une petite bulle BOZER peut rester au-dessus de tes applications.", color = Muted, fontSize = 12.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                onEnableFloatingBubble()
+                                settingsOpen = false
+                            }) {
+                                Text("Activer la bulle", color = Accent)
+                            }
+                            TextButton(onClick = onDisableFloatingBubble) {
+                                Text("Arrêter la bulle", color = Color(0xFF8A5D5D))
+                            }
+                        }
                         Text("Mémoire explicite : ${rememberedFacts.size} information(s) retenue(s).", color = Muted, fontSize = 12.sp)
                         rememberedFacts.asReversed().forEach { fact ->
                             Text("• $fact", color = Muted, fontSize = 12.sp, lineHeight = 17.sp)
