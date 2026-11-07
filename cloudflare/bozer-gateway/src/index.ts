@@ -133,10 +133,10 @@ export default {
       return json({ error: "provider_caps_exceed_gateway_safety_budget", max_daily_provider_attempts: attemptBudget }, 503);
     }
 
+    const userAllowed = await reserve(env.DB, day, "user", client, userCap);
+    if (!userAllowed) return json({ error: "user_daily_limit_reached" }, 429);
     const failures: string[] = [];
     for (const provider of providers) {
-      const userAllowed = await reserve(env.DB, day, provider.name, client, userCap);
-      if (!userAllowed) return json({ error: "user_daily_limit_reached" }, 429);
       const globalAllowed = await reserve(env.DB, day, provider.name, "*", provider.cap);
       if (!globalAllowed) {
         failures.push(provider.name + ":daily_cap");
