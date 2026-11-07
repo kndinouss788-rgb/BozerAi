@@ -86,7 +86,7 @@ object BozerFeatureIntentDetector {
             BozerPremiumFeature.TRANSLATOR to listOf("traduis", "traduction", "traducteur", "interprète", "interprete"),
             BozerPremiumFeature.DEVELOPER to listOf("corrige mon code", "débogue", "debug", "analyse ce code", "développe cette fonction", "developpe cette fonction")
         )
-        val match = candidates.firstOrNull { (_, phrases) -> phrases.any(input::contains) } ?: return null
+        val match = candidates.firstOrNull { (_, phrases) -> phrases.any { normalize(it) in input } } ?: return null
         return FeatureRequest(match.first, text.trim(), text.trim())
     }
 
