@@ -187,6 +187,17 @@ class BozerBrainEndToEndTest {
         assertTrue("Les informations mémorisées n'ont pas été effacées depuis les réglages", rememberedFactCount() == 0)
         assertTrue("L'effacement de la mémoire a supprimé l'historique des conversations", assistantCount() == historyBeforeClear)
         Log.i("BOZER_E2E", "memory_clear_verified=true; conversation_history_preserved=true")
-        Log.i("BOZER_E2E", "PASS: seven local turns, factual answer, arithmetic, persistent memory, follow-up, real network search, restored history and user-controlled memory clearing")
+
+        val (openReply, openMs) = sendMessage("Ouvre les paramètres", 9)
+        assertTrue("BOZER n'a pas confirmé l'ouverture des paramètres : " + openReply,
+            openReply.contains("J'ouvre", ignoreCase = true))
+        assertTrue("BOZER n'a pas réellement ouvert l'application Paramètres",
+            device.wait(Until.hasObject(By.pkg("com.android.settings")), 15_000))
+        Log.i("BOZER_E2E", "open_settings_verified=true; latency_ms=" + openMs)
+        device.executeShellCommand("am force-stop com.android.settings")
+        device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
+        assertTrue("BOZER ne revient pas après ouverture d'une application externe",
+            device.wait(Until.hasObject(By.pkg("ai.bozer.app")), 15_000))
+        Log.i("BOZER_E2E", "PASS: real local conversation, web search, persistent memory, safe memory clearing and Android app launch")
     }
 }
