@@ -21,14 +21,14 @@ class RemoteBrainClient(
     private val appContext = context.applicationContext
     val isConfigured: Boolean get() = endpoint.startsWith("https://")
 
-    suspend fun reply(history: List<ChatMessage>): String = withContext(Dispatchers.IO) {
+    suspend fun reply(history: List<ChatMessage>, extraContext: String = ""): String = withContext(Dispatchers.IO) {
         check(isConfigured) { "La passerelle IA distante de BOZER n'est pas configurée." }
         val clientId = installId()
         val messages = JSONArray()
             .put(JSONObject().put("role", "system").put(
                 "content",
                 "Tu es BOZER, assistant francophone naturel, chaleureux et honnête. " +
-                    "Réponds directement, tiens compte du contexte et n'invente jamais une action, une source ou un fait."
+                    "Réponds directement, tiens compte du contexte. " + extraContext
             ))
         history.takeLast(12).forEach { item ->
             if (item.role == "user" || item.role == "assistant") {
