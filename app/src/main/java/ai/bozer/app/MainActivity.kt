@@ -12,6 +12,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -73,6 +75,12 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var memoryOpen by remember { mutableStateOf(false) }
+    var memoryFacts by remember { mutableStateOf(repository.rememberedFacts()) }
+    var editingFact by remember { mutableStateOf<String?>(null) }
+    var editedFact by remember { mutableStateOf("") }
+    var confirmClearHistory by remember { mutableStateOf(false) }
+    var confirmClearMemory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
@@ -320,13 +328,137 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         Text("Cerveau", color = Ink, fontWeight = FontWeight.Medium)
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
-                        Text("Tes conversations restent enregistrées sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        Text("Tes conversations et souvenirs restent enregistrés sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        TextButton(onClick = {
+                            memoryFacts = repository.rememberedFacts()
+                            settingsOpen = false
+                            memoryOpen = true
+                        }) {
+                            Text("Gérer les souvenirs (${repository.rememberedFacts().size})", color = Ink)
+                        }
+                        TextButton(onClick = {
+                            settingsOpen = false
+                            confirmClearHistory = true
+                        }) {
+                            Text("Effacer l'historique", color = Color(0xFF8A5555))
+                        }
+                        TextButton(onClick = {
+                            settingsOpen = false
+                            confirmClearMemory = true
+                        }) {
+                            Text("Effacer la mémoire", color = Color(0xFF8A5555))
+                        }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = { settingsOpen = false }) {
                         Text("Fermer", color = Ink)
                     }
+                }
+            )
+        }
+        if (memoryOpen) {
+            AlertDialog(
+                onDismissRequest = { memoryOpen = false },
+                containerColor = Color(0xFFFBFCFD),
+                title = { Text("Mémoire locale", color = Ink, fontWeight = FontWeight.SemiBold) },
+                text = {
+                    if (memoryFacts.isEmpty()) {
+                        Text("Aucun souvenir enregistré.", color = Muted)
+                    } else {
+                        Column(
+                            Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            memoryFacts.forEach { fact ->
+                                Column {
+                                    Text(fact, color = Ink, fontSize = 13.sp, lineHeight = 18.sp)
+                                    Row {
+                                        TextButton(onClick = {
+                                            editingFact = fact
+                                            editedFact = fact
+                                            memoryOpen = false
+                                        }) { Text("Modifier", color = Accent) }
+                                        TextButton(onClick = {
+                                            repository.forgetRememberedFact(fact)
+                                            memoryFacts = repository.rememberedFacts()
+                                        }) { Text("Oublier", color = Color(0xFF8A5555)) }
+                                    }
+                                }
+                                Divider(color = Color(0xFFE8EDF0))
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { memoryOpen = false }) { Text("Fermer", color = Ink) }
+                }
+            )
+        }
+        if (editingFact != null) {
+            AlertDialog(
+                onDismissRequest = { editingFact = null },
+                containerColor = Color(0xFFFBFCFD),
+                title = { Text("Corriger un souvenir", color = Ink, fontWeight = FontWeight.SemiBold) },
+                text = {
+                    OutlinedTextField(
+                        value = editedFact,
+                        onValueChange = { editedFact = it },
+                        label = { Text("Information corrigée") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 4
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = editedFact.isNotBlank(),
+                        onClick = {
+                            val oldFact = editingFact
+                            if (oldFact != null && repository.updateRememberedFact(oldFact, editedFact)) {
+                                memoryFacts = repository.rememberedFacts()
+                            }
+                            editingFact = null
+                        }
+                    ) { Text("Enregistrer", color = Ink) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { editingFact = null }) { Text("Annuler", color = Muted) }
+                }
+            )
+        }
+        if (confirmClearHistory) {
+            AlertDialog(
+                onDismissRequest = { confirmClearHistory = false },
+                containerColor = Color(0xFFFBFCFD),
+                title = { Text("Effacer l'historique ?", color = Ink) },
+                text = { Text("Les messages de cette conversation seront supprimés. Les souvenirs explicites seront conservés.", color = Muted) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        repository.clearHistory()
+                        messages.clear()
+                        confirmClearHistory = false
+                    }) { Text("Effacer", color = Color(0xFF8A5555)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmClearHistory = false }) { Text("Annuler", color = Ink) }
+                }
+            )
+        }
+        if (confirmClearMemory) {
+            AlertDialog(
+                onDismissRequest = { confirmClearMemory = false },
+                containerColor = Color(0xFFFBFCFD),
+                title = { Text("Effacer la mémoire ?", color = Ink) },
+                text = { Text("Tous les souvenirs explicites enregistrés sur ce téléphone seront supprimés. L'historique restera intact.", color = Muted) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        repository.clearMemory()
+                        memoryFacts = emptyList()
+                        confirmClearMemory = false
+                    }) { Text("Effacer", color = Color(0xFF8A5555)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmClearMemory = false }) { Text("Annuler", color = Ink) }
                 }
             )
         }
