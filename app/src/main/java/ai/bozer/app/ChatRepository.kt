@@ -14,6 +14,8 @@ class ChatRepository(
     private val inferenceLock = Mutex()
     fun history(): List<ChatMessage> = database.history()
     fun save(message: ChatMessage) = database.save(message)
+    fun rememberedFacts(): List<String> = database.rememberedFacts()
+    fun clearRememberedFacts() = database.clearRememberedFacts()
 
     suspend fun reply(history: List<ChatMessage>): String = inferenceLock.withLock {
         val latestUserText = history.lastOrNull { it.role == "user" }?.content.orEmpty()
