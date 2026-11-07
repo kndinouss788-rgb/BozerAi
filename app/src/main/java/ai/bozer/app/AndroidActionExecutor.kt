@@ -31,6 +31,16 @@ class AndroidActionExecutor(private val activity: Activity) {
             .trim()
         if (normalizedRequest.isBlank()) return null
 
+        // Android system settings may be labelled "Settings" on an English device
+        // even when the user gives BOZER the French command.
+        if (normalizedRequest in setOf("parametres", "reglages", "settings", "configuration")) {
+            val settingsIntent = activity.packageManager.getLaunchIntentForPackage("com.android.settings")
+            if (settingsIntent != null) {
+                activity.startActivity(settingsIntent)
+                return "J'ouvre les paramètres."
+            }
+        }
+
         val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val candidates = activity.packageManager.queryIntentActivities(
             launcher,
