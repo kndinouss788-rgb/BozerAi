@@ -1,6 +1,7 @@
 package ai.bozer.app
 
 import android.database.sqlite.SQLiteDatabase
+import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -199,6 +200,14 @@ class BozerBrainEndToEndTest {
         device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
         assertTrue("BOZER ne revient pas après ouverture d'une application externe",
             device.wait(Until.hasObject(By.pkg("ai.bozer.app")), 15_000))
-        Log.i("BOZER_E2E", "PASS: real local conversation, web search, persistent memory, safe memory clearing and Android app launch")
+        context.startService(Intent(context, BozerFloatingService::class.java))
+        assertTrue("La bulle flottante BOZER ne s'est pas affichée",
+            device.wait(Until.hasObject(By.desc("Ouvrir BOZER")), 10_000))
+        device.findObject(By.desc("Ouvrir BOZER")).click()
+        assertTrue("La bulle ne ramène pas vers BOZER",
+            device.wait(Until.hasObject(By.pkg("ai.bozer.app")), 10_000))
+        context.stopService(Intent(context, BozerFloatingService::class.java))
+        Log.i("BOZER_E2E", "floating_bubble_verified=true; opens_bozer=true")
+        Log.i("BOZER_E2E", "PASS: real local conversation, web search, persistent memory, safe memory clearing, Android app launch and floating bubble")
     }
 }
