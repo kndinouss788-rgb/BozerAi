@@ -418,11 +418,15 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                                 memoryFacts = repository.rememberedFacts()
                             }
                             editingFact = null
+                            memoryOpen = true
                         }
                     ) { Text("Enregistrer", color = Ink) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { editingFact = null }) { Text("Annuler", color = Muted) }
+                    TextButton(onClick = {
+                        editingFact = null
+                        memoryOpen = true
+                    }) { Text("Annuler", color = Muted) }
                 }
             )
         }
