@@ -54,7 +54,8 @@ class MainActivity : ComponentActivity() {
         engine = LocalLlamaEngine()
         val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(repository, modelManager, engine) }
+        val actionExecutor = AndroidActionExecutor(this)
+        setContent { BozerChat(repository, modelManager, engine, actionExecutor) }
     }
 
     override fun onDestroy() {
@@ -64,7 +65,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
+private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine, actionExecutor: AndroidActionExecutor) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -128,14 +129,16 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
 
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty() || sending || !modelReady) return
+        if (text.isEmpty() || sending) return
+        val actionReply = actionExecutor.execute(text)
+        if (actionReply == null && !modelReady) return
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
         repository.save(userMessage)
         sending = true
         scope.launch {
-            val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
+            val answer = actionReply ?: withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
             repository.save(assistantMessage)
