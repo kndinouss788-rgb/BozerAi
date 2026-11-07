@@ -186,7 +186,7 @@ class BozerBrainEndToEndTest {
         while (rememberedFactCount() != 0 && SystemClock.elapsedRealtime() < clearDeadline) SystemClock.sleep(200)
         assertTrue("Les informations mémorisées n'ont pas été effacées depuis les réglages", rememberedFactCount() == 0)
         assertTrue("L'effacement de la mémoire a supprimé l'historique des conversations", assistantCount() == historyBeforeClear)
-        device.findObject(By.text("Fermer"))?.click()
+        device.wait(Until.findObject(By.text("Fermer")), 5_000)?.click()
         Log.i("BOZER_E2E", "memory_clear_verified=true; conversation_history_preserved=true")
 
         val (openReply, openMs) = sendMessage("Ouvre les paramètres", 9)
