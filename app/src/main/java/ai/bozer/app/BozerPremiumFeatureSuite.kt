@@ -3,7 +3,8 @@ package ai.bozer.app
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.util.Locale\nimport java.text.Normalizer
+import java.util.Locale
+import java.text.Normalizer
 
 /**
  * Product foundation for BOZER's seven optional professional capabilities.
