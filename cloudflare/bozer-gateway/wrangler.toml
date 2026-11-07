@@ -1,0 +1,14 @@
+name = "bozer-ai-gateway"
+main = "src/index.ts"
+compatibility_date = "2026-11-07"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bozer-gateway-quota"
+database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+
+[vars]
+USER_DAILY_REQUEST_CAP = "20"
+DAILY_PROVIDER_ATTEMPT_BUDGET = "45000"
+GEMINI_MODEL = "gemini-2.5-flash"
+GROQ_MODEL = "openai/gpt-oss-20b"
