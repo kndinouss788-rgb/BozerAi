@@ -4,12 +4,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val gatewayUrl = providers.gradleProperty("BOZER_GATEWAY_URL")
+    .orElse(providers.environmentVariable("BOZER_GATEWAY_URL"))
+    .getOrElse("")
+
 android {
     namespace = "ai.bozer.app"
     compileSdk = 35
-    ndkVersion = "27.2.12479018"\n    val gatewayUrl = (project.findProperty("BOZER_GATEWAY_URL") as String?) ?: System.getenv("BOZER_GATEWAY_URL").orEmpty()\n    defaultConfig {\n        buildConfigField("String", "BOZER_GATEWAY_URL", "\\\"${gatewayUrl.replace("\\", "\\\\").replace("\\\"", "\\\\\\"")}\\\"")\n    }
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
+        buildConfigField("String", "BOZER_GATEWAY_URL", "\"" + gatewayUrl.replace("\"", "\\\"") + "\"")
         applicationId = "ai.bozer.app"
         minSdk = 26
         targetSdk = 35
