@@ -89,7 +89,10 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
         val newValue = newContent.trim().take(240)
         if (oldValue.isBlank() || newValue.isBlank()) return false
         if (oldValue.equals(newValue, ignoreCase = true)) {
-            return rememberedFacts(Int.MAX_VALUE).any { it.equals(oldValue, ignoreCase = true) }
+            return readableDatabase.query(
+                "remembered_facts", arrayOf("id"), "content = ?", arrayOf(oldValue),
+                null, null, null, "1"
+            ).use { it.moveToFirst() }
         }
         val values = ContentValues().apply {
             put("content", newValue)
