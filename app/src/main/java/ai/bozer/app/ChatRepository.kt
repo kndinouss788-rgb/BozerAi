@@ -14,11 +14,23 @@ class ChatRepository(
     private val inferenceLock = Mutex()
     fun history(): List<ChatMessage> = database.history()
     fun save(message: ChatMessage) = database.save(message)
+    fun rememberedFacts(): List<String> = database.rememberedFacts()
+    fun updateRememberedFact(oldContent: String, newContent: String): Boolean =
+        database.updateRememberedFact(oldContent, newContent)
+    fun forgetRememberedFact(content: String): Boolean = database.forgetRememberedFact(content)
+    fun clearHistory() = database.clearHistory()
+    fun clearMemory() = database.clearRememberedFacts()
 
     suspend fun reply(history: List<ChatMessage>): String = inferenceLock.withLock {
         val latestUserText = history.lastOrNull { it.role == "user" }?.content.orEmpty()
-        if (asksToForgetMemory(latestUserText)) database.clearRememberedFacts()
-        else extractExplicitMemory(latestUserText)?.let(database::rememberFact)
+        when {
+            asksToForgetMemory(latestUserText) -> database.clearRememberedFacts()
+            extractMemoryCorrection(latestUserText)?.let { (oldFact, newFact) ->
+                database.updateRememberedFact(oldFact, newFact)
+            } == true -> Unit
+            extractSingleMemoryForget(latestUserText)?.let(database::forgetRememberedFact) == true -> Unit
+            else -> extractExplicitMemory(latestUserText)?.let(database::rememberFact)
+        }
 
         if (asksForCurrentTime(latestUserText)) {
             return@withLock "Il est " + LocalTime.now().format(
@@ -125,6 +137,30 @@ class ChatRepository(
             "oublie tout ce que tu as mémorisé", "oublie tout ce que tu as memorise",
             "efface ta mémoire", "efface ta memoire", "oublie tes souvenirs"
         ).any(normalized::contains)
+    }
+
+    private fun extractMemoryCorrection(text: String): Pair<String, String>? {
+        val match = Regex(
+            """^(?:corrige|modifie|remplace)\s+(?:la\s+)?(?:mémoire|memoire)\s*[:,-]?\s*(.+?)\s*(?:->|=>|\bpar\b)\s*(.+)$""",
+            RegexOption.IGNORE_CASE
+        ).find(text.trim()) ?: return null
+        val oldFact = match.groupValues[1].trim().trimEnd('.', '!', '?')
+        val newFact = match.groupValues[2].trim().trimEnd('.', '!', '?')
+        return if (oldFact.length >= 3 && newFact.length >= 3) oldFact to newFact else null
+    }
+
+    private fun extractSingleMemoryForget(text: String): String? {
+        if (asksToForgetMemory(text)) return null
+        val match = Regex(
+            """^(?:oublie|efface|supprime)\s+(?:le fait que\s+)?(.+)$""",
+            RegexOption.IGNORE_CASE
+        ).find(text.trim()) ?: return null
+        val fact = match.groupValues[1].trim().trimEnd('.', '!', '?')
+        if (fact.length < 3) return null
+        if (fact.startsWith("ta mémoire", ignoreCase = true) ||
+            fact.startsWith("ta memoire", ignoreCase = true) ||
+            fact.startsWith("tes souvenirs", ignoreCase = true)) return null
+        return fact
     }
 
     private fun asksForCurrentTime(text: String): Boolean {
