@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "ai.bozer.app"
     compileSdk = 35
-    ndkVersion = "27.2.12479018"
+    ndkVersion = "27.2.12479018"\n    val gatewayUrl = (project.findProperty("BOZER_GATEWAY_URL") as String?) ?: System.getenv("BOZER_GATEWAY_URL").orEmpty()\n    defaultConfig {\n        buildConfigField("String", "BOZER_GATEWAY_URL", "\\\"${gatewayUrl.replace("\\", "\\\\").replace("\\\"", "\\\\\\"")}\\\"")\n    }
 
     defaultConfig {
         applicationId = "ai.bozer.app"
@@ -32,7 +32,7 @@ android {
         }
     }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
