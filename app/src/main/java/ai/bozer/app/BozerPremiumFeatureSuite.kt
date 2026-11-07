@@ -90,8 +90,8 @@ object BozerFeatureIntentDetector {
         return FeatureRequest(match.first, text.trim(), text.trim())
     }
 
-    private fun normalize(value: String): String = value
-        .lowercase(Locale.ROOT)
+    private fun normalize(value: String): String = Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "")
         .replace(Regex("\\s+"), " ")
         .trim()
 }
