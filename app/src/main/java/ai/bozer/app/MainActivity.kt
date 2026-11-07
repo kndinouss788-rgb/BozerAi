@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
         engine = LocalLlamaEngine()
         val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(repository, modelManager, engine) }
+        setContent { BozerChat(this@MainActivity, repository, modelManager, engine) }
     }
 
     override fun onDestroy() {
@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
+private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -81,6 +81,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     var editedFact by remember { mutableStateOf("") }
     var confirmClearHistory by remember { mutableStateOf(false) }
     var confirmClearMemory by remember { mutableStateOf(false) }
+    var pendingPhoneAction by remember { mutableStateOf<PhoneAction?>(null) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
@@ -139,6 +140,11 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
         repository.save(userMessage)
+        val phoneAction = PhoneActionPlanner.parse(text)
+        if (phoneAction != null) {
+            pendingPhoneAction = phoneAction
+            return
+        }
         sending = true
         scope.launch {
             val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
@@ -147,6 +153,18 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
             repository.save(assistantMessage)
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
+        }
+    }
+
+    fun cancelPendingPhoneAction() {
+        if (pendingPhoneAction != null) {
+            val status = ChatMessage(
+                role = "assistant",
+                content = "Action annulée. Rien n'a été lancé."
+            )
+            messages.add(status)
+            repository.save(status)
+            pendingPhoneAction = null
         }
     }
 
@@ -463,6 +481,28 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                 },
                 dismissButton = {
                     TextButton(onClick = { confirmClearMemory = false }) { Text("Annuler", color = Ink) }
+                }
+            )
+        }
+        pendingPhoneAction?.let { action ->
+            AlertDialog(
+                onDismissRequest = { cancelPendingPhoneAction() },
+                containerColor = Color(0xFFFBFCFD),
+                title = { Text(PhoneActionPlanner.confirmationTitle(action), color = Ink) },
+                text = { Text(PhoneActionPlanner.confirmationDescription(action), color = Muted) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val result = PhoneActionPlanner.execute(activity, action)
+                        val status = ChatMessage(role = "assistant", content = result.message)
+                        messages.add(status)
+                        repository.save(status)
+                        pendingPhoneAction = null
+                    }) { Text("Confirmer", color = Ink) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { cancelPendingPhoneAction() }) {
+                        Text("Annuler", color = Muted)
+                    }
                 }
             )
         }
