@@ -97,4 +97,12 @@ class ChatDatabaseInstrumentedTest {
         database.rememberFact("Projet : BOZER")
         assertEquals(listOf("Projet : BOZER"), database.rememberedFacts())
     }
+    @Test
+    fun identicalCorrectionIsSafeAndDoesNotCreateDuplicateFacts() {
+        database.rememberFact("Langue : français")
+        assertTrue(database.updateRememberedFact("Langue : français", "Langue : français"))
+        assertFalse(database.updateRememberedFact("Fait absent", "Fait corrigé"))
+        assertEquals(1, database.rememberedFacts().count { it.equals("Langue : français", ignoreCase = true) })
+    }
+
 }
