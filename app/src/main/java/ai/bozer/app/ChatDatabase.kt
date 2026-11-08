@@ -50,6 +50,10 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         return result.asReversed()
     }
 
+    fun clearHistory() {
+        writableDatabase.delete("messages", null, null)
+    }
+
     fun save(message: ChatMessage) {
         val values = ContentValues().apply {
             put("role", message.role)
