@@ -222,7 +222,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     }
                 }
 
-                if (!modelReady) {
+                if (!modelReady && !repository.remoteConfigured) {
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
                         color = Color.White.copy(alpha = 0.82f),
@@ -288,7 +288,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         textStyle = TextStyle(color = Ink, fontSize = 15.sp),
                         cursorBrush = androidx.compose.ui.graphics.SolidColor(Accent),
                         decorationBox = { inner ->
-                            if (draft.isEmpty()) Text(if (modelReady) "Parle-moi, je t'écoute…" else "Installe d'abord le cerveau…",
+                            if (draft.isEmpty()) Text(if (modelReady || repository.remoteConfigured) "Écris à BOZER…" else "Installe d'abord le cerveau…",
                                 color = Color(0xFFA0A2AD), fontSize = 15.sp)
                             inner()
                         },
@@ -297,7 +297,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         singleLine = false
                     )
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && modelReady,
+                    Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && (modelReady || repository.remoteConfigured),
                         shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF718A9A), disabledContainerColor = Color(0xFFDDE6EA))) {
                         Text("↑", fontSize = 22.sp, color = Color.White)
@@ -503,24 +503,32 @@ private fun contextualSuggestions(lastMessage: String): List<String> {
 @Composable
 private fun MessageBubble(message: ChatMessage) {
     val isUser = message.role == "user"
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-        verticalAlignment = Alignment.Bottom) {
-        if (!isUser) {
-            BozerOrb(size = 27.dp, active = false)
-            Spacer(Modifier.width(8.dp))
+    if (isUser) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Surface(
+                color = Color(0xFFEAF0F3).copy(alpha = 0.94f),
+                shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomEnd = 7.dp, bottomStart = 22.dp),
+                modifier = Modifier.widthIn(max = 310.dp)
+            ) {
+                Text(message.content, modifier = Modifier.padding(horizontal = 17.dp, vertical = 13.dp),
+                    color = Ink, fontSize = 15.sp, lineHeight = 22.sp)
+            }
         }
-        Surface(
-            color = if (isUser) Color(0xFFEAF0F3).copy(alpha = 0.94f) else Color.White.copy(alpha = 0.94f),
-            shape = RoundedCornerShape(
-                topStart = 22.dp, topEnd = 22.dp,
-                bottomEnd = if (isUser) 7.dp else 22.dp,
-                bottomStart = if (isUser) 22.dp else 7.dp
-            ),
-            shadowElevation = if (isUser) 0.dp else 2.dp,
-            modifier = Modifier.widthIn(max = 310.dp)
+    } else {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top
         ) {
-            Text(message.content, modifier = Modifier.padding(horizontal = 17.dp, vertical = 13.dp),
-                color = Ink, fontSize = 15.sp, lineHeight = 22.sp)
+            BozerOrb(size = 28.dp, active = false)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                message.content,
+                modifier = Modifier.weight(1f).padding(top = 3.dp, bottom = 5.dp),
+                color = Ink,
+                fontSize = 15.sp,
+                lineHeight = 23.sp
+            )
         }
     }
 }
