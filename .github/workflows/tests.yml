@@ -2,9 +2,9 @@ name: BOZER core tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/remote-ai-quota-router]
   pull_request:
-    branches: [main]
+    branches: [main, feature/remote-ai-quota-router]
   workflow_dispatch:
 
 jobs:
