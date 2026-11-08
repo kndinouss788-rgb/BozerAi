@@ -52,9 +52,9 @@ private val Pearl = Color(0xFFF8FAFC)
 private val Ink = Color(0xFF26313A)
 private val Muted = Color(0xFF7D8993)
 private val GlassEdge = Color(0xFFFFFFFF)
-private val Accent = Color(0xFF718A9A)
-private val Lavender = Color(0xFFE8EEF1)
-private val SoftLilac = Color(0xFFF2F5F7)
+private val Accent = Color(0xFF858B90)
+private val Lavender = Color(0xFFECEEEF)
+private val SoftLilac = Color(0xFFF5F6F6)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
@@ -217,7 +217,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     )
                     drawCircle(
                         brush = Brush.radialGradient(
-                            listOf(Color(0xFFE7EEF1).copy(alpha = 0.34f), Color.Transparent),
+                            listOf(Color(0xFFE8EAEB).copy(alpha = 0.34f), Color.Transparent),
                             center = Offset(w * (0.84f - ambientShift * 0.30f), h * 0.78f),
                             radius = w * 0.58f
                         ),
@@ -304,7 +304,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     Spacer(Modifier.width(8.dp))
                     Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && (modelReady || repository.remoteConfigured),
                         shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(46.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF718A9A), disabledContainerColor = Color(0xFFDDE6EA))) {
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF858B90), disabledContainerColor = Color(0xFFE1E3E4))) {
                         Text("↑", fontSize = 22.sp, color = Color.White)
                     }
                 }
@@ -420,21 +420,21 @@ private fun BozerOrb(size: androidx.compose.ui.unit.Dp, active: Boolean) {
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(Color.White.copy(alpha = if (active) 0.95f else 0.72f),
-                    Color(0xFFDCE7EC).copy(alpha = 0.34f), Color.Transparent),
+                    Color(0xFFE7E9EA).copy(alpha = 0.34f), Color.Transparent),
                 center, diameter * 0.49f
             ),
             radius = diameter * 0.49f,
             center = center
         )
         drawCircle(
-            color = Color(0xFFB9CBD3).copy(alpha = if (active) 0.38f else 0.18f),
+            color = Color(0xFFC9CDCF).copy(alpha = if (active) 0.38f else 0.18f),
             radius = radius * 1.28f,
             center = center,
             style = Stroke(width = diameter * 0.012f)
         )
         drawCircle(
             brush = Brush.linearGradient(
-                listOf(Color.White, Color(0xFFF4F8FA), Color(0xFFD4E1E7), Color(0xFFB7C9D1)),
+                listOf(Color.White, Color(0xFFF4F8FA), Color(0xFFE3E5E6), Color(0xFFC7CBCE)),
                 start = Offset(center.x - radius, center.y - radius),
                 end = Offset(center.x + radius, center.y + radius)
             ),
@@ -513,7 +513,7 @@ private fun MessageBubble(message: ChatMessage) {
     if (isUser) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Surface(
-                color = Color(0xFFEAF0F3).copy(alpha = 0.94f),
+                color = Color(0xFFECEEEF).copy(alpha = 0.94f),
                 shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomEnd = 7.dp, bottomStart = 22.dp),
                 modifier = Modifier.widthIn(max = 310.dp)
             ) {
