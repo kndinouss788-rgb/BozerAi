@@ -1,16 +1,39 @@
 export interface Env {
   DB: D1Database;
+  AI?: Ai;
+
   GEMINI_API_KEY?: string;
   GROQ_API_KEY?: string;
+  CEREBRAS_API_KEY?: string;
+  SAMBANOVA_API_KEY?: string;
+  MISTRAL_API_KEY?: string;
+  NVIDIA_API_KEY?: string;
+  OPENROUTER_API_KEY?: string;
+
   GEMINI_MODEL?: string;
   GROQ_MODEL?: string;
+  CEREBRAS_MODEL?: string;
+  SAMBANOVA_MODEL?: string;
+  MISTRAL_MODEL?: string;
+  NVIDIA_MODEL?: string;
+  OPENROUTER_MODEL?: string;
+  CLOUDFLARE_AI_MODEL?: string;
+
   GEMINI_DAILY_REQUEST_CAP?: string;
   GROQ_DAILY_REQUEST_CAP?: string;
+  CEREBRAS_DAILY_REQUEST_CAP?: string;
+  SAMBANOVA_DAILY_REQUEST_CAP?: string;
+  MISTRAL_DAILY_REQUEST_CAP?: string;
+  NVIDIA_DAILY_REQUEST_CAP?: string;
+  OPENROUTER_DAILY_REQUEST_CAP?: string;
+  CLOUDFLARE_AI_DAILY_REQUEST_CAP?: string;
+
   USER_DAILY_REQUEST_CAP?: string;
-  DAILY_PROVIDER_ATTEMPT_BUDGET?: string;
+  PROVIDER_ORDER?: string;
 }
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+type Provider = { name: string; cap: number; call: () => Promise<string> };
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -36,6 +59,38 @@ async function reserve(db: D1Database, day: string, provider: string, client: st
   return result !== null;
 }
 
+class ProviderError extends Error {
+  constructor(readonly provider: string, readonly status: number) { super(provider); }
+}
+
+async function callOpenAICompatible(
+  provider: string,
+  endpoint: string,
+  apiKey: string,
+  model: string,
+  messages: ChatMessage[],
+  maxTokens: number,
+  extraHeaders: Record<string, string> = {}
+): Promise<string> {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`,
+      ...extraHeaders
+    },
+    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.7 }),
+    signal: AbortSignal.timeout(7_000)
+  });
+  if (!response.ok) throw new ProviderError(provider, response.status);
+  const data: any = await response.json();
+  const text = data.choices?.[0]?.message?.content;
+  const answer = typeof text === "string" ? text.trim() :
+    Array.isArray(text) ? text.map((part: any) => part.text || "").join("").trim() : "";
+  if (!answer) throw new ProviderError(provider, 502);
+  return answer;
+}
+
 async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number): Promise<string> {
   const model = env.GEMINI_MODEL || "gemini-2.5-flash";
   const system = messages.find(m => m.role === "system")?.content || "You are BOZER, a helpful assistant.";
@@ -53,7 +108,7 @@ async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number):
         contents,
         generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 }
       }),
-      signal: AbortSignal.timeout(35_000)
+      signal: AbortSignal.timeout(7_000)
     }
   );
   if (!response.ok) throw new ProviderError("gemini", response.status);
@@ -63,27 +118,57 @@ async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number):
   return text;
 }
 
-async function callGroq(env: Env, messages: ChatMessage[], maxTokens: number): Promise<string> {
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${env.GROQ_API_KEY!}` },
-    body: JSON.stringify({
-      model: env.GROQ_MODEL || "openai/gpt-oss-20b",
-      messages,
-      max_tokens: maxTokens,
-      temperature: 0.7
-    }),
-    signal: AbortSignal.timeout(35_000)
-  });
-  if (!response.ok) throw new ProviderError("groq", response.status);
-  const data: any = await response.json();
-  const text = data.choices?.[0]?.message?.content?.trim();
-  if (!text) throw new ProviderError("groq", 502);
-  return text;
-}
+function buildProviders(env: Env, messages: ChatMessage[], maxTokens: number): Provider[] {
+  const providers: Provider[] = [];
+  const add = (name: string, key: string | undefined, capValue: string | undefined, call: () => Promise<string>) => {
+    const cap = positiveInt(capValue, 0);
+    if (key && cap > 0) providers.push({ name, cap, call });
+  };
 
-class ProviderError extends Error {
-  constructor(readonly provider: string, readonly status: number) { super(provider); }
+  add("gemini", env.GEMINI_API_KEY, env.GEMINI_DAILY_REQUEST_CAP,
+    () => callGemini(env, messages, maxTokens));
+  add("groq", env.GROQ_API_KEY, env.GROQ_DAILY_REQUEST_CAP,
+    () => callOpenAICompatible("groq", "https://api.groq.com/openai/v1/chat/completions",
+      env.GROQ_API_KEY!, env.GROQ_MODEL || "openai/gpt-oss-20b", messages, maxTokens));
+  add("cerebras", env.CEREBRAS_API_KEY, env.CEREBRAS_DAILY_REQUEST_CAP,
+    () => callOpenAICompatible("cerebras", "https://api.cerebras.ai/v1/chat/completions",
+      env.CEREBRAS_API_KEY!, env.CEREBRAS_MODEL || "llama3.1-8b", messages, maxTokens));
+  add("sambanova", env.SAMBANOVA_API_KEY, env.SAMBANOVA_DAILY_REQUEST_CAP,
+    () => callOpenAICompatible("sambanova", "https://api.sambanova.ai/v1/chat/completions",
+      env.SAMBANOVA_API_KEY!, env.SAMBANOVA_MODEL || "Meta-Llama-3.1-8B-Instruct", messages, maxTokens));
+  add("mistral", env.MISTRAL_API_KEY, env.MISTRAL_DAILY_REQUEST_CAP,
+    () => callOpenAICompatible("mistral", "https://api.mistral.ai/v1/chat/completions",
+      env.MISTRAL_API_KEY!, env.MISTRAL_MODEL || "ministral-3b-latest", messages, maxTokens));
+  add("nvidia", env.NVIDIA_API_KEY, env.NVIDIA_DAILY_REQUEST_CAP,
+    () => callOpenAICompatible("nvidia", "https://integrate.api.nvidia.com/v1/chat/completions",
+      env.NVIDIA_API_KEY!, env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct", messages, maxTokens));
+  add("openrouter", env.OPENROUTER_API_KEY, env.OPENROUTER_DAILY_REQUEST_CAP,
+    () => callOpenAICompatible("openrouter", "https://openrouter.ai/api/v1/chat/completions",
+      env.OPENROUTER_API_KEY!, env.OPENROUTER_MODEL || "meta-llama/llama-3.1-8b-instruct:free",
+      messages, maxTokens, { "HTTP-Referer": "https://bozerai.bozerpdg.workers.dev", "X-Title": "BOZER" }));
+
+  const cloudflareCap = positiveInt(env.CLOUDFLARE_AI_DAILY_REQUEST_CAP, 0);
+  if (env.AI && cloudflareCap > 0) {
+    providers.push({
+      name: "cloudflare-ai",
+      cap: cloudflareCap,
+      call: async () => {
+        const result: any = await env.AI!.run(
+          (env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct") as any,
+          { messages, max_tokens: maxTokens }
+        );
+        const answer = typeof result?.response === "string" ? result.response.trim() :
+          typeof result?.result?.response === "string" ? result.result.response.trim() : "";
+        if (!answer) throw new ProviderError("cloudflare-ai", 502);
+        return answer;
+      }
+    });
+  }
+
+  const order = (env.PROVIDER_ORDER || "gemini,groq,cerebras,sambanova,mistral,nvidia,openrouter,cloudflare-ai")
+    .split(",").map(value => value.trim().toLowerCase()).filter(Boolean);
+  const rank = new Map(order.map((name, index) => [name, index]));
+  return providers.sort((a, b) => (rank.get(a.name) ?? 999) - (rank.get(b.name) ?? 999));
 }
 
 export default {
@@ -115,30 +200,21 @@ export default {
     }
     const totalChars = messages.reduce((sum, item) => sum + item.content.length, 0);
     if (totalChars > 24000) return json({ error: "context_too_large" }, 413);
+    if (!messages.some(item => item.role === "user")) return json({ error: "missing_user_message" }, 400);
+
     const maxTokens = Math.min(900, Math.max(64, positiveInt(String(body.max_tokens || ""), 700)));
     const day = new Date().toISOString().slice(0, 10);
     const userCap = positiveInt(env.USER_DAILY_REQUEST_CAP, 20);
-
-    const providers = [
-      { name: "gemini", key: env.GEMINI_API_KEY, cap: positiveInt(env.GEMINI_DAILY_REQUEST_CAP, 0),
-        call: () => callGemini(env, messages, maxTokens) },
-      { name: "groq", key: env.GROQ_API_KEY, cap: positiveInt(env.GROQ_DAILY_REQUEST_CAP, 0),
-        call: () => callGroq(env, messages, maxTokens) }
-    ].filter(p => !!p.key && p.cap > 0);
-
-    if (providers.length === 0) return json({ error: "no_provider_configured" }, 503);
-    const attemptBudget = positiveInt(env.DAILY_PROVIDER_ATTEMPT_BUDGET, 45_000);
-    const configuredDailyTotal = providers.reduce((sum, provider) => sum + provider.cap, 0);
-    if (configuredDailyTotal > attemptBudget) {
-      return json({ error: "provider_caps_exceed_gateway_safety_budget", max_daily_provider_attempts: attemptBudget }, 503);
-    }
-
     const userAllowed = await reserve(env.DB, day, "user", client, userCap);
     if (!userAllowed) return json({ error: "user_daily_limit_reached" }, 429);
+
+    const providers = buildProviders(env, messages, maxTokens);
+    if (providers.length === 0) return json({ error: "no_provider_configured" }, 503);
+
     const failures: string[] = [];
     for (const provider of providers) {
-      const globalAllowed = await reserve(env.DB, day, provider.name, "*", provider.cap);
-      if (!globalAllowed) {
+      const allowed = await reserve(env.DB, day, provider.name, "*", provider.cap);
+      if (!allowed) {
         failures.push(provider.name + ":daily_cap");
         continue;
       }
@@ -148,12 +224,11 @@ export default {
       } catch (error) {
         const status = error instanceof ProviderError ? error.status : 503;
         failures.push(provider.name + ":" + status);
-        // Fall back only for quota, capacity and transient provider failures.
-        if (!(status === 429 || status === 408 || status >= 500)) {
-          return json({ error: "provider_request_rejected" }, 502);
-        }
+        // Any provider-side failure triggers failover. Invalid credentials/model
+        // are reported in server logs without exposing keys or details to clients.
+        console.warn("BOZER provider failed", provider.name, status);
       }
     }
-    return json({ error: "all_providers_unavailable", reasons: failures }, 503);
+    return json({ error: "all_providers_unavailable", attempted: failures.map(item => item.split(":")[0]) }, 503);
   }
 };
