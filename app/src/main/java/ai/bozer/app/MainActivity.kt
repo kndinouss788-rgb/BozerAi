@@ -7,6 +7,11 @@ import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -40,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 private val Pearl = Color(0xFFF8FAFC)
@@ -104,11 +110,17 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var showWelcomeOrb by remember { mutableStateOf(true) }
     var confirmClearMemory by remember { mutableStateOf(false) }
     val rememberedFacts = remember { mutableStateListOf<String>().apply { addAll(repository.rememberedFacts()) } }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
+
+    LaunchedEffect(Unit) {
+        delay(1500)
+        showWelcomeOrb = false
+    }
 
     LaunchedEffect(Unit) {
         if (modelManager.verifyInstalled()) {
@@ -191,8 +203,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    BozerOrb(size = 46.dp, active = sending || modelBusy)
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(2.dp))
                     Column {
                         Text("BOZER", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Ink, letterSpacing = 1.1.sp)
                         Text(if (sending) "Je suis avec toi" else if (modelReady) "Ton compagnon intelligent" else "Un espace à toi",
@@ -246,49 +257,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                 }
 
                 if (messages.isEmpty()) {
-                    Column(
-                        Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp),
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text("TON ESPACE BOZER", fontSize = 10.sp, letterSpacing = 1.8.sp,
-                                    fontWeight = FontWeight.SemiBold, color = Accent)
-                                Spacer(Modifier.height(8.dp))
-                                Text("Salut ! Prêt à\nfaire avancer tes idées ?",
-                                    fontSize = 27.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-                                Spacer(Modifier.height(7.dp))
-                                Text("Une idée, une question, un projet… commençons ici.",
-                                    fontSize = 12.sp, lineHeight = 17.sp, color = Muted)
-                            }
-                            Box(Modifier.size(112.dp), contentAlignment = Alignment.Center) {
-                                BozerOrb(size = 108.dp, active = modelReady || sending)
-                            }
-                        }
-                        Spacer(Modifier.height(20.dp))
-                        Text("TON PROCHAIN PAS", fontSize = 10.sp, letterSpacing = 1.5.sp,
-                            fontWeight = FontWeight.SemiBold, color = Muted)
-                        Spacer(Modifier.height(10.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            FeatureCard("✦", "Réfléchir", "Clarifier une idée", Modifier.weight(1f)) {
-                                draft = "Aide-moi à réfléchir à une idée et à trouver la meilleure direction."
-                            }
-                            FeatureCard("⌁", "S'organiser", "Préparer ma journée", Modifier.weight(1f)) {
-                                draft = "Aide-moi à organiser ma journée."
-                            }
-                        }
-                        Spacer(Modifier.height(10.dp))
-                        FeatureCard("◇", "Découvrir avec BOZER", "Apprendre, comprendre et progresser",
-                            Modifier.fillMaxWidth()) {
-                            draft = "Propose-moi quelque chose d'intéressant à apprendre aujourd'hui."
-                        }
-                        Spacer(Modifier.weight(1f))
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            Text(if (modelReady) "BOZER est là. On avance ensemble." else "Installe le cerveau pour commencer.",
-                                color = Muted, fontSize = 11.sp)
-                        }
-                    }
-                } else {
+                    Spacer(Modifier.weight(1f).fillMaxWidth())
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         state = listState,
@@ -302,15 +271,6 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                                 Spacer(Modifier.width(9.dp))
                                 Text("BOZER prend le temps de réfléchir…", color = Muted, fontSize = 12.sp)
                             }
-                        }
-                    }
-                }
-
-                if (messages.isNotEmpty() && !sending) {
-                    val suggestions = contextualSuggestions(lastUserText)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                        suggestions.forEach { suggestion ->
-                            ContextChip(suggestion, Modifier.weight(1f)) { draft = suggestion }
                         }
                     }
                 }
@@ -345,6 +305,23 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     }
                 }
             }
+                AnimatedVisibility(
+                    visible = showWelcomeOrb,
+                    enter = fadeIn(tween(450)) + scaleIn(initialScale = 0.78f, animationSpec = tween(650)),
+                    exit = fadeOut(tween(350)) + scaleOut(targetScale = 1.12f, animationSpec = tween(350))
+                ) {
+                    Box(
+                        Modifier.fillMaxSize().background(Color(0xFFF8FAFC).copy(alpha = 0.96f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            BozerOrb(size = 124.dp, active = true)
+                            Spacer(Modifier.height(20.dp))
+                            Text("BOZER", fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
+                                color = Ink, letterSpacing = 2.2.sp)
+                        }
+                    }
+                }
             }
         }
         if (settingsOpen) {
@@ -420,47 +397,58 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
 
 @Composable
 private fun BozerOrb(size: androidx.compose.ui.unit.Dp, active: Boolean) {
-    val transition = rememberInfiniteTransition(label = "bozer-mascot")
+    val transition = rememberInfiniteTransition(label = "bozer-pearl")
     val pulse by transition.animateFloat(
-        initialValue = 0.97f, targetValue = if (active) 1.035f else 1.015f,
-        animationSpec = infiniteRepeatable(animation = tween(if (active) 1050 else 2400), repeatMode = RepeatMode.Reverse),
-        label = "mascot-pulse"
+        initialValue = 0.96f,
+        targetValue = if (active) 1.055f else 1.018f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (active) 850 else 2600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pearl-pulse"
     )
     Canvas(Modifier.size(size)) {
-        val w = this.size.width
-        val h = this.size.height
-        val cx = w / 2f
-        val headW = w * 0.78f * pulse
-        val headH = h * 0.48f * pulse
-        val headTop = h * 0.13f
-        // Soft halo behind the little BOZER companion.
-        drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.9f), Color(0xFFDCE5E9).copy(alpha = 0.42f), Color.Transparent),
-            Offset(cx, h * 0.47f), w * 0.58f), w * 0.58f, Offset(cx, h * 0.47f))
-        // Floating side fins.
-        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFC7D5DC), Color(0xFF8EA5B2))),
-            Offset(w * 0.09f, h * 0.57f), androidx.compose.ui.geometry.Size(w * 0.17f, h * 0.25f))
-        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFC7D5DC), Color(0xFF8EA5B2))),
-            Offset(w * 0.74f, h * 0.57f), androidx.compose.ui.geometry.Size(w * 0.17f, h * 0.25f))
-        // Small glowing body.
-        drawOval(Brush.radialGradient(listOf(Color.White, Color(0xFFE4EBEF), Color(0xFFA9BBC4)),
-            Offset(cx - w * 0.08f, h * 0.75f), w * 0.29f),
-            Offset(w * 0.34f, h * 0.62f), androidx.compose.ui.geometry.Size(w * 0.32f, h * 0.30f))
-        // Pearl shell and violet glass face.
-        drawOval(Brush.linearGradient(listOf(Color.White, Color(0xFFE7EDF0), Color(0xFFAFC0C8))),
-            Offset(cx - headW / 2f, headTop), androidx.compose.ui.geometry.Size(headW, headH))
-        drawOval(Brush.linearGradient(listOf(Color(0xFF465D6A), Color(0xFF78909D), Color(0xFF526875))),
-            Offset(cx - headW * 0.39f, headTop + headH * 0.22f),
-            androidx.compose.ui.geometry.Size(headW * 0.78f, headH * 0.59f))
-        // Two gentle luminous eyes.
-        drawOval(Color(0xFFF5FAFC), Offset(cx - headW * 0.23f, headTop + headH * 0.48f),
-            androidx.compose.ui.geometry.Size(headW * 0.13f, headH * 0.13f))
-        drawOval(Color(0xFFF5FAFC), Offset(cx + headW * 0.10f, headTop + headH * 0.48f),
-            androidx.compose.ui.geometry.Size(headW * 0.13f, headH * 0.13f))
-        // Glass highlight.
-        drawOval(Color.White.copy(alpha = 0.62f), Offset(cx - headW * 0.31f, headTop + headH * 0.12f),
-            androidx.compose.ui.geometry.Size(headW * 0.28f, headH * 0.09f))
-        drawOval(Color.White.copy(alpha = 0.34f), Offset(cx - w * 0.12f, h * 0.68f),
-            androidx.compose.ui.geometry.Size(w * 0.10f, h * 0.035f))
+        val diameter = this.size.minDimension
+        val center = Offset(this.size.width / 2f, this.size.height / 2f)
+        val radius = diameter * 0.34f * pulse
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color.White.copy(alpha = if (active) 0.95f else 0.72f),
+                    Color(0xFFDCE7EC).copy(alpha = 0.34f), Color.Transparent),
+                center, diameter * 0.49f
+            ),
+            radius = diameter * 0.49f,
+            center = center
+        )
+        drawCircle(
+            color = Color(0xFFB9CBD3).copy(alpha = if (active) 0.38f else 0.18f),
+            radius = radius * 1.28f,
+            center = center,
+            style = Stroke(width = diameter * 0.012f)
+        )
+        drawCircle(
+            brush = Brush.linearGradient(
+                listOf(Color.White, Color(0xFFF4F8FA), Color(0xFFD4E1E7), Color(0xFFB7C9D1)),
+                start = Offset(center.x - radius, center.y - radius),
+                end = Offset(center.x + radius, center.y + radius)
+            ),
+            radius = radius,
+            center = center
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color.White.copy(alpha = 0.98f), Color.White.copy(alpha = 0.08f), Color.Transparent),
+                Offset(center.x - radius * 0.35f, center.y - radius * 0.48f),
+                radius * 0.92f
+            ),
+            radius = radius * 0.92f,
+            center = center
+        )
+        drawCircle(
+            color = Color.White.copy(alpha = 0.82f),
+            radius = radius * 0.12f,
+            center = Offset(center.x - radius * 0.38f, center.y - radius * 0.48f)
+        )
     }
 }
 
