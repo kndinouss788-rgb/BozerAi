@@ -78,10 +78,11 @@ object BozerFeatureIntentDetector {
         if (input.isBlank()) return null
 
         val candidates = listOf(
+            // Specific document intents must precede the broad BUSINESS "client" match.
+            BozerPremiumFeature.DOCUMENTS to listOf("crée un devis", "cree un devis", "crée une facture", "cree une facture", "rédige mon cv", "redige mon cv", "document pdf"),
             BozerPremiumFeature.BUSINESS to listOf("client", "commande", "stock", "vente", "chiffre d'affaires", "devis commercial", "mon commerce", "facture client"),
             BozerPremiumFeature.AGENT to listOf("fais ces tâches", "execute ce plan", "exécute ce plan", "organise et fais", "agent personnel", "automatise"),
             BozerPremiumFeature.RESEARCH to listOf("recherche approfondie", "compare les sources", "rapport de recherche", "étude de marché", "cherche plusieurs sources"),
-            BozerPremiumFeature.DOCUMENTS to listOf("crée un devis", "cree un devis", "crée une facture", "cree une facture", "rédige mon cv", "redige mon cv", "document pdf"),
             BozerPremiumFeature.SECRETARY to listOf("organise ma journée", "organise ma journee", "mes rendez-vous", "mes rendez vous", "planning de la semaine", "rappelle-moi"),
             BozerPremiumFeature.TRANSLATOR to listOf("traduis", "traduction", "traducteur", "interprète", "interprete"),
             BozerPremiumFeature.DEVELOPER to listOf("corrige mon code", "débogue", "debug", "analyse ce code", "développe cette fonction", "developpe cette fonction")
