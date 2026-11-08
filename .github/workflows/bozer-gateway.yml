@@ -2,12 +2,12 @@ name: BOZER gateway typecheck
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/remote-ai-quota-router]
     paths:
       - "cloudflare/bozer-gateway/**"
       - ".github/workflows/bozer-gateway.yml"
   pull_request:
-    branches: [main]
+    branches: [main, feature/remote-ai-quota-router]
     paths:
       - "cloudflare/bozer-gateway/**"
       - ".github/workflows/bozer-gateway.yml"
