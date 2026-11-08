@@ -15,6 +15,7 @@ class ChatRepository(
     private val inferenceLock = Mutex()
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
+    fun clearHistory() = database.clearHistory()
     fun save(message: ChatMessage) = database.save(message)
     fun rememberedFacts(): List<String> = database.rememberedFacts()
     fun clearRememberedFacts() = database.clearRememberedFacts()
