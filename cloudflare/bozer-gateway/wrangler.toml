@@ -12,6 +12,7 @@ database_id = "a346764f-a8ef-4393-b84f-cabb779aabfe"
 
 [vars]
 USER_DAILY_REQUEST_CAP = "20"
-DAILY_PROVIDER_ATTEMPT_BUDGET = "45000"
 GEMINI_MODEL = "gemini-2.5-flash"
 GROQ_MODEL = "openai/gpt-oss-20b"
+PROVIDER_ORDER = "gemini,groq,cerebras,sambanova,mistral,nvidia,openrouter,cloudflare-ai"
+CLOUDFLARE_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
