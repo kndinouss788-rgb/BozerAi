@@ -200,58 +200,35 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
             ) {
             Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 14.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Spacer(Modifier.width(2.dp))
-                    Column {
-                        Text("BOZER", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Ink, letterSpacing = 1.1.sp)
-                        Text(if (sending) "Je suis avec toi" else if (modelReady) "Ton compagnon intelligent" else "Un espace à toi",
-                            fontSize = 12.sp, color = Muted)
-                    }
-                    Spacer(Modifier.weight(1f))
                     Surface(
                         modifier = Modifier.size(42.dp).clickable { settingsOpen = true },
-                        color = Color.White.copy(alpha = 0.78f),
+                        color = Color.White.copy(alpha = 0.72f),
                         shape = CircleShape,
-                        shadowElevation = 5.dp
+                        shadowElevation = 2.dp
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("⚙", fontSize = 19.sp, color = Color(0xFF687584))
+                            Text("☰", fontSize = 20.sp, color = Ink)
                         }
                     }
-                }
-
-                if (!modelReady && !repository.remoteConfigured) {
+                    Spacer(Modifier.weight(1f))
+                    Text("BOZER", fontSize = 17.sp, fontWeight = FontWeight.Medium,
+                        color = Ink, letterSpacing = 1.4.sp)
+                    Spacer(Modifier.weight(1f))
                     Surface(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
-                        color = Color.White.copy(alpha = 0.82f),
-                        shape = RoundedCornerShape(24.dp),
-                        shadowElevation = 3.dp
+                        modifier = Modifier.size(42.dp).clickable {
+                            repository.clearHistory()
+                            messages.clear()
+                            draft = ""
+                        },
+                        color = Color.White.copy(alpha = 0.72f),
+                        shape = CircleShape,
+                        shadowElevation = 2.dp
                     ) {
-                        Column(Modifier.padding(18.dp)) {
-                            Text(if (repository.remoteConfigured) "Le cerveau distant de BOZER est configuré" else "Réveillons le cerveau de BOZER", fontSize = 17.sp,
-                                fontWeight = FontWeight.SemiBold, color = Ink)
-                            Spacer(Modifier.height(6.dp))
-                            Text(if (repository.remoteConfigured) "Les réponses utilisent la passerelle IA distante. Installe aussi le cerveau local pour le mode de secours hors ligne." else "Qwen 0.5B · environ 491 Mo · stockage privé · fonctionne ensuite sans Internet.",
-                                fontSize = 13.sp, lineHeight = 19.sp, color = Muted)
-                            Spacer(Modifier.height(12.dp))
-                            Text(modelStatus, fontSize = 12.sp, color = Color(0xFF686777))
-                            if (modelBusy && downloadProgress > 0f) {
-                                Spacer(Modifier.height(8.dp))
-                                LinearProgressIndicator(progress = { downloadProgress }, modifier = Modifier.fillMaxWidth(),
-                                    color = Accent, trackColor = Color(0xFFDDE6EA))
-                            } else if (modelBusy) {
-                                Spacer(Modifier.height(8.dp))
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Accent,
-                                    trackColor = Color(0xFFE7EDF0))
-                            }
-                            Spacer(Modifier.height(12.dp))
-                            Button(onClick = { installAndLoad() }, enabled = !modelBusy,
-                                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Ink)) {
-                                Text(if (modelBusy) "Préparation en cours…" else "Installer le cerveau")
-                            }
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("＋", fontSize = 24.sp, color = Ink)
                         }
                     }
                 }
@@ -316,8 +293,6 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             BozerOrb(size = 124.dp, active = true)
                             Spacer(Modifier.height(20.dp))
-                            Text("BOZER", fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
-                                color = Ink, letterSpacing = 2.2.sp)
                         }
                     }
                 }
@@ -327,39 +302,50 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
             AlertDialog(
                 onDismissRequest = { settingsOpen = false },
                 containerColor = Color(0xFFFBFCFD),
-                title = { Text("Réglages BOZER", color = Ink, fontWeight = FontWeight.SemiBold) },
+                title = { Text("BOZER", color = Ink, fontWeight = FontWeight.Medium) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Cerveau", color = Ink, fontWeight = FontWeight.Medium)
-                        Text(modelStatus, color = Muted, fontSize = 13.sp)
-                        Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
-                        Text("Tes conversations restent enregistrées sur ce téléphone.", color = Muted, fontSize = 12.sp)
-                        Text("Accès rapide : une petite bulle BOZER peut rester au-dessus de tes applications.", color = Muted, fontSize = 12.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(
+                            onClick = { installAndLoad() },
+                            enabled = !modelBusy && !modelReady,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (modelReady) "Cerveau local prêt" else if (modelBusy) "Installation en cours…" else "Installer le cerveau local", color = Ink)
+                        }
+                        if (modelBusy || modelStatus.startsWith("Installation impossible") || modelStatus.startsWith("Chargement impossible")) {
+                            Text(modelStatus, color = Muted, fontSize = 12.sp)
+                            if (modelBusy) {
+                                LinearProgressIndicator(
+                                    progress = { downloadProgress },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = Accent,
+                                    trackColor = Color(0xFFE7EDF0)
+                                )
+                            }
+                        }
+                        TextButton(
+                            onClick = {
                                 onEnableFloatingBubble()
                                 settingsOpen = false
-                            }) {
-                                Text("Activer la bulle", color = Accent)
-                            }
-                            TextButton(onClick = onDisableFloatingBubble) {
-                                Text("Arrêter la bulle", color = Color(0xFF8A5D5D))
-                            }
-                        }
-                        Text("Mémoire explicite : ${rememberedFacts.size} information(s) retenue(s).", color = Muted, fontSize = 12.sp)
-                        rememberedFacts.asReversed().forEach { fact ->
-                            Text("• $fact", color = Muted, fontSize = 12.sp, lineHeight = 17.sp)
-                        }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Activer la bulle flottante", color = Ink) }
+                        TextButton(
+                            onClick = {
+                                onDisableFloatingBubble()
+                                settingsOpen = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Désactiver la bulle flottante", color = Ink) }
+                        TextButton(
+                            onClick = { confirmClearMemory = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Effacer la mémoire", color = Color(0xFF8A5D5D)) }
                     }
                 },
                 confirmButton = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { confirmClearMemory = true }) {
-                            Text("Effacer la mémoire", color = Color(0xFF8A5D5D))
-                        }
-                        TextButton(onClick = { settingsOpen = false }) {
-                            Text("Fermer", color = Ink)
-                        }
+                    TextButton(onClick = { settingsOpen = false }) {
+                        Text("Fermer", color = Ink)
                     }
                 }
             )
@@ -367,21 +353,14 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                 AlertDialog(
                     onDismissRequest = { confirmClearMemory = false },
                     containerColor = Color(0xFFFBFCFD),
-                    title = { Text("Effacer les informations mémorisées ?", color = Ink) },
-                    text = {
-                        Text(
-                            "BOZER oubliera les ${rememberedFacts.size} information(s) que tu lui as explicitement demandé de retenir. Tes conversations ne seront pas supprimées.",
-                            color = Muted
-                        )
-                    },
+                    title = { Text("Effacer la mémoire ?", color = Ink) },
+                    text = { Text("Cette action efface uniquement les informations mémorisées, pas les conversations.", color = Muted) },
                     confirmButton = {
                         TextButton(onClick = {
                             repository.clearRememberedFacts()
                             rememberedFacts.clear()
                             confirmClearMemory = false
-                        }) {
-                            Text("Effacer", color = Color(0xFF8A5D5D))
-                        }
+                        }) { Text("Effacer", color = Color(0xFF8A5D5D)) }
                     },
                     dismissButton = {
                         TextButton(onClick = { confirmClearMemory = false }) {
