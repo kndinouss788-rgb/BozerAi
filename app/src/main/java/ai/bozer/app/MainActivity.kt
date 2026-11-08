@@ -242,10 +242,11 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     ) {
                         items(messages) { message -> MessageBubble(message) }
                         if (sending) item {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp, top = 2.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                            ) {
                                 BozerOrb(size = 25.dp, active = true)
-                                Spacer(Modifier.width(9.dp))
-                                Text("BOZER prend le temps de réfléchir…", color = Muted, fontSize = 12.sp)
                             }
                         }
                     }
