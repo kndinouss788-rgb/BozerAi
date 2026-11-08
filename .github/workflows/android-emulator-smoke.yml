@@ -77,8 +77,8 @@ jobs:
             adb shell run-as ai.bozer.app test -d files/models
             adb push .ci-cache/qwen2.5-0.5b-instruct-q4_k_m.gguf /data/local/tmp/bozer-qwen.gguf
             adb push .ci-cache/model.sha256 /data/local/tmp/bozer-model.sha256
-            adb exec-out cat /data/local/tmp/bozer-qwen.gguf | adb shell run-as ai.bozer.app sh -c "cat > 'files/models/qwen2.5-0.5b-instruct-q4_k_m.gguf'"
-            adb exec-out cat /data/local/tmp/bozer-model.sha256 | adb shell run-as ai.bozer.app sh -c "cat > 'files/models/qwen2.5-0.5b-instruct-q4_k_m.gguf.sha256'"
+            adb exec-out cat /data/local/tmp/bozer-qwen.gguf | adb shell run-as ai.bozer.app sh -c "cat > '/data/user/0/ai.bozer.app/files/models/qwen2.5-0.5b-instruct-q4_k_m.gguf'"
+            adb exec-out cat /data/local/tmp/bozer-model.sha256 | adb shell run-as ai.bozer.app sh -c "cat > '/data/user/0/ai.bozer.app/files/models/qwen2.5-0.5b-instruct-q4_k_m.gguf.sha256'"
             adb shell run-as ai.bozer.app ls -lh files/models
             adb shell run-as ai.bozer.app test -s "files/models/qwen2.5-0.5b-instruct-q4_k_m.gguf"
             adb logcat -c
