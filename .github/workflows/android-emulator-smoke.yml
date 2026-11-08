@@ -2,7 +2,7 @@ name: BOZER Android emulator and real-brain tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/remote-ai-quota-router]
     paths:
       - "app/**"
       - "build.gradle.kts"
@@ -10,7 +10,7 @@ on:
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
   pull_request:
-    branches: [main]
+    branches: [main, feature/remote-ai-quota-router]
     paths:
       - "app/**"
       - "build.gradle.kts"
