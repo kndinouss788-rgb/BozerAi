@@ -115,7 +115,16 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
     val rememberedFacts = remember { mutableStateListOf<String>().apply { addAll(repository.rememberedFacts()) } }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
-    val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
+    val ambientTransition = rememberInfiniteTransition(label = "pearl-surface")
+    val ambientShift by ambientTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(9000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pearl-drift"
+    )
 
     LaunchedEffect(Unit) {
         delay(1500)
@@ -193,11 +202,29 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
 
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = Pearl) {
-            Box(
-                Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(listOf(Color(0xFFF7F9FA), Color(0xFFFBFCFD), Color(0xFFEEF2F4)))
-                )
-            ) {
+            Box(Modifier.fillMaxSize().background(Pearl)) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            listOf(Color.White.copy(alpha = 0.72f), Color.White.copy(alpha = 0f)),
+                            center = Offset(w * (0.18f + ambientShift * 0.42f), h * 0.24f),
+                            radius = w * 0.72f
+                        ),
+                        radius = w * 0.72f,
+                        center = Offset(w * (0.18f + ambientShift * 0.42f), h * 0.24f)
+                    )
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            listOf(Color(0xFFE7EEF1).copy(alpha = 0.34f), Color.Transparent),
+                            center = Offset(w * (0.84f - ambientShift * 0.30f), h * 0.78f),
+                            radius = w * 0.58f
+                        ),
+                        radius = w * 0.58f,
+                        center = Offset(w * (0.84f - ambientShift * 0.30f), h * 0.78f)
+                    )
+                }
             Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp),
