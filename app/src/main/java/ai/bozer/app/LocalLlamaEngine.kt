@@ -1,10 +1,15 @@
 package ai.bozer.app
 
+/** Small seam that lets repository behavior be tested without loading native weights. */
+interface ConversationModel {
+    fun generate(prompt: String): String
+}
+
 /**
  * JNI facade for the bundled llama.cpp runtime.
  * ChatRepository serializes generation requests.
  */
-class LocalLlamaEngine {
+class LocalLlamaEngine : ConversationModel {
     companion object {
         init { System.loadLibrary("bozer_llama") }
     }
@@ -27,7 +32,7 @@ class LocalLlamaEngine {
     }
 
     @Synchronized
-    fun generate(prompt: String): String {
+    override fun generate(prompt: String): String {
         check(loaded) { "Le modèle BOZER n'est pas chargé." }
         // Allow fuller conversational answers instead of cutting every reply
         // at an overly restrictive 96-token limit.
