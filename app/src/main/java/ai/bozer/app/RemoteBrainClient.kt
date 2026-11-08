@@ -53,7 +53,18 @@ class RemoteBrainClient(
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
             if (status !in 200..299) {
-                throw IllegalStateException("Passerelle BOZER indisponible (HTTP $status).")
+                val serverError = try {
+                    val errorJson = JSONObject(responseText)
+                    val code = errorJson.optString("error").ifBlank { "erreur_inconnue" }
+                    val attempted = errorJson.optJSONArray("attempted")
+                    val providers = if (attempted == null) "" else
+                        (0 until attempted.length()).mapNotNull { attempted.optString(it).takeIf(String::isNotBlank) }
+                            .joinToString(", ").let { if (it.isBlank()) "" else " Fournisseurs essayés : $it." }
+                    "$code.$providers"
+                } catch (_: Exception) {
+                    responseText.take(300).ifBlank { "Réponse serveur vide." }
+                }
+                throw IllegalStateException("Passerelle BOZER HTTP $status : $serverError")
             }
             val answer = JSONObject(responseText).optString("reply").trim()
             check(answer.isNotBlank()) { "Le cerveau distant a renvoyé une réponse vide." }
