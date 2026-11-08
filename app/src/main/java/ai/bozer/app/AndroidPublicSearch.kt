@@ -13,12 +13,17 @@ import java.nio.charset.StandardCharsets
 
 data class InternetSearchResult(val title: String, val url: String, val snippet: String)
 
+/** Injectable boundary for real public web searches performed by the Android process. */
+interface PublicSearchClient {
+    fun search(query: String, limit: Int = 3): List<InternetSearchResult>
+}
+
 /** Real, bounded Wikipedia search executed by the Android process. */
 class AndroidPublicSearch(
     private val connectTimeoutMs: Int = 8_000,
     private val readTimeoutMs: Int = 12_000
-) {
-    fun search(query: String, limit: Int = 3): List<InternetSearchResult> {
+) : PublicSearchClient {
+    override fun search(query: String, limit: Int): List<InternetSearchResult> {
         val cleanQuery = query.trim()
         require(cleanQuery.isNotEmpty()) { "La recherche ne peut pas être vide." }
         require(cleanQuery.length <= 300) { "La recherche est trop longue." }
