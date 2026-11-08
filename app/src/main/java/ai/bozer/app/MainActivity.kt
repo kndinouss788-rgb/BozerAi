@@ -256,8 +256,7 @@ private fun BozerChat(repository: ChatRepository, modelManager: LocalModelManage
                     }
                 }
 
-                if (messages.isEmpty()) {
-                    Spacer(Modifier.weight(1f).fillMaxWidth())
+                if (messages.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         state = listState,
