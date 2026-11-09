@@ -9,6 +9,7 @@ on:
       - "settings.gradle.kts"
       - "gradle.properties"
       - ".github/workflows/android-native.yml"
+      - ".github/scripts/**"
   pull_request:
     branches: [main]
     paths:
