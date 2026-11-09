@@ -18,6 +18,7 @@ on:
       - "settings.gradle.kts"
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
+      - ".github/scripts/**"
   workflow_dispatch:
 
 concurrency:
