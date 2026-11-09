@@ -34,13 +34,14 @@ class BozerFloatingService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        if (!Settings.canDrawOverlays(this)) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
         try {
+            // Satisfy Android's foreground-service start deadline even if the
+            // user has revoked overlay permission since the previous launch.
             promoteToForeground()
+            if (!Settings.canDrawOverlays(this)) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
             if (bubble == null) attachBubble()
         } catch (_: SecurityException) {
             stopSelf()
