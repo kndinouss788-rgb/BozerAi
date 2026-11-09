@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
     private val microphonePermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
-                voiceInput.start()
+                if (!voiceInput.start()) voiceResultHandler = null
             } else {
                 voiceResultHandler = null
                 Toast.makeText(this, "Accès au microphone refusé.", Toast.LENGTH_SHORT).show()
@@ -74,11 +74,12 @@ class MainActivity : ComponentActivity() {
     private fun requestVoiceInput(onTranscript: (String) -> Unit) {
         if (::voiceInput.isInitialized && voiceInput.isListening) {
             voiceInput.cancel()
+            voiceResultHandler = null
             return
         }
         voiceResultHandler = onTranscript
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            voiceInput.start()
+            if (!voiceInput.start()) voiceResultHandler = null
         } else {
             microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
