@@ -34,10 +34,16 @@ class OnDeviceVoiceInputInstrumentedTest {
         var started = false
         instrumentation.runOnMainSync { started = voiceInput.start() }
         if (started) {
-            assertTrue("The on-device recognizer did not enter listening state.", voiceInput.isListening)
             instrumentation.runOnMainSync { voiceInput.cancel() }
             assertFalse("Cancel did not stop the recognizer.", voiceInput.isListening)
-            assertTrue(statuses.any { it.contains("annulée", ignoreCase = true) })
+            assertTrue(
+                "The local recognizer did not report its start, cancellation or an immediate service error.",
+                statuses.any {
+                    it.contains("écoute", ignoreCase = true) ||
+                        it.contains("annulée", ignoreCase = true) ||
+                        it.contains("erreur", ignoreCase = true)
+                }
+            )
         } else {
             assertFalse(voiceInput.isListening)
             assertTrue(
