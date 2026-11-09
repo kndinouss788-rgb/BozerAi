@@ -1,4 +1,4 @@
-name = "bozer-ai-gateway"
+name = "bozerai"
 main = "src/index.ts"
 compatibility_date = "2026-11-07"
 
