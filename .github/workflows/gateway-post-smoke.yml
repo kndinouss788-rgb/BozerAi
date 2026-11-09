@@ -6,6 +6,7 @@ on:
       - feature/remote-ai-quota-router
     paths:
       - ".github/workflows/gateway-post-smoke.yml"
+      - "cloudflare/bozer-gateway/wrangler.toml"
   workflow_dispatch:
 
 permissions:
