@@ -1,6 +1,9 @@
 package ai.bozer.app
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -55,6 +58,31 @@ private val SoftLilac = Color(0xFFF2F5F7)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
+    private lateinit var voiceInput: OnDeviceVoiceInput
+    private var voiceResultHandler: ((String) -> Unit)? = null
+
+    private val microphonePermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                voiceInput.start()
+            } else {
+                voiceResultHandler = null
+                Toast.makeText(this, "Accès au microphone refusé.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private fun requestVoiceInput(onTranscript: (String) -> Unit) {
+        if (::voiceInput.isInitialized && voiceInput.isListening) {
+            voiceInput.cancel()
+            return
+        }
+        voiceResultHandler = onTranscript
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            voiceInput.start()
+        } else {
+            microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     private val overlayPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -87,6 +115,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
+        voiceInput = OnDeviceVoiceInput(
+            this,
+            onText = { transcript ->
+                voiceResultHandler?.invoke(transcript)
+                voiceResultHandler = null
+            },
+            onStatus = { message ->
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            }
+        )
         val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
         setContent {
@@ -96,12 +134,14 @@ class MainActivity : ComponentActivity() {
                 modelManager,
                 engine,
                 ::enableFloatingBubble,
-                ::disableFloatingBubble
+                ::disableFloatingBubble,
+                ::requestVoiceInput
             )
         }
     }
 
     override fun onDestroy() {
+        if (::voiceInput.isInitialized) voiceInput.close()
         if (::engine.isInitialized) engine.close()
         super.onDestroy()
     }
@@ -114,7 +154,8 @@ private fun BozerChat(
     modelManager: LocalModelManager,
     engine: LocalLlamaEngine,
     onEnableFloatingBubble: () -> Unit,
-    onDisableFloatingBubble: () -> Unit
+    onDisableFloatingBubble: () -> Unit,
+    onStartVoiceInput: ((String) -> Unit) -> Unit
 ) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
@@ -392,7 +433,14 @@ private fun BozerChat(
                         keyboardActions = KeyboardActions(onSend = { send() }),
                         singleLine = false
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(
+                        onClick = { onStartVoiceInput { transcript -> draft = transcript } },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Text("🎙", fontSize = 18.sp, color = Accent)
+                    }
+                    Spacer(Modifier.width(4.dp))
                     Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && modelReady,
                         shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF718A9A), disabledContainerColor = Color(0xFFDDE6EA))) {
