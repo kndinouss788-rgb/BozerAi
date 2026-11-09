@@ -41,8 +41,8 @@ class RemoteBrainClient(
             .put("max_tokens", 700)
         val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
-            connectTimeout = 12_000
-            readTimeout = 75_000
+            connectTimeout = 8_000
+            readTimeout = 32_000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
             setRequestProperty("X-Bozer-Client", clientId)
