@@ -6,6 +6,8 @@ import android.content.Intent
 import android.provider.AlarmClock
 import android.net.Uri
 import android.content.pm.PackageManager
+import java.text.Normalizer
+import java.util.Locale
 
 sealed interface PhoneAction {
     data class OpenApp(val appName: String) : PhoneAction
@@ -91,13 +93,18 @@ object PhoneActionPlanner {
             launcherQuery,
             PackageManager.MATCH_ALL
         )
-        val normalizedTarget = appName.trim().lowercase()
+        val normalizedTarget = normalizeAppLabel(appName)
+        if (normalizedTarget in setOf("parametres", "reglages", "settings", "configuration")) {
+            return context.packageManager.getLaunchIntentForPackage("com.android.settings")?.apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        }
         val match = matches.firstOrNull { info ->
             info.activityInfo.packageName != context.packageName &&
-                info.loadLabel(context.packageManager).toString().trim().lowercase() == normalizedTarget
+                normalizeAppLabel(info.loadLabel(context.packageManager).toString()) == normalizedTarget
         } ?: matches.firstOrNull { info ->
             info.activityInfo.packageName != context.packageName &&
-                info.loadLabel(context.packageManager).toString().trim().lowercase()
+                normalizeAppLabel(info.loadLabel(context.packageManager).toString())
                     .contains(normalizedTarget)
         } ?: return null
 
@@ -106,6 +113,19 @@ object PhoneActionPlanner {
             setClassName(match.activityInfo.packageName, match.activityInfo.name)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+    }
+
+    private fun normalizeAppLabel(value: String): String {
+        var normalized = Normalizer.normalize(
+            value.lowercase(Locale.ROOT),
+            Normalizer.Form.NFD
+        ).replace(Regex("\\p{Mn}+"), "").replace(Regex("\\s+"), " ").trim()
+        listOf("l'application ", "l'appli ", "les ", "le ", "la ", "l'").forEach { prefix ->
+            if (normalized.startsWith(prefix)) {
+                normalized = normalized.removePrefix(prefix).trim()
+            }
+        }
+        return normalized
     }
 
     fun createIntent(context: Context, action: PhoneAction): Intent? = when (action) {

@@ -1,6 +1,14 @@
 package ai.bozer.app
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.RepeatMode
@@ -50,23 +58,110 @@ private val SoftLilac = Color(0xFFF2F5F7)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
+    private lateinit var voiceInput: OnDeviceVoiceInput
+    private var voiceResultHandler: ((String) -> Unit)? = null
+
+    private val microphonePermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                if (!voiceInput.start()) voiceResultHandler = null
+            } else {
+                voiceResultHandler = null
+                Toast.makeText(this, "Accès au microphone refusé.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private fun requestVoiceInput(onTranscript: (String) -> Unit) {
+        if (::voiceInput.isInitialized && voiceInput.isListening) {
+            voiceInput.cancel()
+            voiceResultHandler = null
+            return
+        }
+        voiceResultHandler = onTranscript
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            if (!voiceInput.start()) voiceResultHandler = null
+        } else {
+            microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    private val overlayPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (Settings.canDrawOverlays(this)) {
+                startFloatingBubbleService()
+            } else {
+                Toast.makeText(this, "L'autorisation de superposition n'a pas été accordée.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private fun enableFloatingBubble() {
+        if (Settings.canDrawOverlays(this)) {
+            startFloatingBubbleService()
+        } else {
+            overlayPermissionLauncher.launch(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+            )
+        }
+    }
+
+    private fun startFloatingBubbleService() {
+        val intent = Intent(this, BozerFloatingService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
+        else startService(intent)
+    }
+
+    private fun disableFloatingBubble() {
+        stopService(BozerFloatingService.stopIntent(this))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
+        voiceInput = OnDeviceVoiceInput(
+            this,
+            onText = { transcript ->
+                voiceResultHandler?.invoke(transcript)
+                voiceResultHandler = null
+            },
+            onStatus = { message ->
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            }
+        )
         val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(this@MainActivity, repository, modelManager, engine) }
+        setContent {
+            BozerChat(
+                this@MainActivity,
+                repository,
+                modelManager,
+                engine,
+                ::enableFloatingBubble,
+                ::disableFloatingBubble,
+                ::requestVoiceInput
+            )
+        }
     }
 
     override fun onDestroy() {
+        if (::voiceInput.isInitialized) voiceInput.close()
         if (::engine.isInitialized) engine.close()
         super.onDestroy()
     }
 }
 
 @Composable
-private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
+private fun BozerChat(
+    activity: ComponentActivity,
+    repository: ChatRepository,
+    modelManager: LocalModelManager,
+    engine: LocalLlamaEngine,
+    onEnableFloatingBubble: () -> Unit,
+    onDisableFloatingBubble: () -> Unit,
+    onStartVoiceInput: ((String) -> Unit) -> Unit
+) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -135,24 +230,42 @@ private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, m
 
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty() || sending || !modelReady) return
+        if (text.isEmpty() || sending) return
+        val phoneAction = PhoneActionPlanner.parse(text)
+        if (phoneAction == null && !modelReady) return
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
         repository.save(userMessage)
-        val phoneAction = PhoneActionPlanner.parse(text)
         if (phoneAction != null) {
             pendingPhoneAction = phoneAction
             return
         }
         sending = true
         scope.launch {
-            val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
-            val assistantMessage = ChatMessage(role = "assistant", content = answer)
-            messages.add(assistantMessage)
-            repository.save(assistantMessage)
-            sending = false
-            listState.animateScrollToItem(messages.lastIndex)
+            try {
+                val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
+                val assistantMessage = ChatMessage(role = "assistant", content = answer)
+                messages.add(assistantMessage)
+                withContext(Dispatchers.IO) { repository.save(assistantMessage) }
+            } catch (error: Exception) {
+                // Report a real failure instead of leaving the composer stuck
+                // or presenting a fallback as if the model had answered.
+                val detail = error.message?.take(160)?.takeIf { it.isNotBlank() }
+                val failure = ChatMessage(
+                    role = "assistant",
+                    content = if (detail == null) {
+                        "Je n'ai pas pu traiter ce message. Aucun résultat ni action n'a été inventé. Réessaie après avoir vérifié le cerveau local."
+                    } else {
+                        "Je n'ai pas pu traiter ce message : $detail. Aucun résultat ni action n'a été inventé."
+                    }
+                )
+                messages.add(failure)
+                runCatching { withContext(Dispatchers.IO) { repository.save(failure) } }
+            } finally {
+                sending = false
+                if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+            }
         }
     }
 
@@ -326,8 +439,18 @@ private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, m
                         keyboardActions = KeyboardActions(onSend = { send() }),
                         singleLine = false
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && modelReady,
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(
+                        onClick = { onStartVoiceInput { transcript -> draft = transcript } },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Text("🎙", fontSize = 18.sp, color = Accent)
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    Button(
+                        onClick = { send() },
+                        enabled = draft.isNotBlank() && !sending &&
+                            (modelReady || PhoneActionPlanner.parse(draft.trim()) != null),
                         shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF718A9A), disabledContainerColor = Color(0xFFDDE6EA))) {
                         Text("↑", fontSize = 22.sp, color = Color.White)
@@ -347,6 +470,23 @@ private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, m
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
                         Text("Tes conversations et souvenirs restent enregistrés sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        Divider(color = Color(0xFFE8EDF0))
+                        Text("Bulle flottante", color = Ink, fontWeight = FontWeight.Medium)
+                        Text(
+                            "Une petite bulle peut ouvrir BOZER au-dessus de tes autres applications. Android demandera ton autorisation ; une notification persistante indiquera quand elle est active.",
+                            color = Muted,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                settingsOpen = false
+                                onEnableFloatingBubble()
+                            }) { Text("Activer", color = Accent) }
+                            TextButton(onClick = onDisableFloatingBubble) {
+                                Text("Désactiver", color = Color(0xFF8A5555))
+                            }
+                        }
                         TextButton(onClick = {
                             memoryFacts = repository.rememberedFacts()
                             settingsOpen = false

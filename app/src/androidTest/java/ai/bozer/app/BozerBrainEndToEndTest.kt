@@ -86,6 +86,20 @@ class BozerBrainEndToEndTest {
         return reply to elapsed
     }
 
+    private fun submitPhoneAction(command: String, dialogTitle: String) {
+        val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 20_000)
+        assertNotNull("Champ de saisie BOZER introuvable pour l'action Android", field)
+        field!!.click()
+        field.setText(command)
+        val send = device.wait(Until.findObject(By.text("↑")), 10_000)
+        assertNotNull("Bouton d'envoi BOZER introuvable pour l'action Android", send)
+        send!!.click()
+        assertNotNull(
+            "BOZER n'a pas demandé de confirmation pour : " + command,
+            device.wait(Until.findObject(By.text(dialogTitle)), 10_000)
+        )
+    }
+
     @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
         device.executeShellCommand("am force-stop ai.bozer.app")
@@ -174,6 +188,83 @@ class BozerBrainEndToEndTest {
             persistentRecall.contains("chat", ignoreCase = true)
         )
         Log.i("BOZER_E2E", "turn_8_persistent_memory_latency_ms=" + persistentRecallMs)
-        Log.i("BOZER_E2E", "PASS: seven local turns, factual answer, arithmetic, persistent memory, follow-up, real network search and restored history")
+
+        // User-visible memory clearing must not erase conversation history.
+        val historyBeforeMemoryClear = assistantCount()
+        device.wait(Until.findObject(By.text("⚙")), 10_000)?.click()
+        assertNotNull(
+            "Le réglage de mémoire est introuvable",
+            device.wait(Until.findObject(By.textContains("Gérer les souvenirs")), 10_000)
+        )
+        device.findObject(By.textContains("Gérer les souvenirs")).click()
+        assertNotNull(
+            "Le fait explicite n'apparaît pas dans la mémoire locale",
+            device.wait(Until.findObject(By.textContains("animal préféré est le chat")), 10_000)
+        )
+        device.wait(Until.findObject(By.text("Fermer")), 5_000)?.click()
+        device.wait(Until.findObject(By.text("⚙")), 5_000)?.click()
+        device.findObject(By.text("Effacer la mémoire")).click()
+        assertNotNull(
+            "La confirmation d'effacement de mémoire n'est pas affichée",
+            device.wait(Until.findObject(By.text("Effacer la mémoire ?")), 10_000)
+        )
+        device.findObject(By.text("Effacer")).click()
+        val memoryClearDeadline = SystemClock.elapsedRealtime() + 10_000
+        while (rememberedFactCount() != 0 && SystemClock.elapsedRealtime() < memoryClearDeadline) {
+            SystemClock.sleep(200)
+        }
+        assertTrue("La mémoire explicite n'a pas été effacée depuis l'interface", rememberedFactCount() == 0)
+        assertTrue(
+            "L'effacement de la mémoire a supprimé l'historique",
+            assistantCount() == historyBeforeMemoryClear
+        )
+        Log.i("BOZER_E2E", "memory_clear_verified=true; history_preserved=true")
+
+        // The app must not open the settings screen until the user confirms.
+        submitPhoneAction("Ouvre les paramètres", "Ouvrir les paramètres ?")
+        assertTrue("L'action a quitté BOZER avant confirmation", device.hasObject(By.pkg("ai.bozer.app")))
+        device.findObject(By.text("Confirmer")).click()
+        assertTrue(
+            "L'application Paramètres n'a pas été ouverte après confirmation",
+            device.wait(Until.hasObject(By.pkg("com.android.settings")), 10_000)
+        )
+        device.pressBack()
+        assertTrue(device.wait(Until.hasObject(By.pkg("ai.bozer.app")), 10_000))
+        Log.i("BOZER_E2E", "open_settings_confirmation_verified=true")
+
+        // A dial request must be cancelled without opening the dialer.
+        submitPhoneAction("Appelle +226 70 12 34 56", "Ouvrir le composeur ?")
+        assertTrue("Le composeur s'est ouvert avant confirmation", device.hasObject(By.pkg("ai.bozer.app")))
+        device.findObject(By.text("Annuler")).click()
+        assertTrue("BOZER n'est pas resté ouvert après annulation", device.wait(Until.hasObject(By.pkg("ai.bozer.app")), 5_000))
+        Log.i("BOZER_E2E", "sensitive_call_cancel_verified=true; no_call_placed=true")
+
+        // A text message must likewise remain only a proposed action until consent.
+        submitPhoneAction("Envoie un SMS à +226 70 12 34 56 : Bonjour", "Préparer un SMS ?")
+        assertTrue("Le composeur SMS s'est ouvert avant confirmation", device.hasObject(By.pkg("ai.bozer.app")))
+        device.findObject(By.text("Annuler")).click()
+        assertTrue("BOZER n'est pas resté ouvert après annulation du SMS", device.wait(Until.hasObject(By.pkg("ai.bozer.app")), 5_000))
+        Log.i("BOZER_E2E", "sensitive_sms_cancel_verified=true; no_message_sent=true")
+
+        // An alarm is also prepared only after an explicit confirmation.
+        val alarmAction = PhoneAction.SetAlarm(6, 45)
+        val clockPackage = PhoneActionPlanner.createIntent(context, alarmAction)
+            ?.resolveActivity(context.packageManager)?.packageName
+        assertNotNull("Aucune application Horloge ne prend en charge les alarmes", clockPackage)
+        submitPhoneAction("Mets un réveil à 6h45", "Préparer un réveil ?")
+        assertNotNull(
+            "L'heure demandée n'apparaît pas dans la confirmation",
+            device.wait(Until.findObject(By.textContains("06:45")), 5_000)
+        )
+        device.findObject(By.text("Confirmer")).click()
+        assertTrue(
+            "L'application Horloge n'a pas été ouverte après confirmation",
+            device.wait(Until.hasObject(By.pkg(clockPackage!!)), 10_000)
+        )
+        device.pressBack()
+        assertTrue(device.wait(Until.hasObject(By.pkg("ai.bozer.app")), 10_000))
+        Log.i("BOZER_E2E", "alarm_confirmation_verified=true; clock_package=" + clockPackage)
+
+        Log.i("BOZER_E2E", "PASS: seven local turns, factual answer, arithmetic, persistent memory, follow-up, real network search, restored history, memory clearing, confirmed app/alarm actions and cancelled sensitive actions")
     }
 }
