@@ -9,6 +9,7 @@ on:
       - "settings.gradle.kts"
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
+      - ".github/scripts/**"
   pull_request:
     branches: [main]
     paths:
@@ -70,46 +71,7 @@ jobs:
           profile: pixel_2
           emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -cores 2
-          script: |
-            set -euo pipefail
-            APP_FILES="/data/user/0/ai.bozer.app/files"
-            MODEL_DIR="$APP_FILES/models"
-            MODEL_NAME="qwen2.5-0.5b-instruct-q4_k_m.gguf"
-            MODEL_SHA="74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
-            collect_diagnostics() {
-              adb logcat -d -v threadtime -s BOZER_E2E:I BOZER_PERF:I BOZER_SEARCH:I AndroidRuntime:E > bozer-emulator-test.log 2>&1 || true
-              adb exec-out screencap -p > bozer-smoke.png 2>/dev/null || true
-              adb shell dumpsys meminfo ai.bozer.app > bozer-memory.txt 2>&1 || true
-            }
-            trap collect_diagnostics EXIT
-
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
-            adb shell run-as ai.bozer.app sh -c "mkdir -p '$MODEL_DIR'"
-            adb push .ci-cache/qwen2.5-0.5b-instruct-q4_k_m.gguf /data/local/tmp/bozer-qwen.gguf
-            adb push .ci-cache/model.sha256 /data/local/tmp/bozer-model.sha256
-            adb shell chmod 644 /data/local/tmp/bozer-qwen.gguf /data/local/tmp/bozer-model.sha256
-            adb shell run-as ai.bozer.app cp /data/local/tmp/bozer-qwen.gguf "$MODEL_DIR/$MODEL_NAME"
-            adb shell run-as ai.bozer.app cp /data/local/tmp/bozer-model.sha256 "$MODEL_DIR/$MODEL_NAME.sha256"
-            adb shell run-as ai.bozer.app ls -lh "$MODEL_DIR"
-            DEVICE_SHA="$(adb shell run-as ai.bozer.app sha256sum "$MODEL_DIR/$MODEL_NAME" | awk '{print $1}' | tr -d '\\r')"
-            test "$DEVICE_SHA" = "$MODEL_SHA"
-            adb shell run-as ai.bozer.app test -s "$MODEL_DIR/$MODEL_NAME"
-            adb logcat -c
-            gradle :app:connectedDebugAndroidTest --no-daemon
-            adb shell am force-stop ai.bozer.app
-            adb shell am start -n ai.bozer.app/.MainActivity
-            sleep 8
-            pid="$(adb shell pidof ai.bozer.app | tr -d '\\r')"
-            test -n "$pid"
-            echo "BOZER_PID=$pid"
-            collect_diagnostics
-            if grep -Eq 'FATAL EXCEPTION|E/AndroidRuntime|Process: ai[.]bozer[.]app' bozer-emulator-test.log; then
-              cat bozer-emulator-test.log
-              echo "AndroidRuntime reported a fatal application error."
-              exit 1
-            fi
-            test -s bozer-smoke.png
-            echo "MODEL_SHA256=$DEVICE_SHA"
+          script: bash .github/scripts/android-emulator-e2e.sh
       - name: Upload emulator screenshot and brain test logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -118,6 +80,7 @@ jobs:
           path: |
             bozer-smoke.png
             bozer-emulator-test.log
+            bozer-memory.txt
             app/build/outputs/androidTest-results/connected/
             app/build/reports/androidTests/connected/
           if-no-files-found: ignore
