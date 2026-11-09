@@ -87,7 +87,11 @@ class MainActivity : ComponentActivity() {
 
     private val overlayPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (Settings.canDrawOverlays(this)) startFloatingBubbleService()
+            if (Settings.canDrawOverlays(this)) {
+                startFloatingBubbleService()
+            } else {
+                Toast.makeText(this, "L'autorisation de superposition n'a pas été accordée.", Toast.LENGTH_SHORT).show()
+            }
         }
 
     private fun enableFloatingBubble() {
