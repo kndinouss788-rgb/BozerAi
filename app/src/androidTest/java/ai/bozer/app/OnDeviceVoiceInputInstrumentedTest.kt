@@ -25,7 +25,7 @@ class OnDeviceVoiceInputInstrumentedTest {
 
     @After
     fun tearDown() {
-        voiceInput.close()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync { voiceInput.close() }
     }
 
     @Test
