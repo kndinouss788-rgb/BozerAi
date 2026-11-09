@@ -173,12 +173,18 @@ function buildProviders(env: Env, messages: ChatMessage[], maxTokens: number): P
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const pathname = new URL(request.url).pathname;
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: {
+      return new Response(null, { status: 204, headers: {
         "access-control-allow-origin": "*",
-        "access-control-allow-methods": "POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-bozer-client"
+        "access-control-allow-methods": "GET, POST, OPTIONS",
+        "access-control-allow-headers": "content-type, x-bozer-client",
+        "access-control-max-age": "86400"
       }});
+    }
+    // Public, read-only health checks. GET never invokes an AI provider or uses quota.
+    if (request.method === "GET" && ["/", "/health", "/api/health"].includes(pathname)) {
+      return json({ ok: true, service: "bozer-ai-gateway" });
     }
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
