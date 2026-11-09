@@ -136,7 +136,7 @@ async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number, 
 
 function buildProviders(env: Env, messages: ChatMessage[], maxTokens: number): Provider[] {
   const providers: Provider[] = [];
-  const add = (name: string, key: string | undefined, capValue: string | undefined, call: () => Promise<string>) => {
+  const add = (name: string, key: string | undefined, capValue: string | undefined, call: (timeoutMs: number) => Promise<string>) => {
     const cap = positiveInt(capValue, 0);
     if (key && cap > 0) providers.push({ name, cap, call });
   };
