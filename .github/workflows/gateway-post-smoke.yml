@@ -1,0 +1,49 @@
+name: BOZER gateway live POST smoke test
+
+on:
+  push:
+    branches:
+      - feature/remote-ai-quota-router
+    paths:
+      - ".github/workflows/gateway-post-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send one real conversation to the deployed BOZER gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="$(mktemp)"
+          response="$(mktemp)"
+          trap 'rm -f "$payload" "$response"' EXIT
+          cat > "$payload" <<'JSON'
+          {
+            "messages": [
+              {"role":"system","content":"Tu es BOZER, assistant francophone naturel et concis."},
+              {"role":"user","content":"Bonjour BOZER. Réponds en français en une phrase : qui es-tu et comment peux-tu m'aider ?"}
+            ],
+            "max_tokens": 120
+          }
+          JSON
+          code="$(curl --silent --show-error --max-time 35 \
+            --output "$response" --write-out "%{http_code}" \
+            --request POST "https://bozerai.bozerpdg.workers.dev/" \
+            --header "Content-Type: application/json" \
+            --header "X-Bozer-Client: github-actions-smoke-20261109" \
+            --data-binary "@$payload")"
+          echo "HTTP status: $code"
+          cat "$response"
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Gateway POST returned HTTP $code"
+            exit 1
+          fi
+          jq -e '.reply | type == "string" and length > 0' "$response" >/dev/null
+          jq -r '"Provider: " + .provider + "\nBOZER reply: " + .reply' "$response"
