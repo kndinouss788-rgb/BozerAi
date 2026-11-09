@@ -30,10 +30,12 @@ class OnDeviceVoiceInputInstrumentedTest {
 
     @Test
     fun voiceInputUsesOnDeviceAvailabilityAndCanBeStopped() {
-        val started = voiceInput.start()
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        var started = false
+        instrumentation.runOnMainSync { started = voiceInput.start() }
         if (started) {
             assertTrue("The on-device recognizer did not enter listening state.", voiceInput.isListening)
-            voiceInput.cancel()
+            instrumentation.runOnMainSync { voiceInput.cancel() }
             assertFalse("Cancel did not stop the recognizer.", voiceInput.isListening)
             assertTrue(statuses.any { it.contains("annulée", ignoreCase = true) })
         } else {
