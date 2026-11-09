@@ -65,15 +65,14 @@ class PhoneActionInstrumentedTest {
 
     @Test
     fun confirmedOpenAppActionLaunchesAndroidSettings() {
-        val intent = PhoneActionPlanner.createIntent(
-            context,
-            PhoneAction.OpenApp("Settings")
-        )
-        assertNotNull("The launcher query did not find Android Settings", intent)
+        val action = PhoneActionPlanner.parse("Ouvre les paramètres")
+        assertEquals(PhoneAction.OpenApp("les paramètres"), action)
+        val intent = PhoneActionPlanner.createIntent(context, action!!)
+        assertNotNull("The French system-settings alias did not resolve", intent)
         assertEquals("com.android.settings", intent!!.component?.packageName)
         assertNotNull(intent.resolveActivity(context.packageManager))
 
-        val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"))
+        val result = PhoneActionPlanner.execute(context, action)
         assertTrue(result.message, result.launched)
         assertTrue(
             "Android Settings did not become the foreground application",
