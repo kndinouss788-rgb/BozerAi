@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/gateway-post-smoke.yml"
       - "cloudflare/bozer-gateway/wrangler.toml"
+      - "cloudflare/bozer-gateway/src/**"
   workflow_dispatch:
 
 permissions:
