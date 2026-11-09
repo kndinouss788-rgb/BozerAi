@@ -196,12 +196,29 @@ private fun BozerChat(
         }
         sending = true
         scope.launch {
-            val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
-            val assistantMessage = ChatMessage(role = "assistant", content = answer)
-            messages.add(assistantMessage)
-            repository.save(assistantMessage)
-            sending = false
-            listState.animateScrollToItem(messages.lastIndex)
+            try {
+                val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
+                val assistantMessage = ChatMessage(role = "assistant", content = answer)
+                messages.add(assistantMessage)
+                withContext(Dispatchers.IO) { repository.save(assistantMessage) }
+            } catch (error: Exception) {
+                // Report a real failure instead of leaving the composer stuck
+                // or presenting a fallback as if the model had answered.
+                val detail = error.message?.take(160)?.takeIf { it.isNotBlank() }
+                val failure = ChatMessage(
+                    role = "assistant",
+                    content = if (detail == null) {
+                        "Je n'ai pas pu traiter ce message. Aucun résultat ni action n'a été inventé. Réessaie après avoir vérifié le cerveau local."
+                    } else {
+                        "Je n'ai pas pu traiter ce message : $detail. Aucun résultat ni action n'a été inventé."
+                    }
+                )
+                messages.add(failure)
+                runCatching { withContext(Dispatchers.IO) { repository.save(failure) } }
+            } finally {
+                sending = false
+                if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+            }
         }
     }
 
