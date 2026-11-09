@@ -33,6 +33,8 @@ jobs:
             "max_tokens": 120
           }
           JSON
+          # Wait for Cloudflare Git integration to finish deploying this commit.
+          sleep 45
           code="$(curl --silent --show-error --max-time 35 \
             --output "$response" --write-out "%{http_code}" \
             --request POST "https://bozerai.bozerpdg.workers.dev/" \
@@ -43,7 +45,8 @@ jobs:
           cat "$response"
           echo
           if [ "$code" != "200" ]; then
-            echo "::error::Gateway POST returned HTTP $code"
+            detail="$(tr "\n" " " < "$response")"
+            echo "::error::Gateway POST returned HTTP $code: $detail"
             exit 1
           fi
           jq -e '.reply | type == "string" and length > 0' "$response" >/dev/null
