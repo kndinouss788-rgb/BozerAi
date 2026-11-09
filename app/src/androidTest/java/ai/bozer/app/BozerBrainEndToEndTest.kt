@@ -92,7 +92,7 @@ class BozerBrainEndToEndTest {
         device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
         assertNotNull(
             "Le moteur llama.cpp n'a pas affiché l'état prêt. Vérifier le chargement du GGUF.",
-            device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 600_000)
+            device.wait(Until.findObject(By.text("Parle-moi, je t'écoute…")), 600_000)
         )
 
         val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 1)
@@ -153,7 +153,7 @@ class BozerBrainEndToEndTest {
         device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
         assertNotNull(
             "BOZER ne retrouve pas son modèle après redémarrage",
-            device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 180_000)
+            device.wait(Until.findObject(By.text("Parle-moi, je t'écoute…")), 180_000)
         )
         assertNotNull(
             "La salutation n'a pas été restaurée",
