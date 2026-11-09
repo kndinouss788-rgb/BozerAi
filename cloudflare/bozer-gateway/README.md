@@ -15,7 +15,7 @@ The router supports these adapters, in the order configured by `PROVIDER_ORDER`:
 - OpenRouter
 - Cloudflare Workers AI (requires the `AI` binding)
 
-A provider is eligible only when its required secret (or Cloudflare AI binding) and a positive `*_DAILY_REQUEST_CAP` are configured. The router tries eligible providers in order. A failed request or exhausted provider cap moves to the next eligible provider. Provider attempts are reserved before the upstream call, so failed attempts also consume the configured attempt budget.
+A provider is eligible only when its required secret (or Cloudflare AI binding) and a positive `*_DAILY_REQUEST_CAP` are configured. The router tries eligible providers in order. A failed request or exhausted provider cap moves to the next eligible provider. Failed upstream attempts release their provider quota reservation; only a successful provider response consumes the provider's daily cap. A request that fails across all providers also releases the installation's request reservation.
 
 ## Configuration
 
@@ -50,7 +50,8 @@ The Android client calls the HTTPS Worker endpoint using `BOZER_GATEWAY_URL`. Th
 - This router uses configured daily attempt caps; it does not discover each provider's live remaining quota or guarantee free capacity.
 - Provider quotas differ by model, account, tier, region, and time window. Verify each account's current dashboard limits and commercial terms.
 - Every provider attempt writes quota counters to D1. Account for D1 write limits and Workers request/CPU limits when planning capacity.
-- A chain of several unavailable providers can be slow. Provider calls currently have a 7-second timeout each; the Android client timeout is longer to allow fallback.
+- The Worker exposes lightweight GET health checks at `/`, `/health`, and `/api/health`; chat requests remain POST-only.
+- Provider calls have a maximum 5-second timeout each and the complete fallback chain has a 25-second budget. Android allows 32 seconds for the response before falling back to its local model.
 - Add abuse monitoring, a global emergency disable switch, and quota/billing alerts before public launch.
 
 10,000 daily users or any specific daily response volume is **not guaranteed** by combining free tiers. Capacity must be load-tested against actual account quotas and Cloudflare plan limits. When all remote providers are unavailable, Android attempts its local model; that local fallback must also be tested on real target devices.
