@@ -92,7 +92,7 @@ async function callOpenAICompatible(
 }
 
 async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number): Promise<string> {
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = env.GEMINI_MODEL || "gemini-3.5-flash-lite";
   const system = messages.find(m => m.role === "system")?.content || "You are BOZER, a helpful assistant.";
   const contents = messages.filter(m => m.role !== "system").map(m => ({
     role: m.role === "assistant" ? "model" : "user",
