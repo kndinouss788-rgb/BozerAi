@@ -230,12 +230,13 @@ private fun BozerChat(
 
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty() || sending || !modelReady) return
+        if (text.isEmpty() || sending) return
+        val phoneAction = PhoneActionPlanner.parse(text)
+        if (phoneAction == null && !modelReady) return
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
         repository.save(userMessage)
-        val phoneAction = PhoneActionPlanner.parse(text)
         if (phoneAction != null) {
             pendingPhoneAction = phoneAction
             return
