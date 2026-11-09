@@ -21,6 +21,9 @@ class OnDeviceVoiceInput(
 ) : RecognitionListener {
     private val appContext = context.applicationContext
     private var recognizer: SpeechRecognizer? = null
+    @Volatile
+    var isListening: Boolean = false
+        private set
 
     fun isAvailable(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -49,6 +52,7 @@ class OnDeviceVoiceInput(
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
             }
             recognizer?.startListening(request)
+            isListening = true
             onStatus("Écoute locale en cours…")
             true
         } catch (_: RuntimeException) {
@@ -60,6 +64,7 @@ class OnDeviceVoiceInput(
 
     fun cancel() {
         recognizer?.cancel()
+        closeRecognizer()
         onStatus("Écoute annulée.")
     }
 
@@ -68,6 +73,7 @@ class OnDeviceVoiceInput(
     }
 
     private fun closeRecognizer() {
+        isListening = false
         recognizer?.setRecognitionListener(null)
         recognizer?.destroy()
         recognizer = null
@@ -93,7 +99,7 @@ class OnDeviceVoiceInput(
             SpeechRecognizer.ERROR_AUDIO -> "Le microphone a rencontré une erreur."
             SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Android n'a pas accordé l'accès au microphone."
             SpeechRecognizer.ERROR_NETWORK,
-            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "La reconnaissance locale a signalé une erreur réseau ; aucune recherche distante n'a été lancée par BOZER."
+            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Le moteur de reconnaissance locale a signalé une erreur. Aucune recherche Internet n'a été lancée par BOZER."
             SpeechRecognizer.ERROR_NO_MATCH,
             SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Je n'ai pas reconnu de parole. Réessaie."
             SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "La reconnaissance vocale est déjà occupée."
