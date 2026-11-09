@@ -235,6 +235,6 @@ export default {
         console.warn("BOZER provider failed", provider.name, status);
       }
     }
-    return json({ error: "all_providers_unavailable", attempted: failures.map(item => item.split(":")[0]) }, 503);
+    return json({ error: "all_providers_unavailable", attempted: failures.map(item => item.split(":")[0]), provider_errors: failures }, 503);
   }
 };
