@@ -33,12 +33,18 @@ export interface Env {
 }
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
-type Provider = { name: string; cap: number; call: () => Promise<string> };
+type Provider = { name: string; cap: number; call: (timeoutMs: number) => Promise<string> };
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "access-control-allow-origin": "*",
+      "access-control-allow-headers": "content-type, x-bozer-client",
+      "access-control-allow-methods": "GET, POST, OPTIONS"
+    }
   });
 }
 
@@ -59,6 +65,15 @@ async function reserve(db: D1Database, day: string, provider: string, client: st
   return result !== null;
 }
 
+// Undo a reservation when an upstream provider fails. This prevents transient
+// network errors, invalid model names, and provider outages from burning quota.
+async function release(db: D1Database, day: string, provider: string, client: string): Promise<void> {
+  await db.prepare(
+    `UPDATE quota_usage SET requests = CASE WHEN requests > 0 THEN requests - 1 ELSE 0 END
+     WHERE day = ? AND provider = ? AND client_id = ?`
+  ).bind(day, provider, client).run();
+}
+
 class ProviderError extends Error {
   constructor(readonly provider: string, readonly status: number) { super(provider); }
 }
@@ -70,6 +85,7 @@ async function callOpenAICompatible(
   model: string,
   messages: ChatMessage[],
   maxTokens: number,
+  timeoutMs: number,
   extraHeaders: Record<string, string> = {}
 ): Promise<string> {
   const response = await fetch(endpoint, {
@@ -80,7 +96,7 @@ async function callOpenAICompatible(
       ...extraHeaders
     },
     body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.7 }),
-    signal: AbortSignal.timeout(7_000)
+    signal: AbortSignal.timeout(timeoutMs)
   });
   if (!response.ok) throw new ProviderError(provider, response.status);
   const data: any = await response.json();
@@ -91,7 +107,7 @@ async function callOpenAICompatible(
   return answer;
 }
 
-async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number): Promise<string> {
+async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number, timeoutMs: number): Promise<string> {
   const model = env.GEMINI_MODEL || "gemini-2.5-flash";
   const system = messages.find(m => m.role === "system")?.content || "You are BOZER, a helpful assistant.";
   const contents = messages.filter(m => m.role !== "system").map(m => ({
@@ -108,7 +124,7 @@ async function callGemini(env: Env, messages: ChatMessage[], maxTokens: number):
         contents,
         generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 }
       }),
-      signal: AbortSignal.timeout(7_000)
+      signal: AbortSignal.timeout(timeoutMs)
     }
   );
   if (!response.ok) throw new ProviderError("gemini", response.status);
@@ -126,37 +142,44 @@ function buildProviders(env: Env, messages: ChatMessage[], maxTokens: number): P
   };
 
   add("gemini", env.GEMINI_API_KEY, env.GEMINI_DAILY_REQUEST_CAP,
-    () => callGemini(env, messages, maxTokens));
+    (timeoutMs) => callGemini(env, messages, maxTokens, timeoutMs));
   add("groq", env.GROQ_API_KEY, env.GROQ_DAILY_REQUEST_CAP,
-    () => callOpenAICompatible("groq", "https://api.groq.com/openai/v1/chat/completions",
-      env.GROQ_API_KEY!, env.GROQ_MODEL || "openai/gpt-oss-20b", messages, maxTokens));
+    (timeoutMs) => callOpenAICompatible("groq", "https://api.groq.com/openai/v1/chat/completions",
+      env.GROQ_API_KEY!, env.GROQ_MODEL || "openai/gpt-oss-20b", messages, maxTokens, timeoutMs));
   add("cerebras", env.CEREBRAS_API_KEY, env.CEREBRAS_DAILY_REQUEST_CAP,
-    () => callOpenAICompatible("cerebras", "https://api.cerebras.ai/v1/chat/completions",
-      env.CEREBRAS_API_KEY!, env.CEREBRAS_MODEL || "llama3.1-8b", messages, maxTokens));
+    (timeoutMs) => callOpenAICompatible("cerebras", "https://api.cerebras.ai/v1/chat/completions",
+      env.CEREBRAS_API_KEY!, env.CEREBRAS_MODEL || "llama3.1-8b", messages, maxTokens, timeoutMs));
   add("sambanova", env.SAMBANOVA_API_KEY, env.SAMBANOVA_DAILY_REQUEST_CAP,
-    () => callOpenAICompatible("sambanova", "https://api.sambanova.ai/v1/chat/completions",
-      env.SAMBANOVA_API_KEY!, env.SAMBANOVA_MODEL || "Meta-Llama-3.1-8B-Instruct", messages, maxTokens));
+    (timeoutMs) => callOpenAICompatible("sambanova", "https://api.sambanova.ai/v1/chat/completions",
+      env.SAMBANOVA_API_KEY!, env.SAMBANOVA_MODEL || "Meta-Llama-3.1-8B-Instruct", messages, maxTokens, timeoutMs));
   add("mistral", env.MISTRAL_API_KEY, env.MISTRAL_DAILY_REQUEST_CAP,
-    () => callOpenAICompatible("mistral", "https://api.mistral.ai/v1/chat/completions",
-      env.MISTRAL_API_KEY!, env.MISTRAL_MODEL || "ministral-3b-latest", messages, maxTokens));
+    (timeoutMs) => callOpenAICompatible("mistral", "https://api.mistral.ai/v1/chat/completions",
+      env.MISTRAL_API_KEY!, env.MISTRAL_MODEL || "ministral-3b-latest", messages, maxTokens, timeoutMs));
   add("nvidia", env.NVIDIA_API_KEY, env.NVIDIA_DAILY_REQUEST_CAP,
-    () => callOpenAICompatible("nvidia", "https://integrate.api.nvidia.com/v1/chat/completions",
-      env.NVIDIA_API_KEY!, env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct", messages, maxTokens));
+    (timeoutMs) => callOpenAICompatible("nvidia", "https://integrate.api.nvidia.com/v1/chat/completions",
+      env.NVIDIA_API_KEY!, env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct", messages, maxTokens, timeoutMs));
   add("openrouter", env.OPENROUTER_API_KEY, env.OPENROUTER_DAILY_REQUEST_CAP,
-    () => callOpenAICompatible("openrouter", "https://openrouter.ai/api/v1/chat/completions",
+    (timeoutMs) => callOpenAICompatible("openrouter", "https://openrouter.ai/api/v1/chat/completions",
       env.OPENROUTER_API_KEY!, env.OPENROUTER_MODEL || "meta-llama/llama-3.1-8b-instruct:free",
-      messages, maxTokens, { "HTTP-Referer": "https://bozerai.bozerpdg.workers.dev", "X-Title": "BOZER" }));
+      messages, maxTokens, timeoutMs, { "HTTP-Referer": "https://bozerai.bozerpdg.workers.dev", "X-Title": "BOZER" }));
 
   const cloudflareCap = positiveInt(env.CLOUDFLARE_AI_DAILY_REQUEST_CAP, 0);
   if (env.AI && cloudflareCap > 0) {
     providers.push({
       name: "cloudflare-ai",
       cap: cloudflareCap,
-      call: async () => {
-        const result: any = await env.AI!.run(
+      call: async (timeoutMs: number) => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const inference = env.AI!.run(
           (env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.1-8b-instruct") as any,
           { messages, max_tokens: maxTokens }
         );
+        const timeout = new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new ProviderError("cloudflare-ai", 504)), timeoutMs);
+        });
+        let result: any;
+        try { result = await Promise.race([inference, timeout]); }
+        finally { if (timer !== undefined) clearTimeout(timer); }
         const answer = typeof result?.response === "string" ? result.response.trim() :
           typeof result?.result?.response === "string" ? result.result.response.trim() : "";
         if (!answer) throw new ProviderError("cloudflare-ai", 502);
@@ -173,12 +196,15 @@ function buildProviders(env: Env, messages: ChatMessage[], maxTokens: number): P
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: {
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-bozer-client"
-      }});
+    const pathname = new URL(request.url).pathname;
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: {
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET, POST, OPTIONS",
+      "access-control-allow-headers": "content-type, x-bozer-client",
+      "access-control-max-age": "86400"
+    }});
+    if (request.method === "GET" && ["/", "/health", "/api/health"].includes(pathname)) {
+      return json({ ok: true, service: "bozer-ai-gateway" });
     }
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
@@ -203,32 +229,53 @@ export default {
     if (!messages.some(item => item.role === "user")) return json({ error: "missing_user_message" }, 400);
 
     const maxTokens = Math.min(900, Math.max(64, positiveInt(String(body.max_tokens || ""), 700)));
+    const providers = buildProviders(env, messages, maxTokens);
+    if (providers.length === 0) return json({ error: "no_provider_configured" }, 503);
+
     const day = new Date().toISOString().slice(0, 10);
     const userCap = positiveInt(env.USER_DAILY_REQUEST_CAP, 20);
     const userAllowed = await reserve(env.DB, day, "user", client, userCap);
     if (!userAllowed) return json({ error: "user_daily_limit_reached" }, 429);
 
-    const providers = buildProviders(env, messages, maxTokens);
-    if (providers.length === 0) return json({ error: "no_provider_configured" }, 503);
-
     const failures: string[] = [];
-    for (const provider of providers) {
-      const allowed = await reserve(env.DB, day, provider.name, "*", provider.cap);
-      if (!allowed) {
-        failures.push(provider.name + ":daily_cap");
-        continue;
+    const deadline = Date.now() + 25_000;
+    let succeeded = false;
+    try {
+      for (const provider of providers) {
+        const remainingMs = deadline - Date.now();
+        if (remainingMs < 500) {
+          failures.push("request:deadline");
+          break;
+        }
+        const allowed = await reserve(env.DB, day, provider.name, "*", provider.cap);
+        if (!allowed) {
+          failures.push(provider.name + ":daily_cap");
+          continue;
+        }
+        try {
+          const reply = await provider.call(Math.min(5_000, remainingMs));
+          succeeded = true;
+          return json({ reply, provider: provider.name });
+        } catch (error) {
+          const status = error instanceof ProviderError ? error.status : 503;
+          failures.push(provider.name + ":" + status);
+          try { await release(env.DB, day, provider.name, "*"); }
+          catch (quotaError) { console.error("BOZER quota rollback failed", provider.name, quotaError); }
+          // Failed upstream calls do not consume the provider's success quota.
+          // Error details and API credentials are never returned to the client.
+          console.warn("BOZER provider failed", provider.name, status);
+        }
       }
-      try {
-        const reply = await provider.call();
-        return json({ reply, provider: provider.name });
-      } catch (error) {
-        const status = error instanceof ProviderError ? error.status : 503;
-        failures.push(provider.name + ":" + status);
-        // Any provider-side failure triggers failover. Invalid credentials/model
-        // are reported in server logs without exposing keys or details to clients.
-        console.warn("BOZER provider failed", provider.name, status);
+      return json({
+        error: "all_providers_unavailable",
+        attempted: failures.filter(item => item !== "request:deadline").map(item => item.split(":")[0]),
+        deadline_reached: Date.now() >= deadline
+      }, 503);
+    } finally {
+      if (!succeeded) {
+        try { await release(env.DB, day, "user", client); }
+        catch (quotaError) { console.error("BOZER user quota rollback failed", quotaError); }
       }
     }
-    return json({ error: "all_providers_unavailable", attempted: failures.map(item => item.split(":")[0]) }, 503);
   }
 };
