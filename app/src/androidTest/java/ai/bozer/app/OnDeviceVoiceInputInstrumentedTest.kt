@@ -20,17 +20,13 @@ class OnDeviceVoiceInputInstrumentedTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val statuses = mutableListOf<String>()
     private val voiceInput by lazy {
-        OnDeviceVoiceInput(context, onText = {}, onStatus = statuses::add)
+        OnDeviceVoiceInput(context, onText = {}, onStatus = { statuses.add(it) })
     }
 
     @After
     fun tearDown() {
-        if (::unused.isInitialized) Unit
         voiceInput.close()
     }
-
-    // A private lateinit sentinel keeps this test free of a fake speech service.
-    private lateinit var unused: Unit
 
     @Test
     fun voiceInputUsesOnDeviceAvailabilityAndCanBeStopped() {
