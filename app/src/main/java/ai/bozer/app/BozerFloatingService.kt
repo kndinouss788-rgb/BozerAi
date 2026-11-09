@@ -83,7 +83,11 @@ class BozerFloatingService : Service() {
             .setContentIntent(openPendingIntent)
             .setOngoing(true)
             .addAction(
-                Notification.Action.Builder(null, "Arrêter la bulle", stopPendingIntent).build()
+                Notification.Action.Builder(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Arrêter la bulle",
+                    stopPendingIntent
+                ).build()
             )
             .build()
 
