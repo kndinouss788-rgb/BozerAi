@@ -447,7 +447,10 @@ private fun BozerChat(
                         Text("🎙", fontSize = 18.sp, color = Accent)
                     }
                     Spacer(Modifier.width(4.dp))
-                    Button(onClick = { send() }, enabled = draft.isNotBlank() && !sending && modelReady,
+                    Button(
+                        onClick = { send() },
+                        enabled = draft.isNotBlank() && !sending &&
+                            (modelReady || PhoneActionPlanner.parse(draft.trim()) != null),
                         shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF718A9A), disabledContainerColor = Color(0xFFDDE6EA))) {
                         Text("↑", fontSize = 22.sp, color = Color.White)
