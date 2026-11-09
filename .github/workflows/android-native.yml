@@ -10,6 +10,7 @@ on:
       - "gradle.properties"
       - ".github/workflows/android-native.yml"
       - ".github/scripts/**"
+      - ".github/workflows/android-emulator-smoke.yml"
   pull_request:
     branches: [main]
     paths:
