@@ -1,6 +1,11 @@
 package ai.bozer.app
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.RepeatMode
@@ -51,12 +56,49 @@ private val SoftLilac = Color(0xFFF2F5F7)
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
 
+    private val overlayPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (Settings.canDrawOverlays(this)) startFloatingBubbleService()
+        }
+
+    private fun enableFloatingBubble() {
+        if (Settings.canDrawOverlays(this)) {
+            startFloatingBubbleService()
+        } else {
+            overlayPermissionLauncher.launch(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+            )
+        }
+    }
+
+    private fun startFloatingBubbleService() {
+        val intent = Intent(this, BozerFloatingService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
+        else startService(intent)
+    }
+
+    private fun disableFloatingBubble() {
+        stopService(BozerFloatingService.stopIntent(this))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
         val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(this@MainActivity, repository, modelManager, engine) }
+        setContent {
+            BozerChat(
+                this@MainActivity,
+                repository,
+                modelManager,
+                engine,
+                ::enableFloatingBubble,
+                ::disableFloatingBubble
+            )
+        }
     }
 
     override fun onDestroy() {
@@ -66,7 +108,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
+private fun BozerChat(
+    activity: ComponentActivity,
+    repository: ChatRepository,
+    modelManager: LocalModelManager,
+    engine: LocalLlamaEngine,
+    onEnableFloatingBubble: () -> Unit,
+    onDisableFloatingBubble: () -> Unit
+) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -347,6 +396,23 @@ private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, m
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
                         Text("Tes conversations et souvenirs restent enregistrés sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        Divider(color = Color(0xFFE8EDF0))
+                        Text("Bulle flottante", color = Ink, fontWeight = FontWeight.Medium)
+                        Text(
+                            "Une petite bulle peut ouvrir BOZER au-dessus de tes autres applications. Android demandera ton autorisation ; une notification persistante indiquera quand elle est active.",
+                            color = Muted,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                settingsOpen = false
+                                onEnableFloatingBubble()
+                            }) { Text("Activer", color = Accent) }
+                            TextButton(onClick = onDisableFloatingBubble) {
+                                Text("Désactiver", color = Color(0xFF8A5555))
+                            }
+                        }
                         TextButton(onClick = {
                             memoryFacts = repository.rememberedFacts()
                             settingsOpen = false
