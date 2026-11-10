@@ -1,5 +1,15 @@
 package ai.bozer.app
 
+enum class BrainMode(val label: String, val description: String) {
+    AUTO("Automatique", "Internet disponible : serveurs BOZER. Sans Internet : cerveau local."),
+    ONLINE("En ligne", "Utilise uniquement les serveurs distants."),
+    OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
+
+    companion object {
+        fun from(value: String?): BrainMode = entries.firstOrNull { it.name == value } ?: AUTO
+    }
+}
+
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -12,7 +22,7 @@ class ChatRepository(
     private val internetSearch: AndroidPublicSearch = AndroidPublicSearch(),
     private val remoteBrain: RemoteBrainClient? = null
 ) {
-    private val inferenceLock = Mutex()
+    private val inferenceLock = Mutex()\n    @Volatile var brainMode: BrainMode = BrainMode.AUTO\n    @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
     fun clearHistory() = database.clearHistory()
@@ -31,7 +41,19 @@ class ChatRepository(
             ) + "."
         }
 
-        val searchQuery = extractSearchQuery(latestUserText)
+        val onlineAvailable = internetAvailable()
+        val selectedMode = brainMode
+        if (selectedMode == BrainMode.ONLINE && !onlineAvailable) {
+            return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
+        }
+        if (selectedMode == BrainMode.OFFLINE && !model.isLoaded) {
+            return@withLock "Le cerveau local n'est pas encore installé ou chargé. Installe-le une première fois pour utiliser le mode Hors ligne."
+        }
+        if (selectedMode == BrainMode.AUTO && !onlineAvailable && !model.isLoaded) {
+            return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le cerveau local."
+        }
+
+        val searchQuery = if (selectedMode == BrainMode.OFFLINE || !onlineAvailable) null else extractSearchQuery(latestUserText)
         val searchResults = if (searchQuery != null) {
             try {
                 internetSearch.search(searchQuery)
@@ -54,23 +76,26 @@ class ChatRepository(
             }
         }
         try {
-            val answer = if (remoteBrain?.isConfigured == true) {
+            val useRemote = when (selectedMode) {
+                BrainMode.AUTO -> onlineAvailable && remoteBrain?.isConfigured == true
+                BrainMode.ONLINE -> remoteBrain?.isConfigured == true
+                BrainMode.OFFLINE -> false
+            }
+            val answer = if (useRemote) {
                 try {
-                    remoteBrain.reply(history, extraContext)
+                    remoteBrain!!.reply(history, extraContext)
                 } catch (remoteError: Exception) {
-                    if (model.isLoaded) {
-                        try {
-                            model.generate(prompt)
-                        } catch (localError: Exception) {
-                            "La connexion au cerveau distant a échoué et le cerveau local a rencontré une erreur : " +
-                                (localError.message ?: "erreur locale") + "."
-                        }
+                    if (selectedMode == BrainMode.AUTO && model.isLoaded) {
+                        model.generate(prompt)
                     } else {
-                        "Je n'arrive pas à joindre le cerveau distant pour le moment. Vérifie ta connexion Internet puis réessaie. " +
-                            "Détail technique : " + (remoteError.message ?: "erreur réseau") + "."
+                        "Le cerveau distant n'est pas joignable : " +
+                            (remoteError.message ?: "erreur réseau") +
+                            if (selectedMode == BrainMode.AUTO) ". Réessaie quand la connexion sera rétablie." else ". Vérifie Internet ou passe en Automatique."
                     }
                 }
-            } else model.generate(prompt)
+            } else {
+                model.generate(prompt)
+            }
             if (searchResults.isEmpty()) answer else buildString {
                 append(answer)
                 append("\n\nSources Internet (Wikipedia) :\n")
