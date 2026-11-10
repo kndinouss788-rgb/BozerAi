@@ -179,6 +179,7 @@ private fun BozerChat(
     var settingsOpen by remember { mutableStateOf(false) }
     var secretaryOpen by remember { mutableStateOf(false) }
     val secretary = remember { SecretaryRepository(ChatDatabase(context)) }
+    val secretaryCommands = remember { SecretaryCommandProcessor(secretary) }
     val secretaryTasks = remember { mutableStateListOf<SecretaryTask>() }
     var secretaryDraft by remember { mutableStateOf("") }
     var confirmClearMemory by remember { mutableStateOf(false) }
@@ -235,7 +236,7 @@ private fun BozerChat(
     fun send() {
         val text = draft.trim()
         if (text.isEmpty() || sending) return
-        val actionReply = actionExecutor.execute(text)
+        val actionReply = secretaryCommands.execute(text) ?: actionExecutor.execute(text)
         if (actionReply == null && !modelReady && !repository.remoteConfigured) return
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
