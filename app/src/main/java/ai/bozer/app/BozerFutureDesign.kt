@@ -78,6 +78,10 @@ fun FutureIconButton(kind: String, onClick: () -> Unit, size: Dp = 42.dp) {
                 drawLine(FutureInk, Offset(size.width*.5f, size.height*.82f), Offset(size.width*.5f, size.height*.98f), 1.8f)
                 drawLine(FutureInk, Offset(size.width*.34f, size.height*.98f), Offset(size.width*.66f, size.height*.98f), 1.8f)
             }
+            "close" -> Canvas(Modifier.size(18.dp)) {
+                drawLine(FutureInk, Offset(size.width*.18f, size.height*.18f), Offset(size.width*.82f, size.height*.82f), 1.8f, cap = StrokeCap.Round)
+                drawLine(FutureInk, Offset(size.width*.82f, size.height*.18f), Offset(size.width*.18f, size.height*.82f), 1.8f, cap = StrokeCap.Round)
+            }
             "send" -> Canvas(Modifier.size(21.dp)) {
                 val p = Path().apply { moveTo(size.width*.08f, size.height*.48f); lineTo(size.width*.92f, size.height*.08f); lineTo(size.width*.63f, size.height*.92f); lineTo(size.width*.47f, size.height*.57f); close() }
                 drawPath(p, Color.White)
@@ -163,7 +167,10 @@ fun FutureComposer(
         else Box(Modifier.size(44.dp).shadow(8.dp, CircleShape).clip(CircleShape)
             .background(Brush.linearGradient(listOf(Color(0xFF55C7F2), Color(0xFF6589E8))))
             .clickable(enabled = enabled && !sending, onClick = onSend), contentAlignment = Alignment.Center) {
-            FutureIconButton("send", onSend, 42.dp)
+            Canvas(Modifier.size(21.dp)) {
+                val p = Path().apply { moveTo(size.width*.08f, size.height*.48f); lineTo(size.width*.92f, size.height*.08f); lineTo(size.width*.63f, size.height*.92f); lineTo(size.width*.47f, size.height*.57f); close() }
+                drawPath(p, Color.White)
+            }
         }
     }
 }
@@ -191,5 +198,20 @@ private fun FutureSuggestion(title: String, prompt: String, modifier: Modifier, 
         Text("✧", color = Color(0xFF5DBDE9), fontSize = 20.sp)
         Spacer(Modifier.height(8.dp))
         Text(title, color = FutureInk, fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+
+@Composable
+fun FutureSettingLine(title: String, subtitle: String, glyph: String) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Color(0xFFF7FAFC)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(34.dp).clip(CircleShape).background(Color(0xFFE8F7FD)), contentAlignment = Alignment.Center) {
+            Text(glyph, color = Color(0xFF319BC7), fontSize = 19.sp)
+        }
+        Spacer(Modifier.width(11.dp))
+        Column {
+            Text(title, color = FutureInk, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(subtitle, color = FutureMuted, fontSize = 11.sp)
+        }
     }
 }
