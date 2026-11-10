@@ -107,7 +107,7 @@ class BozerBrainEndToEndTest {
         assertRealReply(reply, 10)
         assertTrue("La réponse distante est anormalement vide", reply.length >= 8)
         Log.i("BOZER_E2E", "remote_gateway_verified=true; latency_ms=" + elapsed +
-            "; reply=" + reply.take(320).replace('\\n', ' '))
+            "; reply=" + reply.take(320).replace('\n', ' '))
     }
 
     @Test
