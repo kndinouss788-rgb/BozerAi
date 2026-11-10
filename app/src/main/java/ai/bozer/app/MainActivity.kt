@@ -4,6 +4,9 @@ import android.os.Bundle
 import android.content.Intent
 import android.content.Context
 import android.Manifest
+import android.content.pm.PackageManager
+import android.speech.SpeechRecognizer
+import java.util.Locale
 import android.speech.RecognizerIntent
 import android.net.Uri
 import android.net.ConnectivityManager
@@ -70,6 +73,27 @@ private val Silver = Color(0xFFB8C8D8)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
+    private val voiceResult = mutableStateOf<String?>(null)
+    private val speechLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (result.resultCode == RESULT_OK && !spoken.isNullOrBlank()) voiceResult.value = spoken
+    }
+    private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) launchSpeechRecognition()
+    }
+    private fun launchSpeechRecognition() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) return
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Parle à BOZER")
+        }
+        speechLauncher.launch(intent)
+    }
+    private fun startVoiceInput() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) launchSpeechRecognition()
+        else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+    }
 
     private val overlayPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -106,7 +130,7 @@ class MainActivity : ComponentActivity() {
         val actionExecutor = AndroidActionExecutor(this)
         setContent {
             BozerChat(repository, modelManager, engine, actionExecutor,
-                ::enableFloatingBubble, ::disableFloatingBubble)
+                ::enableFloatingBubble, ::disableFloatingBubble, voiceResult, ::startVoiceInput)
         }
     }
 
@@ -131,7 +155,9 @@ private fun BozerChat(
     engine: LocalLlamaEngine,
     actionExecutor: AndroidActionExecutor,
     onEnableFloatingBubble: () -> Unit,
-    onDisableFloatingBubble: () -> Unit
+    onDisableFloatingBubble: () -> Unit,
+    voiceText: androidx.compose.runtime.MutableState<String?>,
+    onStartVoiceInput: () -> Unit
 ) {
     val context = LocalContext.current
     var brainMode by remember { mutableStateOf(repository.brainMode) }
@@ -143,6 +169,7 @@ private fun BozerChat(
     }
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
+    LaunchedEffect(voiceText.value) { voiceText.value?.let { draft = it; voiceText.value = null } }
     var sending by remember { mutableStateOf(false) }
     var modelReady by remember { mutableStateOf(false) }
     var modelBusy by remember { mutableStateOf(false) }
