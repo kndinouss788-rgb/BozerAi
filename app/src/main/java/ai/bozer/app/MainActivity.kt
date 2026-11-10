@@ -184,6 +184,7 @@ private fun BozerChat(
     var tiktokPrompt by remember { mutableStateOf("") }
     var tiktokVideoUri by remember { mutableStateOf<Uri?>(null) }
     var tiktokStatus by remember { mutableStateOf<String?>(null) }
+    var tiktokGenerating by remember { mutableStateOf(false) }
     val tiktokVideoPicker = androidx.activity.compose.rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -444,6 +445,53 @@ private fun BozerChat(
                         )
                         if (tiktokStatus != null) {
                             Text(tiktokStatus!!, color = Muted, fontSize = 12.sp)
+                        }
+                        Button(
+                            onClick = {
+                                if (!tiktokGenerating) {
+                                    tiktokGenerating = true
+                                    tiktokStatus = "BOZER prépare la publication…"
+                                    scope.launch {
+                                        try {
+                                            val request = """
+Tu es le rédacteur TikTok de BOZER. Prépare une publication en français à partir de ces éléments :
+Description/thème : ${tiktokDescription.ifBlank { "Propose une idée adaptée à BOZER et à son public." }}
+Hashtags souhaités : ${tiktokHashtags.ifBlank { "Choisis des hashtags pertinents et ciblés." }}
+Prompt vidéo : ${tiktokPrompt.ifBlank { "Crée un prompt vidéo vertical TikTok, clair et détaillé." }}
+Réponds STRICTEMENT avec ces trois sections, sans texte avant ni après :
+DESCRIPTION: une légende courte et accrocheuse
+HASHTAGS: 5 à 8 hashtags pertinents
+PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage vertical 9:16)
+                                            """.trimIndent()
+                                            val answer = withContext(Dispatchers.IO) {
+                                                repository.reply(listOf(ChatMessage(role = "user", content = request)))
+                                            }
+                                            fun section(name: String, next: String): String {
+                                                val pattern = Regex("(?is)" + name + "\\s*:\\s*(.*?)(?=" + next + "\\s*:|$)")
+                                                return pattern.find(answer)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+                                            }
+                                            val description = section("DESCRIPTION", "HASHTAGS")
+                                            val hashtags = section("HASHTAGS", "PROMPT")
+                                            val prompt = Regex("(?is)PROMPT\\s*:\\s*(.*)$").find(answer)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+                                            if (description.isNotBlank()) tiktokDescription = description
+                                            if (hashtags.isNotBlank()) tiktokHashtags = hashtags
+                                            if (prompt.isNotBlank()) tiktokPrompt = prompt
+                                            tiktokStatus = if (description.isNotBlank() || hashtags.isNotBlank() || prompt.isNotBlank()) {
+                                                "Publication préparée par BOZER. Relis et modifie le contenu avant de l'envoyer."
+                                            } else answer
+                                        } catch (error: Exception) {
+                                            tiktokStatus = "Génération impossible : ${error.message ?: "erreur inconnue"}"
+                                        } finally {
+                                            tiktokGenerating = false
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = !tiktokGenerating && (modelReady || repository.remoteConfigured),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(15.dp)
+                        ) {
+                            Text(if (tiktokGenerating) "BOZER prépare…" else "✧ Générer description, hashtags et prompt")
                         }
                         Button(
                             onClick = {
