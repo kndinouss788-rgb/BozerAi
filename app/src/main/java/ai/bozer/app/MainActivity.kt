@@ -65,7 +65,6 @@ import kotlinx.coroutines.withContext
 private val Ink = Color(0xFF292638)
 private val Muted = Color(0xFF817C91)
 private val DeepBlue = Color(0xFF203B56)
-private val DeepBlue = Color(0xFF203B56)
 private val Pearl = Color(0xFFFAF9FE)
 private val Lilac = Color(0xFF6688B8)
 private val SoftLilac = Color(0xFFEAF1F8)
@@ -171,7 +170,6 @@ private fun BozerChat(
     }
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
-    fun startVoice() = onStartVoiceInput()
     LaunchedEffect(voiceText.value) { voiceText.value?.let { draft = it; voiceText.value = null } }
     var sending by remember { mutableStateOf(false) }
     var modelReady by remember { mutableStateOf(false) }
