@@ -50,7 +50,7 @@ fun FutureBackdrop(content: @Composable BoxScope.() -> Unit) {
 @Composable
 fun FutureHeader(onMenu: () -> Unit, onProfile: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        FutureIconButton("menu", onMenu, 46.dp)
+        PrototypeIconButton("menu", onMenu, 46.dp)
         Spacer(Modifier.weight(1f))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("B O Z E R", color = FutureInk, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.6.sp)
@@ -64,7 +64,7 @@ fun FutureHeader(onMenu: () -> Unit, onProfile: () -> Unit) {
 }
 
 @Composable
-fun FutureIconButton(kind: String, onClick: () -> Unit, size: Dp = 42.dp) {
+fun PrototypeIconButton(kind: String, onClick: () -> Unit, size: Dp = 42.dp) {
     Box(Modifier.size(size).shadow(8.dp, CircleShape, ambientColor = Color(0x223D9FCB), spotColor = Color(0x223D9FCB))
         .clip(CircleShape).background(Brush.linearGradient(listOf(Color.White.copy(.94f), Color(0xFFEAF7FF).copy(.82f))))
         .border(1.dp, Color.White, CircleShape).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
@@ -155,7 +155,7 @@ fun FutureComposer(
             .padding(start = 9.dp, end = 8.dp, top = 7.dp, bottom = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FutureIconButton("add", onAttach, 38.dp)
+        PrototypeIconButton("add", onAttach, 38.dp)
         BasicTextField(
             value = draft, onValueChange = onDraftChange,
             modifier = Modifier.weight(1f).padding(horizontal = 11.dp, vertical = 12.dp),
@@ -164,7 +164,7 @@ fun FutureComposer(
             decorationBox = { inner -> if (draft.isEmpty()) Text("Message à BOZER…", color = FutureMuted, fontSize = 15.sp); inner() },
             singleLine = false
         )
-        if (draft.isBlank()) FutureIconButton("mic", onVoice, 40.dp)
+        if (draft.isBlank()) PrototypeIconButton("mic", onVoice, 40.dp)
         else Box(Modifier.size(44.dp).shadow(8.dp, CircleShape).clip(CircleShape)
             .background(Brush.linearGradient(listOf(Color(0xFF55C7F2), Color(0xFF6589E8))))
             .clickable(enabled = enabled && !sending, onClick = onSend), contentAlignment = Alignment.Center) {
