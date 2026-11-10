@@ -178,6 +178,18 @@ private fun BozerChat(
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var secretaryOpen by remember { mutableStateOf(false) }
+    var tiktokOpen by remember { mutableStateOf(false) }
+    var tiktokDescription by remember { mutableStateOf("") }
+    var tiktokHashtags by remember { mutableStateOf("") }
+    var tiktokPrompt by remember { mutableStateOf("") }
+    var tiktokVideoUri by remember { mutableStateOf<Uri?>(null) }
+    var tiktokStatus by remember { mutableStateOf<String?>(null) }
+    val tiktokVideoPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        tiktokVideoUri = uri
+        tiktokStatus = if (uri != null) "Vidéo sélectionnée. Tu peux la transmettre à TikTok." else "Aucune vidéo sélectionnée."
+    }
     val secretary = remember { SecretaryRepository(ChatDatabase(context)) }
     val secretaryCommands = remember { SecretaryCommandProcessor(secretary) }
     val secretaryTasks = remember { mutableStateListOf<SecretaryTask>() }
@@ -335,7 +347,7 @@ private fun BozerChat(
                             .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        GlassIconButton("＋", "Ajouter") { /* reserved for future attachments */ }
+                        GlassIconButton("＋", "Créer une publication TikTok") { tiktokOpen = true }
                         BasicTextField(
                             value = draft,
                             onValueChange = { draft = it },
@@ -369,6 +381,102 @@ private fun BozerChat(
                                 Text("↑", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Medium)
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        if (tiktokOpen) {
+            Dialog(onDismissRequest = { tiktokOpen = false }) {
+                Surface(
+                    Modifier.fillMaxWidth().widthIn(max = 440.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = Color(0xF9FFFFFF),
+                    shadowElevation = 24.dp
+                ) {
+                    Column(
+                        Modifier.fillMaxWidth().heightIn(max = 620.dp).verticalScroll(rememberScrollState()).padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(11.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("BOZER • TIKTOK", color = DeepBlue, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                                Text("Prépare ta publication", color = Muted, fontSize = 12.sp)
+                            }
+                            FutureIconButton("close", { tiktokOpen = false }, 38.dp)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                tiktokVideoPicker.launch(
+                                    androidx.activity.result.PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.VideoOnly
+                                    )
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(15.dp)
+                        ) { Text(if (tiktokVideoUri == null) "＋ Choisir une vidéo" else "✓ Vidéo sélectionnée") }
+                        OutlinedTextField(
+                            value = tiktokDescription,
+                            onValueChange = { tiktokDescription = it.take(2200) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Description de la vidéo") },
+                            placeholder = { Text("Présente ta vidéo…") },
+                            minLines = 2,
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                        OutlinedTextField(
+                            value = tiktokHashtags,
+                            onValueChange = { tiktokHashtags = it.take(500) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Hashtags (avec ou sans #)") },
+                            placeholder = { Text("bozer ia technologie innovation") },
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                        OutlinedTextField(
+                            value = tiktokPrompt,
+                            onValueChange = { tiktokPrompt = it.take(1800) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Prompt pour créer/améliorer la vidéo") },
+                            placeholder = { Text("Décris la scène, le style, le mouvement et le format…") },
+                            minLines = 2,
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                        if (tiktokStatus != null) {
+                            Text(tiktokStatus!!, color = Muted, fontSize = 12.sp)
+                        }
+                        Button(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Prompt vidéo BOZER", tiktokPrompt))
+                                tiktokStatus = "Prompt copié. Colle-le dans ton outil de création vidéo."
+                            },
+                            enabled = tiktokPrompt.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(15.dp)
+                        ) { Text("Copier le prompt vidéo") }
+                        Button(
+                            onClick = {
+                                try {
+                                    val caption = TikTokPublisher.buildCaption(tiktokDescription, tiktokHashtags)
+                                    tiktokStatus = if (tiktokVideoUri != null) {
+                                        TikTokPublisher.shareVideo(context, tiktokVideoUri!!, caption)
+                                    } else if (TikTokPublisher.openTikTok(context)) {
+                                        "TikTok est ouvert. Choisis ta vidéo dans l'application, puis ajoute la légende préparée."
+                                    } else {
+                                        "TikTok n'est pas installé sur cet appareil."
+                                    }
+                                } catch (error: Exception) {
+                                    tiktokStatus = "Impossible d'ouvrir TikTok : ${error.message ?: "erreur inconnue"}"
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(15.dp)
+                        ) { Text(if (tiktokVideoUri == null) "Ouvrir TikTok" else "Transmettre la vidéo à TikTok") }
+                        Text(
+                            "BOZER prépare et transmet le contenu. Vérifie le compte, l'aperçu, la visibilité et la légende dans TikTok, puis confirme toi-même la publication.",
+                            color = Muted, fontSize = 11.sp, lineHeight = 16.sp
+                        )
                     }
                 }
             }
