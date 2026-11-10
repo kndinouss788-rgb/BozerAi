@@ -58,10 +58,16 @@ class ChatRepository(
                 try {
                     remoteBrain.reply(history, extraContext)
                 } catch (remoteError: Exception) {
-                    try { model.generate(prompt) } catch (localError: Exception) {
-                        "Le cerveau distant est indisponible et le cerveau local n'est pas prêt. " +
-                            "Distant : " + (remoteError.message ?: "erreur réseau") +
-                            ". Local : " + (localError.message ?: "modèle non chargé") + "."
+                    if (model.isLoaded) {
+                        try {
+                            model.generate(prompt)
+                        } catch (localError: Exception) {
+                            "La connexion au cerveau distant a échoué et le cerveau local a rencontré une erreur : " +
+                                (localError.message ?: "erreur locale") + "."
+                        }
+                    } else {
+                        "Je n'arrive pas à joindre le cerveau distant pour le moment. Vérifie ta connexion Internet puis réessaie. " +
+                            "Détail technique : " + (remoteError.message ?: "erreur réseau") + "."
                     }
                 }
             } else model.generate(prompt)
