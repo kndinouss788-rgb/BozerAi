@@ -177,9 +177,20 @@ private fun BozerChat(
     var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var secretaryOpen by remember { mutableStateOf(false) }
+    val secretary = remember { SecretaryRepository(ChatDatabase(context)) }
+    val secretaryTasks = remember { mutableStateListOf<SecretaryTask>() }
+    var secretaryDraft by remember { mutableStateOf("") }
     var confirmClearMemory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    LaunchedEffect(secretaryOpen) {
+        if (secretaryOpen) {
+            secretaryTasks.clear()
+            secretaryTasks.addAll(withContext(Dispatchers.IO) { secretary.tasks() })
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (modelManager.verifyInstalled()) {
@@ -376,6 +387,9 @@ private fun BozerChat(
                         Spacer(Modifier.height(18.dp))
                         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(17.dp)) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { secretaryOpen = true; settingsOpen = false }, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Ouvrir BOZER SECRETARY  →", color = Color(0xFF258DB8), fontWeight = FontWeight.SemiBold)
+                                }
                                 Text("INTELLIGENCE", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 Text("Mode du cerveau", color = Color(0xFF172538), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                 BrainMode.entries.forEach { mode ->
@@ -435,6 +449,100 @@ private fun BozerChat(
                     },
                     dismissButton = { TextButton(onClick = { confirmClearMemory = false }) { Text("Annuler", color = DeepBlue) } }
                 )
+            }
+        }
+        if (secretaryOpen) {
+            Dialog(onDismissRequest = { secretaryOpen = false }) {
+                Surface(
+                    Modifier.fillMaxWidth().widthIn(max = 440.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = Color(0xF9FFFFFF),
+                    shadowElevation = 24.dp
+                ) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("BOZER SECRETARY", color = DeepBlue, fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                                Text("Tes tâches, au même endroit.", color = Muted, fontSize = 12.sp)
+                            }
+                            FutureIconButton("close", { secretaryOpen = false }, 38.dp)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = secretaryDraft,
+                                onValueChange = { secretaryDraft = it.take(140) },
+                                modifier = Modifier.weight(1f),
+                                placeholder = { Text("Ajouter une tâche…") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    val title = secretaryDraft.trim()
+                                    if (title.isNotEmpty()) {
+                                        scope.launch {
+                                            withContext(Dispatchers.IO) { secretary.createTask(title) }
+                                            secretaryTasks.clear()
+                                            secretaryTasks.addAll(withContext(Dispatchers.IO) { secretary.tasks() })
+                                            secretaryDraft = ""
+                                        }
+                                    }
+                                },
+                                enabled = secretaryDraft.isNotBlank(),
+                                shape = RoundedCornerShape(15.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 13.dp)
+                            ) { Text("+") }
+                        }
+                        if (secretaryTasks.isEmpty()) {
+                            Box(Modifier.fillMaxWidth().padding(vertical = 28.dp), contentAlignment = Alignment.Center) {
+                                Text("Aucune tâche pour le moment. Ajoute ta première tâche.", color = Muted, fontSize = 13.sp)
+                            }
+                        } else {
+                            Column(
+                                Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                secretaryTasks.forEach { task ->
+                                    Row(
+                                        Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
+                                            .background(Color(0xFFF4F8FB)).padding(horizontal = 8.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = task.completed,
+                                            onCheckedChange = { checked ->
+                                                scope.launch {
+                                                    withContext(Dispatchers.IO) {
+                                                        if (checked) secretary.completeTask(task.id) else secretary.reopenTask(task.id)
+                                                    }
+                                                    secretaryTasks.clear()
+                                                    secretaryTasks.addAll(withContext(Dispatchers.IO) { secretary.tasks() })
+                                                }
+                                            }
+                                        )
+                                        Text(
+                                            task.title,
+                                            Modifier.weight(1f),
+                                            color = if (task.completed) Muted else DeepBlue,
+                                            fontSize = 13.sp,
+                                            textDecoration = if (task.completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null
+                                        )
+                                        TextButton(onClick = {
+                                            scope.launch {
+                                                withContext(Dispatchers.IO) { secretary.deleteTask(task.id) }
+                                                secretaryTasks.remove(task)
+                                            }
+                                        }) { Text("×", color = Color(0xFFB65F70), fontSize = 20.sp) }
+                                    }
+                                }
+                            }
+                        }
+                        TextButton(onClick = { secretaryOpen = false }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Fermer", color = Color(0xFF258DB8))
+                        }
+                    }
+                }
             }
         }
     }
