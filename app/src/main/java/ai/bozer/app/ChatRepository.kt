@@ -1,5 +1,11 @@
 package ai.bozer.app
 
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 enum class BrainMode(val label: String, val description: String) {
     AUTO("Automatique", "Internet disponible : serveurs BOZER. Sans Internet : cerveau local."),
     ONLINE("En ligne", "Utilise uniquement les serveurs distants."),
@@ -9,22 +15,6 @@ enum class BrainMode(val label: String, val description: String) {
         fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: AUTO
     }
 }
-
-enum class BrainMode(val label: String, val description: String) {
-    AUTO("Automatique", "Internet disponible : serveurs BOZER. Sans Internet : cerveau local."),
-    ONLINE("En ligne", "Utilise uniquement les serveurs distants."),
-    OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
-
-    companion object {
-        fun from(value: String?): BrainMode = entries.firstOrNull { it.name == value } ?: AUTO
-    }
-}
-
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class ChatRepository(
     private val database: ChatDatabase,
