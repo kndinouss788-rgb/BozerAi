@@ -57,7 +57,7 @@ fun FutureHeader(onMenu: () -> Unit, onProfile: () -> Unit) {
         }
         Spacer(Modifier.weight(1f))
         Box(Modifier.size(46.dp).clip(CircleShape).background(FutureGlass).border(1.dp, Color.White, CircleShape).clickable(onClick = onProfile), contentAlignment = Alignment.Center) {
-            FutureOrb(34.dp)
+            GlassOrbPrototype(34.dp)
         }
     }
 }
@@ -93,7 +93,7 @@ fun FutureIconButton(kind: String, onClick: () -> Unit, size: Dp = 42.dp) {
 }
 
 @Composable
-fun FutureOrb(size: Dp = 54.dp) {
+fun GlassOrbPrototype(size: Dp = 54.dp) {
     val transition = rememberInfiniteTransition(label = "orb")
     val rotation by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(12000, easing = LinearEasing)), label = "rotation")
     val glow by transition.animateFloat(.35f, .78f, infiniteRepeatable(tween(2400), RepeatMode.Reverse), label = "glow")
@@ -113,7 +113,7 @@ fun FutureOrb(size: Dp = 54.dp) {
 }
 
 @Composable
-fun FutureMessageBubble(message: ChatMessage) {
+fun GlassMessagePrototype(message: ChatMessage) {
     val isUser = message.role == "user"
     val appear by animateFloatAsState(1f, animationSpec = tween(420), label = "message-in")
     if (isUser) {
@@ -128,7 +128,7 @@ fun FutureMessageBubble(message: ChatMessage) {
         }
     } else {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Box(Modifier.padding(top = 1.dp).size(38.dp).clip(CircleShape).background(Color.White.copy(.72f)).border(1.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) { FutureOrb(34.dp) }
+            Box(Modifier.padding(top = 1.dp).size(38.dp).clip(CircleShape).background(Color.White.copy(.72f)).border(1.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) { GlassOrbPrototype(34.dp) }
             Spacer(Modifier.width(12.dp))
             Text(message.content, Modifier.weight(1f).padding(top = 5.dp, bottom = 8.dp), color = FutureInk.copy(alpha = appear), fontSize = 15.sp, lineHeight = 24.sp)
         }
@@ -176,9 +176,9 @@ fun FutureComposer(
 }
 
 @Composable
-fun FutureWelcome(onSuggestion: (String) -> Unit, modifier: Modifier = Modifier) {
+fun GlassWelcomePrototype(onSuggestion: (String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        FutureOrb(148.dp)
+        GlassOrbPrototype(148.dp)
         Spacer(Modifier.height(18.dp))
         Text("L’avenir commence ici.", color = FutureInk, fontSize = 25.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-.4).sp)
         Spacer(Modifier.height(7.dp))
