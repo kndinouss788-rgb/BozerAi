@@ -3,19 +3,23 @@ package ai.bozer.app
 import android.os.Bundle
 import android.content.Intent
 import android.content.Context
+import android.Manifest
+import android.speech.RecognizerIntent
 import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.provider.Settings
-import android.speech.RecognizerIntent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -120,10 +124,6 @@ private fun BozerChat(
     onDisableFloatingBubble: () -> Unit
 ) {
     val context = LocalContext.current
-    val voiceLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        if (!spoken.isNullOrBlank()) draft = spoken
-    }
     var brainMode by remember { mutableStateOf(repository.brainMode) }
     fun chooseBrainMode(mode: BrainMode) {
         brainMode = mode
@@ -203,11 +203,53 @@ private fun BozerChat(
         }
     }
 
+    val voiceResult = androidx.activity.compose.rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (!spoken.isNullOrBlank()) draft = listOf(draft.trim(), spoken).filter { it.isNotBlank() }.joinToString(" ")
+    }
+    val voicePermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Parle à BOZER")
+            }
+            voiceResult.launch(intent)
+        }
+    }
+    fun startVoice() { voicePermission.launch(Manifest.permission.RECORD_AUDIO) }
+
     MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
-            FutureBackdrop {
-                Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                    FutureHeader(onMenu = { settingsOpen = true }, onProfile = { settingsOpen = true })
+        Surface(Modifier.fillMaxSize(), color = Pearl) {
+            Box(Modifier.fillMaxSize().background(
+                Brush.linearGradient(listOf(Color(0xFFF9FCFF), Color(0xFFEAF4FB), Color(0xFFF7FAFF), Color(0xFFFDFEFF)))
+            )) {
+                AmbientLiquidBackground()
+                Column(Modifier.fillMaxSize().padding(horizontal = 17.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        GlassIconButton("☰", "Ouvrir les paramètres") { settingsOpen = true }
+                        Spacer(Modifier.weight(1f))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("BOZER", color = DeepBlue, fontSize = 19.sp,
+                                fontWeight = FontWeight.ExtraBold, letterSpacing = 3.2.sp)
+                            Text("INTELLIGENCE • ACTIVE", color = Muted.copy(alpha = .85f),
+                                fontSize = 8.sp, letterSpacing = 1.7.sp)
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Box(Modifier.size(46.dp).clip(CircleShape)
+                            .background(Brush.radialGradient(listOf(Color.White, Color(0xFFDDF5FF), Color(0xFFB9D9EE))))
+                            .border(1.dp, Color.White.copy(alpha=.95f), CircleShape)
+                            .clickable { settingsOpen = true }, contentAlignment = Alignment.Center) {
+                            FutureOrb(34.dp)
+                        }
+                    }
 
                     if (messages.isEmpty()) {
                         FutureWelcome(
@@ -218,40 +260,66 @@ private fun BozerChat(
                         LazyColumn(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             state = listState,
-                            contentPadding = PaddingValues(top = 8.dp, bottom = 18.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            contentPadding = PaddingValues(top = 14.dp, bottom = 22.dp),
+                            verticalArrangement = Arrangement.spacedBy(21.dp)
                         ) {
                             items(messages) { message -> FutureMessageBubble(message) }
                             if (sending) item {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    FutureOrb(36.dp)
-                                    Spacer(Modifier.width(10.dp))
-                                    Text("BOZER réfléchit…", color = Muted, fontSize = 13.sp)
+                                Row(verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(start = 4.dp)) {
+                                    FutureOrb(34.dp)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text("BOZER réfléchit", color = Muted, fontSize = 13.sp)
+                                    ThinkingDots()
                                 }
                             }
                         }
                     }
 
-                    FutureComposer(
-                        draft = draft,
-                        onDraftChange = { draft = it },
-                        onSend = { send() },
-                        onVoice = {
-                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault())
-                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Parle à BOZER")
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 15.dp)
+                            .shadow(22.dp, RoundedCornerShape(34.dp), ambientColor = Color(0x333E759D), spotColor = Color(0x333E759D))
+                            .clip(RoundedCornerShape(34.dp))
+                            .background(Brush.linearGradient(listOf(Color(0xF7FFFFFF), Color(0xEAF1FAFF), Color(0xF9FFFFFF))))
+                            .border(1.dp, Brush.linearGradient(listOf(Color.White, Color(0x99B9D8EB), Color.White)), RoundedCornerShape(34.dp))
+                            .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        GlassIconButton("＋", "Ajouter") { /* reserved for future attachments */ }
+                        BasicTextField(
+                            value = draft,
+                            onValueChange = { draft = it },
+                            modifier = Modifier.weight(1f).padding(horizontal = 11.dp, vertical = 13.dp),
+                            textStyle = TextStyle(color = Ink, fontSize = 15.sp, lineHeight = 21.sp),
+                            cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF65A9D0)),
+                            decorationBox = { inner ->
+                                if (draft.isEmpty()) Text("Écris à BOZER…", color = Color(0xFF8D9AAA), fontSize = 15.sp)
+                                inner()
+                            },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(onSend = { send() }),
+                            singleLine = false
+                        )
+                        if (draft.isBlank()) {
+                            Box(Modifier.size(46.dp).clip(CircleShape)
+                                .background(Brush.linearGradient(listOf(Color(0xFFECF8FF), Color(0xFFDCECF8))))
+                                .border(1.dp, Color.White, CircleShape)
+                                .clickable { startVoice() }, contentAlignment = Alignment.Center) {
+                                Text("⌁", color = DeepBlue, fontSize = 26.sp, fontWeight = FontWeight.Light)
                             }
-                            try { voiceLauncher.launch(intent) } catch (_: Exception) { }
-                        },
-                        onAttach = { settingsOpen = true },
-                        enabled = draft.isNotBlank() && !sending && when (brainMode) {
-                            BrainMode.AUTO -> modelReady || repository.remoteConfigured
-                            BrainMode.ONLINE -> repository.remoteConfigured
-                            BrainMode.OFFLINE -> modelReady
-                        },
-                        sending = sending
-                    )
+                        } else {
+                            Box(Modifier.size(46.dp).shadow(9.dp, CircleShape)
+                                .clip(CircleShape)
+                                .background(Brush.linearGradient(listOf(Color(0xFF294E70), Color(0xFF102B49))))
+                                .clickable(enabled = !sending && when (brainMode) {
+                                    BrainMode.AUTO -> modelReady || repository.remoteConfigured
+                                    BrainMode.ONLINE -> repository.remoteConfigured
+                                    BrainMode.OFFLINE -> modelReady
+                                }) { send() }, contentAlignment = Alignment.Center) {
+                                Text("↑", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -259,173 +327,219 @@ private fun BozerChat(
         if (settingsOpen) {
             AlertDialog(
                 onDismissRequest = { settingsOpen = false },
-                containerColor = Color(0xFFFFFDFF),
-                title = { Text("BOZER", color = Ink, fontWeight = FontWeight.Bold) },
+                containerColor = Color(0xFFF9FCFF),
+                shape = RoundedCornerShape(30.dp),
+                title = {
+                    Column {
+                        Text("Paramètres", color = DeepBlue, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                        Text("Personnalise ton expérience BOZER", color = Muted, fontSize = 12.sp)
+                    }
+                },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("Mode du cerveau", color = Ink, fontWeight = FontWeight.SemiBold)
-                        BrainMode.entries.forEach { mode ->
-                            Row(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-                                    .background(if (brainMode == mode) SoftLilac else Color.Transparent)
-                                    .clickable { chooseBrainMode(mode) }
-                                    .padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(selected = brainMode == mode, onClick = { chooseBrainMode(mode) })
-                                Column(Modifier.weight(1f)) {
-                                    Text(mode.label, color = Ink, fontWeight = FontWeight.Medium)
-                                    Text(mode.description, color = Muted, fontSize = 11.sp, lineHeight = 15.sp)
+                    Column(Modifier.fillMaxWidth().heightIn(max = 470.dp).padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SettingsSection("INTELLIGENCE", "Mode du cerveau") {
+                            BrainMode.entries.forEach { mode ->
+                                Row(
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
+                                        .background(if (brainMode == mode) Color(0xFFE7F3FC) else Color.White.copy(alpha=.72f))
+                                        .clickable { chooseBrainMode(mode) }
+                                        .padding(horizontal = 9.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(selected = brainMode == mode, onClick = { chooseBrainMode(mode) },
+                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF477EA8)))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(mode.label, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                        Text(mode.description, color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
+                                    }
                                 }
                             }
+                            TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady) {
+                                Text(if (modelReady) "Cerveau local prêt" else if (modelBusy) "Installation en cours…" else "Installer le cerveau local")
+                            }
+                            if (modelBusy || modelStatus.startsWith("Installation impossible") || modelStatus.startsWith("Chargement impossible")) {
+                                Text(modelStatus, color = Muted, fontSize = 11.sp)
+                                if (modelBusy) LinearProgressIndicator(progress = { downloadProgress },
+                                    modifier = Modifier.fillMaxWidth(), color = Color(0xFF6BA6CE), trackColor = SoftLilac)
+                            }
                         }
-                        TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady,
-                            modifier = Modifier.fillMaxWidth()) {
-                            Text(if (modelReady) "Cerveau local prêt" else if (modelBusy)
-                                "Installation en cours…" else "Installer le cerveau local", color = Ink)
+                        SettingsSection("APPAREIL", "Commandes rapides") {
+                            SettingsAction("Bulle flottante", "Activer la bulle sur les autres applications") {
+                                onEnableFloatingBubble(); settingsOpen = false
+                            }
+                            SettingsAction("Bulle flottante", "Désactiver la bulle") {
+                                onDisableFloatingBubble(); settingsOpen = false
+                            }
                         }
-                        if (modelBusy || modelStatus.startsWith("Installation impossible") ||
-                            modelStatus.startsWith("Chargement impossible")) {
-                            Text(modelStatus, color = Muted, fontSize = 12.sp)
-                            if (modelBusy) LinearProgressIndicator(
-                                progress = { downloadProgress }, modifier = Modifier.fillMaxWidth(),
-                                color = Lilac, trackColor = SoftLilac
-                            )
-                        }
-                        TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false },
-                            modifier = Modifier.fillMaxWidth()) {
-                            Text("Activer la bulle flottante", color = Ink)
-                        }
-                        TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false },
-                            modifier = Modifier.fillMaxWidth()) {
-                            Text("Désactiver la bulle flottante", color = Ink)
-                        }
-                        TextButton(onClick = { confirmClearMemory = true },
-                            modifier = Modifier.fillMaxWidth()) {
-                            Text("Effacer la mémoire", color = Color(0xFF9A5D69))
+                        SettingsSection("DONNÉES", "Mémoire de BOZER") {
+                            SettingsAction("Effacer la mémoire", "Supprimer les faits mémorisés") { confirmClearMemory = true }
                         }
                     }
                 },
-                confirmButton = {
-                    TextButton(onClick = { settingsOpen = false }) { Text("Fermer", color = Ink) }
-                }
+                confirmButton = { TextButton(onClick = { settingsOpen = false }) { Text("Fermer", color = DeepBlue) } }
             )
             if (confirmClearMemory) {
                 AlertDialog(
                     onDismissRequest = { confirmClearMemory = false },
-                    containerColor = Color(0xFFFFFDFF),
-                    title = { Text("Effacer la mémoire ?", color = Ink) },
+                    containerColor = Color(0xFFF9FCFF), shape = RoundedCornerShape(26.dp),
+                    title = { Text("Effacer la mémoire ?", color = DeepBlue) },
                     text = { Text("Cette action efface uniquement les informations mémorisées, pas les conversations.", color = Muted) },
                     confirmButton = {
-                        TextButton(onClick = {
-                            repository.clearRememberedFacts()
-                            confirmClearMemory = false
-                        }) { Text("Effacer", color = Color(0xFF9A5D69)) }
+                        TextButton(onClick = { repository.clearRememberedFacts(); confirmClearMemory = false }) {
+                            Text("Effacer", color = Color(0xFFB65F70))
+                        }
                     },
-                    dismissButton = {
-                        TextButton(onClick = { confirmClearMemory = false }) { Text("Annuler", color = Ink) }
-                    }
+                    dismissButton = { TextButton(onClick = { confirmClearMemory = false }) { Text("Annuler", color = DeepBlue) } }
                 )
             }
         }
     }
+
+@Composable
+private fun AmbientLiquidBackground() {
+    val transition = rememberInfiniteTransition(label = "liquid")
+    val drift by transition.animateFloat(initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(9000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
+    Canvas(Modifier.fillMaxSize()) {
+        val w = size.width; val h = size.height
+        drawCircle(Color(0x557FD5F0), radius = w * .48f, center = androidx.compose.ui.geometry.Offset(w * (.12f + .08f * drift), h * .20f))
+        drawCircle(Color(0x337AA8E8), radius = w * .42f, center = androidx.compose.ui.geometry.Offset(w * (.94f - .06f * drift), h * .58f))
+        drawCircle(Color(0x22B8E9E8), radius = w * .55f, center = androidx.compose.ui.geometry.Offset(w * .18f, h * (.94f - .04f * drift)))
+    }
 }
 
 @Composable
-private fun WelcomePanel(onSuggestion: (String) -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center) {
-        Box(
-            Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                .clip(RoundedCornerShape(34.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFFF7E9F6), Color(0xFFEDE8FF), Color(0xFFE8F4F7))))
-                .padding(vertical = 28.dp, horizontal = 20.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                RobotBadge(142.dp)
-                Spacer(Modifier.height(18.dp))
-                Text("Ton compagnon IA.", color = Ink, fontSize = 25.sp,
-                    fontWeight = FontWeight.Bold)
-                Text("Toujours là. Toujours prêt.", color = Muted, fontSize = 14.sp)
+private fun FutureOrb(size: androidx.compose.ui.unit.Dp) {
+    val transition = rememberInfiniteTransition(label = "orb")
+    val pulse by transition.animateFloat(.88f, 1.04f,
+        infiniteRepeatable(tween(2100, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
+    Canvas(Modifier.size(size)) {
+        val c = androidx.compose.ui.geometry.Offset(this.size.width/2, this.size.height/2)
+        val r = this.size.minDimension/2
+        drawCircle(Color(0x668BDDF2), r * pulse, c)
+        drawCircle(Color(0xFFEAFBFF), r * .78f, c)
+        drawCircle(Color(0xFF7FB6D6), r * .59f, c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = r*.07f))
+        drawCircle(Color(0xFF234B70), r * .39f, c)
+        drawCircle(Color.White, r * .12f, androidx.compose.ui.geometry.Offset(c.x-r*.14f,c.y-r*.04f))
+        drawCircle(Color(0xFF9DEBFA), r * .09f, androidx.compose.ui.geometry.Offset(c.x+r*.16f,c.y-r*.04f))
+        drawCircle(Color(0xFFB7F4FF), r * .045f, androidx.compose.ui.geometry.Offset(c.x+r*.48f,c.y-r*.48f))
+        drawCircle(Color(0xFFB7F4FF), r * .035f, androidx.compose.ui.geometry.Offset(c.x-r*.49f,c.y+r*.18f))
+    }
+}
+
+@Composable
+private fun GlassIconButton(label: String, description: String, onClick: () -> Unit) {
+    Box(Modifier.size(43.dp).clip(CircleShape)
+        .background(Color.White.copy(alpha=.78f))
+        .border(1.dp, Color.White.copy(alpha=.95f), CircleShape)
+        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+        Text(label, color = DeepBlue, fontSize = 21.sp)
+    }
+}
+
+@Composable
+private fun FutureWelcome(onSuggestion: (String) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Box(Modifier.size(178.dp), contentAlignment = Alignment.Center) {
+            val transition = rememberInfiniteTransition(label = "welcome")
+            val rotation by transition.animateFloat(0f, 360f,
+                infiniteRepeatable(tween(18000, easing = LinearEasing)), label = "rotation")
+            Canvas(Modifier.fillMaxSize()) {
+                val center = androidx.compose.ui.geometry.Offset(size.width/2,size.height/2)
+                drawCircle(Color(0x2283CDE8), size.minDimension*.48f, center,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width=1.2.dp.toPx()))
+                drawCircle(Color(0x4485BDE0), size.minDimension*.39f, center,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width=1.dp.toPx()))
+                val angle = Math.toRadians(rotation.toDouble())
+                drawCircle(Color(0xFF77CDE7), 4.dp.toPx(),
+                    androidx.compose.ui.geometry.Offset(center.x + kotlin.math.cos(angle).toFloat()*size.minDimension*.48f,
+                        center.y + kotlin.math.sin(angle).toFloat()*size.minDimension*.48f))
             }
+            FutureOrb(112.dp)
         }
-        Text("Salut ! Quel est ton premier objectif aujourd’hui ?",
-            color = Ink, fontSize = 21.sp, lineHeight = 28.sp,
-            fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().padding(top = 13.dp))
-        Text("Dis-moi ce que tu veux faire. On avance ensemble.",
-            color = Muted, fontSize = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = 7.dp, bottom = 18.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(11.dp)) {
-            SuggestionCard("✦", "Organiser ma journée", Modifier.weight(1f)) {
+        Spacer(Modifier.height(12.dp))
+        Text("L'intelligence en mouvement.", color = DeepBlue, fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text("Une idée, une question, une action. Commençons.",
+            color = Muted, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(top=7.dp, bottom=22.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            FutureSuggestion("✧", "Organiser ma journée", Modifier.weight(1f)) {
                 onSuggestion("Aide-moi à organiser ma journée.")
             }
-            SuggestionCard("◇", "Faire avancer un projet", Modifier.weight(1f)) {
+            FutureSuggestion("◈", "Faire avancer un projet", Modifier.weight(1f)) {
                 onSuggestion("Aide-moi à faire avancer mon projet.")
             }
         }
-        Spacer(Modifier.height(14.dp))
     }
 }
 
 @Composable
-private fun SuggestionCard(icon: String, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Column(
-        modifier.clip(RoundedCornerShape(23.dp))
-            .background(Color.White.copy(alpha = 0.78f))
-            .clickable(onClick = onClick).padding(15.dp)
-    ) {
-        Text(icon, color = Lilac, fontSize = 22.sp)
-        Spacer(Modifier.height(12.dp))
-        Text(label, color = Ink, fontSize = 13.sp, lineHeight = 18.sp,
-            fontWeight = FontWeight.SemiBold)
+private fun FutureSuggestion(icon: String, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Column(modifier.clip(RoundedCornerShape(22.dp))
+        .background(Color.White.copy(alpha=.68f))
+        .border(1.dp, Color.White, RoundedCornerShape(22.dp))
+        .clickable(onClick=onClick).padding(15.dp)) {
+        Text(icon, color = Color(0xFF5D9ABD), fontSize=22.sp)
+        Spacer(Modifier.height(10.dp))
+        Text(label, color=DeepBlue, fontSize=12.sp, lineHeight=17.sp, fontWeight=FontWeight.SemiBold)
     }
 }
 
 @Composable
-private fun RoundControl(label: String, onClick: () -> Unit) {
-    Box(Modifier.size(42.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.82f))
-        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Text(label, color = Ink, fontSize = 20.sp)
-    }
-}
-
-@Composable
-private fun RobotBadge(size: androidx.compose.ui.unit.Dp) {
-    Box(
-        Modifier.size(size).shadow(12.dp, CircleShape)
-            .background(Brush.radialGradient(listOf(Color.White, Color(0xFFF4EAFE), Color(0xFFE5D5F8))), CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        androidx.compose.foundation.Image(
-            painter = painterResource(R.drawable.ic_bozer_robot),
-            contentDescription = "Robot BOZER",
-            modifier = Modifier.size(size * 0.82f)
-        )
-    }
-}
-
-@Composable
-private fun MessageBubble(message: ChatMessage) {
+private fun FutureMessageBubble(message: ChatMessage) {
     val isUser = message.role == "user"
+    var visible by remember(message.content) { mutableStateOf(false) }
+    LaunchedEffect(message.content) { visible = true }
+    val alpha by animateFloatAsState(if (visible) 1f else 0f, tween(420), label="messageFade")
     if (isUser) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Surface(
-                color = Color(0xFFEDE5FA),
-                shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp,
-                    bottomEnd = 7.dp, bottomStart = 22.dp),
-                modifier = Modifier.widthIn(max = 310.dp)
-            ) {
-                Text(message.content, modifier = Modifier.padding(horizontal = 17.dp, vertical = 13.dp),
-                    color = Ink, fontSize = 15.sp, lineHeight = 22.sp)
+            Box(Modifier.widthIn(max=310.dp).clip(RoundedCornerShape(24.dp,24.dp,8.dp,24.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFFE7F2FA), Color(0xFFDCECF7))))
+                .border(1.dp, Color.White.copy(alpha=.9f), RoundedCornerShape(24.dp,24.dp,8.dp,24.dp))
+                .padding(horizontal=17.dp, vertical=13.dp)) {
+                Text(message.content, color=Ink, fontSize=15.sp, lineHeight=22.sp, modifier=Modifier.alpha(alpha))
             }
         }
     } else {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.Top) {
-            RobotBadge(34.dp)
-            Spacer(Modifier.width(10.dp))
-            Text(message.content, modifier = Modifier.weight(1f).padding(top = 4.dp, bottom = 5.dp),
-                color = Ink, fontSize = 15.sp, lineHeight = 23.sp)
+        Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.Top) {
+            FutureOrb(34.dp)
+            Spacer(Modifier.width(12.dp))
+            Text(message.content, modifier=Modifier.weight(1f).padding(top=4.dp,bottom=5.dp).alpha(alpha),
+                color=Ink, fontSize=15.sp, lineHeight=24.sp)
         }
+    }
+}
+
+@Composable
+private fun ThinkingDots() {
+    val transition = rememberInfiniteTransition(label="dots")
+    val alpha by transition.animateFloat(.25f,1f,
+        infiniteRepeatable(tween(650),RepeatMode.Reverse),label="dotAlpha")
+    Text(" ···", color=Color(0xFF6BA6CE).copy(alpha=alpha), fontSize=19.sp)
+}
+
+@Composable
+private fun SettingsSection(kicker: String, title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+        .background(Color.White.copy(alpha=.76f))
+        .border(1.dp, Color.White, RoundedCornerShape(20.dp)).padding(12.dp),
+        verticalArrangement=Arrangement.spacedBy(5.dp)) {
+        Text(kicker, color=Color(0xFF6D9DBD), fontSize=9.sp, letterSpacing=1.5.sp, fontWeight=FontWeight.Bold)
+        Text(title, color=DeepBlue, fontSize=14.sp, fontWeight=FontWeight.SemiBold)
+        content()
+    }
+}
+
+@Composable
+private fun SettingsAction(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).clickable(onClick=onClick)
+        .padding(vertical=8.dp, horizontal=3.dp), verticalAlignment=Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color=Ink, fontSize=13.sp, fontWeight=FontWeight.Medium)
+            Text(subtitle, color=Muted, fontSize=10.sp)
+        }
+        Text("›", color=Color(0xFF6D9DBD), fontSize=23.sp)
     }
 }
