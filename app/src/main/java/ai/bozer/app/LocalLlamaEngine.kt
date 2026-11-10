@@ -15,6 +15,7 @@ class LocalLlamaEngine {
 
     @Volatile private var loaded = false
     @Volatile private var nativeAttempted = false
+    val isLoaded: Boolean get() = loaded
 
     @Synchronized
     fun load(modelPath: String) {
