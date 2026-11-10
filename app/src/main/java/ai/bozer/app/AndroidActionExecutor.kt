@@ -159,7 +159,7 @@ class AndroidActionExecutor(private val activity: Activity) {
 
     companion object {
         private val OPEN_APP = Regex(
-            """(?:s'il te plaît\\s+)?(?:ouvre|lance|démarre|demarre)\\s+(?:l'application\\s+|l'appli\\s+|application\\s+)?(.+)""",
+            """(?:s'il te plaît\s+)?(?:ouvre|lance|démarre|demarre)\s+(?:l'application\s+|l'appli\s+|application\s+)?(.+)""",
             RegexOption.IGNORE_CASE
         )
     }
@@ -186,22 +186,22 @@ object AndroidCommandParser {
         val normalized = normalize(text)
         if (normalized in setOf("ouvre les parametres", "ouvre les reglages", "ouvre les parametres du telephone")) return AndroidCommand.OpenSettings
 
-        Regex("""^(?:appelle|telephone)\\s+(?:le\\s+)?([+0-9][+0-9() .-]{5,})$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:appelle|telephone)\s+(?:le\s+)?([+0-9][+0-9() .-]{5,})$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.Dial(it.groupValues[1].trim()) }
 
-        Regex("""^(?:envoie|envoye)\\s+(?:un\\s+)?(?:sms|message)\\s+(?:a|au)\\s+([+0-9][+0-9() .-]{5,})\\s+(?:disant|qui dit|: )\\s*(.+)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:envoie|envoye)\s+(?:un\s+)?(?:sms|message)\s+(?:a|au)\s+([+0-9][+0-9() .-]{5,})\s+(?:disant|qui dit|: )\s*(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.ComposeSms(it.groupValues[1].trim(), it.groupValues[2].trim()) }
 
-        Regex("""^(?:ouvre|va sur|visite)\\s+(?:le site\\s+)?((?:https?://)?[a-z0-9.-]+\\.[a-z]{2,}(?:/[^ ]*)?)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:ouvre|va sur|visite)\s+(?:le site\s+)?((?:https?://)?[a-z0-9.-]+\.[a-z]{2,}(?:/[^ ]*)?)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.OpenUrl(it.groupValues[1]) }
 
-        Regex("""^(?:cherche sur internet|recherche sur internet|cherche sur le web)\\s+(.+)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:cherche sur internet|recherche sur internet|cherche sur le web)\s+(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.SearchWeb(it.groupValues[1].trim()) }
 
-        Regex("""^(?:itineraire|navigue|guide-moi)\\s+(?:vers|a|au|aux)\\s+(.+)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:itineraire|navigue|guide-moi)\s+(?:vers|a|au|aux)\s+(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.Navigate(it.groupValues[1].trim()) }
 
-        Regex("""^(?:mets|programme|regle)\\s+(?:une\\s+)?alarme\\s+(?:a|à)\\s+(\\d{1,2})(?:h|:)(\\d{0,2})(?:\\s+(?:pour|intitulee)\\s+(.+))?$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:mets|programme|regle)\s+(?:une\s+)?alarme\s+(?:a|à)\s+(\d{1,2})(?:h|:)(\d{0,2})(?:\s+(?:pour|intitulee)\s+(.+))?$""", RegexOption.IGNORE_CASE)
             .find(text)?.let {
                 val hour = it.groupValues[1].toIntOrNull() ?: return null
                 val minute = it.groupValues[2].ifBlank { "0" }.toIntOrNull() ?: return null
@@ -209,7 +209,7 @@ object AndroidCommandParser {
                 return AndroidCommand.SetAlarm(hour, minute, it.groupValues.getOrNull(3).orEmpty().ifBlank { "BOZER" })
             }
 
-        Regex("""^(?:lance|mets)\\s+(?:un\\s+)?minuteur\\s+(\\d{1,4})\\s*(s|sec|seconde|secondes|min|minute|minutes)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:lance|mets)\s+(?:un\s+)?minuteur\s+(\d{1,4})\s*(s|sec|seconde|secondes|min|minute|minutes)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let {
                 val amount = it.groupValues[1].toIntOrNull() ?: return null
                 val seconds = if (it.groupValues[2].lowercase().startsWith("m")) amount * 60 else amount
@@ -217,10 +217,10 @@ object AndroidCommandParser {
                 return AndroidCommand.SetTimer(seconds, "BOZER")
             }
 
-        Regex("""^partage\\s+(?:ce\\s+)?message\\s*[: ]\\s*(.+)$""", RegexOption.IGNORE_CASE)
+        Regex("""^partage\s+(?:ce\s+)?message\s*[: ]\s*(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.ShareText(it.groupValues[1]) }
 
-        Regex("""^(?:ouvre|lance|demarre)\\s+(?:l'application\\s+|l'appli\\s+|application\\s+)?(.+)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:ouvre|lance|demarre)\s+(?:l'application\s+|l'appli\s+|application\s+)?(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.OpenApp(it.groupValues[1].trim()) }
 
         return null
