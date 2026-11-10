@@ -493,15 +493,6 @@ private fun FutureIconButton(label: String, onClick: () -> Unit, size: androidx.
 }
 
 @Composable
-private fun FutureIconButton(label: String, onClick: () -> Unit, size: androidx.compose.ui.unit.Dp) {
-    Box(Modifier.size(size).clip(CircleShape)
-        .background(Color(0xFFEAF4FA)).border(1.dp, Color.White, CircleShape)
-        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Text(if (label == "close") "×" else label, color = DeepBlue, fontSize = 21.sp)
-    }
-}
-
-@Composable
 private fun FutureWelcome(onSuggestion: (String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Box(Modifier.size(178.dp), contentAlignment = Alignment.Center) {
