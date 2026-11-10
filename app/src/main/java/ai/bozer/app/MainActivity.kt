@@ -2,6 +2,7 @@ package ai.bozer.app
 
 import android.os.Bundle
 import android.content.Intent
+import android.content.Context
 import android.net.Uri\nimport android.net.ConnectivityManager\nimport android.net.NetworkCapabilities
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
