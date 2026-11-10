@@ -1,7 +1,6 @@
 package ai.bozer.app
 
 import android.content.Context
-import android.provider.Settings
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -23,29 +22,29 @@ class RemoteBrainClient(
 
     suspend fun reply(history: List<ChatMessage>, extraContext: String = ""): String = withContext(Dispatchers.IO) {
         check(isConfigured) { "La passerelle IA distante de BOZER n'est pas configurée." }
-        val clientId = installId()
-        val messages = JSONArray()
-            .put(JSONObject().put(
-                "role", "system"
-            ).put(
-                "content",
-                BOZER_PERSONALITY_PROMPT + if (extraContext.isBlank()) "" else "\n\nContexte complémentaire :\n$extraContext"
-            ))
+        val systemContent = (BOZER_PERSONALITY_PROMPT +
+            if (extraContext.isBlank()) "" else "\n\nContexte complémentaire :\n$extraContext").take(5_000)
+
+        // The gateway rejects requests above 24,000 characters. Bound every
+        // message here so long-running conversations cannot silently break.
+        val messages = JSONArray().put(
+            JSONObject().put("role", "system").put("content", systemContent)
+        )
         history.takeLast(12).forEach { item ->
             if (item.role == "user" || item.role == "assistant") {
-                messages.put(JSONObject().put("role", item.role).put("content", item.content.take(6000)))
+                messages.put(JSONObject().put("role", item.role).put("content", item.content.take(1_500)))
             }
         }
-        val payload = JSONObject()
-            .put("messages", messages)
-            .put("max_tokens", 700)
+        val payload = JSONObject().put("messages", messages).put("max_tokens", 700)
         val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
-            connectTimeout = 12_000
-            readTimeout = 75_000
+            connectTimeout = 10_000
+            // Provider attempts are individually bounded by the gateway.
+            // Keep enough room for failover, but never leave the chat spinning for 75s.
+            readTimeout = 35_000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            setRequestProperty("X-Bozer-Client", clientId)
+            setRequestProperty("X-Bozer-Client", installId())
         }
         try {
             connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
@@ -56,11 +55,20 @@ class RemoteBrainClient(
                 val serverError = try {
                     val errorJson = JSONObject(responseText)
                     val code = errorJson.optString("error").ifBlank { "erreur_inconnue" }
-                    val attempted = errorJson.optJSONArray("attempted")
-                    val providers = if (attempted == null) "" else
-                        (0 until attempted.length()).mapNotNull { attempted.optString(it).takeIf(String::isNotBlank) }
-                            .joinToString(", ").let { if (it.isBlank()) "" else " Fournisseurs essayés : $it." }
-                    "$code.$providers"
+                    val details = mutableListOf<String>()
+                    errorJson.optJSONArray("attempted")?.let { array ->
+                        val names = (0 until array.length()).mapNotNull {
+                            array.optString(it).takeIf(String::isNotBlank)
+                        }
+                        if (names.isNotEmpty()) details += "Fournisseurs essayés : ${names.joinToString(", ")}."
+                    }
+                    errorJson.optJSONArray("provider_errors")?.let { array ->
+                        val errors = (0 until array.length()).mapNotNull {
+                            array.optString(it).takeIf(String::isNotBlank)
+                        }
+                        if (errors.isNotEmpty()) details += errors.joinToString(", ")
+                    }
+                    (listOf(code) + details).joinToString(". ")
                 } catch (_: Exception) {
                     responseText.take(300).ifBlank { "Réponse serveur vide." }
                 }
