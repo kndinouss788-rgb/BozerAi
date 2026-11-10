@@ -28,6 +28,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -332,60 +335,65 @@ private fun BozerChat(
         }
 
         if (settingsOpen) {
-            AlertDialog(
-                onDismissRequest = { settingsOpen = false },
-                containerColor = Color(0xFFF9FCFF),
-                shape = RoundedCornerShape(30.dp),
-                title = {
-                    Column {
-                        Text("Paramètres", color = DeepBlue, fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                        Text("Personnalise ton expérience BOZER", color = Muted, fontSize = 12.sp)
-                    }
-                },
-                text = {
-                    Column(Modifier.fillMaxWidth().heightIn(max = 470.dp).padding(top = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SettingsSection("INTELLIGENCE", "Mode du cerveau") {
-                            BrainMode.entries.forEach { mode ->
-                                Row(
-                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
-                                        .background(if (brainMode == mode) Color(0xFFE7F3FC) else Color.White.copy(alpha=.72f))
-                                        .clickable { chooseBrainMode(mode) }
-                                        .padding(horizontal = 9.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(selected = brainMode == mode, onClick = { chooseBrainMode(mode) },
-                                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF477EA8)))
-                                    Column(Modifier.weight(1f)) {
-                                        Text(mode.label, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                        Text(mode.description, color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
+            Dialog(onDismissRequest = { settingsOpen = false }) {
+                Surface(Modifier.fillMaxWidth().widthIn(max = 440.dp), shape = RoundedCornerShape(30.dp), color = Color(0xF8FFFFFF), shadowElevation = 24.dp) {
+                    Column(Modifier.padding(20.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Paramètres", color = Color(0xFF172538), fontSize = 23.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Personnalise ton expérience BOZER", color = Color(0xFF7D8A9B), fontSize = 12.sp)
+                            }
+                            FutureIconButton("close", { settingsOpen = false }, 38.dp)
+                        }
+                        Spacer(Modifier.height(18.dp))
+                        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(17.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("INTELLIGENCE", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                Text("Mode du cerveau", color = Color(0xFF172538), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                BrainMode.entries.forEach { mode ->
+                                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                                        .background(if (brainMode == mode) Color(0xFFEAF7FF) else Color(0xFFF7FAFC))
+                                        .border(1.dp, if (brainMode == mode) Color(0xFFB9E9FA) else Color(0xFFEAF0F4), RoundedCornerShape(16.dp))
+                                        .clickable { chooseBrainMode(mode) }.padding(horizontal = 10.dp, vertical = 7.dp),
+                                        verticalAlignment = Alignment.CenterVertically) {
+                                        RadioButton(selected = brainMode == mode, onClick = { chooseBrainMode(mode) }, colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF42B9E8)))
+                                        Column(Modifier.weight(1f)) {
+                                            Text(mode.label, color = Color(0xFF172538), fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                                            Text(mode.description, color = Color(0xFF7D8A9B), fontSize = 11.sp, lineHeight = 15.sp)
+                                        }
                                     }
                                 }
+                                TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady) {
+                                    Text(if (modelReady) "Cerveau local prêt" else if (modelBusy) "Installation en cours…" else "Installer le cerveau local", color = Color(0xFF258DB8))
+                                }
+                                if (modelBusy || modelStatus.startsWith("Installation impossible") || modelStatus.startsWith("Chargement impossible")) {
+                                    Text(modelStatus, color = Color(0xFF7D8A9B), fontSize = 11.sp)
+                                    if (modelBusy) LinearProgressIndicator(progress = { downloadProgress }, modifier = Modifier.fillMaxWidth(), color = Color(0xFF53BFEA), trackColor = Color(0xFFE5F5FC))
+                                }
                             }
-                            TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady) {
-                                Text(if (modelReady) "Cerveau local prêt" else if (modelBusy) "Installation en cours…" else "Installer le cerveau local")
+                            HorizontalDivider(color = Color(0xFFEAF0F4))
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("APPARENCE ET INTERFACE", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                FutureSettingLine("Interface", "Verre liquide • Blanc nacré", "✧")
+                                FutureSettingLine("Animations", "Effets fluides et lumineux", "◌")
                             }
-                            if (modelBusy || modelStatus.startsWith("Installation impossible") || modelStatus.startsWith("Chargement impossible")) {
-                                Text(modelStatus, color = Muted, fontSize = 11.sp)
-                                if (modelBusy) LinearProgressIndicator(progress = { downloadProgress },
-                                    modifier = Modifier.fillMaxWidth(), color = Color(0xFF6BA6CE), trackColor = SoftLilac)
+                            HorizontalDivider(color = Color(0xFFEAF0F4))
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("FONCTIONS", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Activer la bulle flottante", color = Color(0xFF258DB8)) }
+                                TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Désactiver la bulle flottante", color = Color(0xFF258DB8)) }
+                            }
+                            HorizontalDivider(color = Color(0xFFEAF0F4))
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("DONNÉES ET CONFIDENTIALITÉ", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                TextButton(onClick = { confirmClearMemory = true }, modifier = Modifier.fillMaxWidth()) { Text("Effacer la mémoire", color = Color(0xFFB65E70)) }
                             }
                         }
-                        SettingsSection("APPAREIL", "Commandes rapides") {
-                            SettingsAction("Bulle flottante", "Activer la bulle sur les autres applications") {
-                                onEnableFloatingBubble(); settingsOpen = false
-                            }
-                            SettingsAction("Bulle flottante", "Désactiver la bulle") {
-                                onDisableFloatingBubble(); settingsOpen = false
-                            }
-                        }
-                        SettingsSection("DONNÉES", "Mémoire de BOZER") {
-                            SettingsAction("Effacer la mémoire", "Supprimer les faits mémorisés") { confirmClearMemory = true }
-                        }
+                        Spacer(Modifier.height(12.dp))
+                        TextButton(onClick = { settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Fermer", color = Color(0xFF258DB8), fontWeight = FontWeight.SemiBold) }
                     }
-                },
-                confirmButton = { TextButton(onClick = { settingsOpen = false }) { Text("Fermer", color = DeepBlue) } }
-            )
+                }
+            }
             if (confirmClearMemory) {
                 AlertDialog(
                     onDismissRequest = { confirmClearMemory = false },
