@@ -65,6 +65,7 @@ import kotlinx.coroutines.withContext
 private val Ink = Color(0xFF292638)
 private val Muted = Color(0xFF817C91)
 private val DeepBlue = Color(0xFF203B56)
+private val DeepBlue = Color(0xFF203B56)
 private val Pearl = Color(0xFFFAF9FE)
 private val Lilac = Color(0xFF6688B8)
 private val SoftLilac = Color(0xFFEAF1F8)
@@ -479,6 +480,15 @@ private fun GlassIconButton(label: String, description: String, onClick: () -> U
         .border(1.dp, Color.White.copy(alpha=.95f), CircleShape)
         .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
         Text(label, color = DeepBlue, fontSize = 21.sp)
+    }
+}
+
+@Composable
+private fun FutureIconButton(label: String, onClick: () -> Unit, size: androidx.compose.ui.unit.Dp) {
+    Box(Modifier.size(size).clip(CircleShape)
+        .background(Color(0xFFEAF4FA)).border(1.dp, Color.White, CircleShape)
+        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+        Text(if (label == "close") "×" else label, color = DeepBlue, fontSize = 21.sp)
     }
 }
 
