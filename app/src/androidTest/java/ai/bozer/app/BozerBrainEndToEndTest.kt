@@ -88,6 +88,29 @@ class BozerBrainEndToEndTest {
     }
 
     @Test
+    fun remoteGatewayHandlesARealConversationFromTheAndroidApp() {
+        device.executeShellCommand("am force-stop ai.bozer.app")
+        device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
+
+        val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 20_000)
+        assertNotNull("Champ de saisie BOZER introuvable pour le test distant", field)
+        val previous = assistantCount()
+        field!!.click()
+        field.setText("Bonjour BOZER. Réponds en français en une phrase : qui es-tu ?")
+        val send = device.wait(Until.findObject(By.text("↑")), 10_000)
+        assertNotNull("Bouton d'envoi BOZER introuvable pour le test distant", send)
+
+        val started = SystemClock.elapsedRealtime()
+        send!!.click()
+        val reply = waitForAssistantReply(previous, 45_000)
+        val elapsed = SystemClock.elapsedRealtime() - started
+        assertRealReply(reply, 10)
+        assertTrue("La réponse distante est anormalement vide", reply.length >= 8)
+        Log.i("BOZER_E2E", "remote_gateway_verified=true; latency_ms=" + elapsed +
+            "; reply=" + reply.take(320).replace('\\n', ' '))
+    }
+
+    @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
         device.executeShellCommand("am force-stop ai.bozer.app")
         device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
