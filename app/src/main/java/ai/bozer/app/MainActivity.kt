@@ -46,9 +46,11 @@ import kotlinx.coroutines.withContext
 private val Ink = Color(0xFF292638)
 private val Muted = Color(0xFF817C91)
 private val Pearl = Color(0xFFFAF9FE)
-private val Lilac = Color(0xFF9870D5)
-private val SoftLilac = Color(0xFFF0E8FB)
+private val Lilac = Color(0xFF6688B8)
+private val SoftLilac = Color(0xFFEAF1F8)
 private val GlassWhite = Color(0xDFFFFFFF)
+private val Ice = Color(0xFFE8F4FA)
+private val Silver = Color(0xFFB8C8D8)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
