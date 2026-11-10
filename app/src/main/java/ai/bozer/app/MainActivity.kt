@@ -7,7 +7,9 @@ import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.provider.Settings
+import android.speech.RecognizerIntent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
@@ -118,6 +120,10 @@ private fun BozerChat(
     onDisableFloatingBubble: () -> Unit
 ) {
     val context = LocalContext.current
+    val voiceLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (!spoken.isNullOrBlank()) draft = spoken
+    }
     var brainMode by remember { mutableStateOf(repository.brainMode) }
     fun chooseBrainMode(mode: BrainMode) {
         brainMode = mode
@@ -198,36 +204,13 @@ private fun BozerChat(
     }
 
     MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Pearl) {
-            Box(Modifier.fillMaxSize().background(
-                Brush.verticalGradient(listOf(Color(0xFFF4EDFF), Pearl, Color(0xFFF9F2FC)))
-            )) {
+        Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
+            FutureBackdrop {
                 Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 18.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RoundControl("☰") { settingsOpen = true }
-                        Spacer(Modifier.weight(1f))
-                        Text("BOZER", color = Ink, fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold, letterSpacing = 2.2.sp)
-                        Spacer(Modifier.weight(1f))
-                        Box(
-                            Modifier.size(42.dp).clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.88f))
-                                .clickable { settingsOpen = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.foundation.Image(
-                                painter = painterResource(R.drawable.ic_bozer_robot),
-                                contentDescription = "Logo BOZER",
-                                modifier = Modifier.size(31.dp)
-                            )
-                        }
-                    }
+                    FutureHeader(onMenu = { settingsOpen = true }, onProfile = { settingsOpen = true })
 
                     if (messages.isEmpty()) {
-                        WelcomePanel(
+                        FutureWelcome(
                             onSuggestion = { draft = it },
                             modifier = Modifier.weight(1f).fillMaxWidth()
                         )
@@ -238,10 +221,10 @@ private fun BozerChat(
                             contentPadding = PaddingValues(top = 8.dp, bottom = 18.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(messages) { message -> MessageBubble(message) }
+                            items(messages) { message -> FutureMessageBubble(message) }
                             if (sending) item {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    RobotBadge(34.dp)
+                                    FutureOrb(36.dp)
                                     Spacer(Modifier.width(10.dp))
                                     Text("BOZER réfléchit…", color = Muted, fontSize = 13.sp)
                                 }
@@ -249,44 +232,26 @@ private fun BozerChat(
                         }
                     }
 
-                    Row(
-                        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp)
-                            .shadow(14.dp, RoundedCornerShape(30.dp))
-                            .background(GlassWhite, RoundedCornerShape(30.dp))
-                            .padding(start = 18.dp, end = 7.dp, top = 7.dp, bottom = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BasicTextField(
-                            value = draft,
-                            onValueChange = { draft = it },
-                            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-                            textStyle = TextStyle(color = Ink, fontSize = 15.sp),
-                            cursorBrush = androidx.compose.ui.graphics.SolidColor(Lilac),
-                            decorationBox = { inner ->
-                                if (draft.isEmpty()) Text("Écris à BOZER…",
-                                    color = Color(0xFF9A95A6), fontSize = 15.sp)
-                                inner()
-                            },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(onSend = { send() }),
-                            singleLine = false
-                        )
-                        Button(
-                            onClick = { send() },
-                            enabled = draft.isNotBlank() && !sending && when (brainMode) {
-                                BrainMode.AUTO -> modelReady || repository.remoteConfigured
-                                BrainMode.ONLINE -> repository.remoteConfigured
-                                BrainMode.OFFLINE -> modelReady
-                            },
-                            shape = CircleShape,
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.size(46.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Lilac,
-                                disabledContainerColor = Color(0xFFE4DDEC)
-                            )
-                        ) { Text("↑", fontSize = 23.sp, color = Color.White) }
-                    }
+                    FutureComposer(
+                        draft = draft,
+                        onDraftChange = { draft = it },
+                        onSend = { send() },
+                        onVoice = {
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault())
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Parle à BOZER")
+                            }
+                            try { voiceLauncher.launch(intent) } catch (_: Exception) { }
+                        },
+                        onAttach = { settingsOpen = true },
+                        enabled = draft.isNotBlank() && !sending && when (brainMode) {
+                            BrainMode.AUTO -> modelReady || repository.remoteConfigured
+                            BrainMode.ONLINE -> repository.remoteConfigured
+                            BrainMode.OFFLINE -> modelReady
+                        },
+                        sending = sending
+                    )
                 }
             }
         }
