@@ -3,7 +3,9 @@ package ai.bozer.app
 import android.os.Bundle
 import android.content.Intent
 import android.content.Context
-import android.net.Uri\nimport android.net.ConnectivityManager\nimport android.net.NetworkCapabilities
+import android.net.Uri
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
@@ -30,7 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource\nimport androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -78,7 +81,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
         val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, applicationContext)
-        val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)\n        repository.brainMode = BrainMode.from(getSharedPreferences("bozer_settings", MODE_PRIVATE).getString("brain_mode", "AUTO"))\n        repository.internetAvailable = { hasValidatedInternet() }
+        val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
+        repository.brainMode = BrainMode.from(getSharedPreferences("bozer_settings", MODE_PRIVATE).getString("brain_mode", "AUTO"))
+        repository.internetAvailable = { hasValidatedInternet() }
         val modelManager = LocalModelManager(applicationContext)
         val actionExecutor = AndroidActionExecutor(this)
         setContent {
@@ -87,7 +92,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun hasValidatedInternet(): Boolean {\n        val manager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager\n        val network = manager.activeNetwork ?: return false\n        val capabilities = manager.getNetworkCapabilities(network) ?: return false\n        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&\n            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)\n    }\n\n    override fun onDestroy() {
+    private fun hasValidatedInternet(): Boolean {
+        val manager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    override fun onDestroy() {
         if (::engine.isInitialized) engine.close()
         super.onDestroy()
     }
@@ -102,7 +115,15 @@ private fun BozerChat(
     onEnableFloatingBubble: () -> Unit,
     onDisableFloatingBubble: () -> Unit
 ) {
-    val context = LocalContext.current\n    var brainMode by remember { mutableStateOf(repository.brainMode) }\n    fun chooseBrainMode(mode: BrainMode) {\n        brainMode = mode\n        repository.brainMode = mode\n        context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)\n            .edit().putString("brain_mode", mode.name).apply()\n    }\n    val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
+    val context = LocalContext.current
+    var brainMode by remember { mutableStateOf(repository.brainMode) }
+    fun chooseBrainMode(mode: BrainMode) {
+        brainMode = mode
+        repository.brainMode = mode
+        context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+            .edit().putString("brain_mode", mode.name).apply()
+    }
+    val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
     var modelReady by remember { mutableStateOf(false) }
@@ -250,7 +271,11 @@ private fun BozerChat(
                         )
                         Button(
                             onClick = { send() },
-                            enabled = draft.isNotBlank() && !sending && when (brainMode) {\n                                BrainMode.AUTO -> modelReady || repository.remoteConfigured\n                                BrainMode.ONLINE -> repository.remoteConfigured\n                                BrainMode.OFFLINE -> modelReady\n                            },
+                            enabled = draft.isNotBlank() && !sending && when (brainMode) {
+                                BrainMode.AUTO -> modelReady || repository.remoteConfigured
+                                BrainMode.ONLINE -> repository.remoteConfigured
+                                BrainMode.OFFLINE -> modelReady
+                            },
                             shape = CircleShape,
                             contentPadding = PaddingValues(0.dp),
                             modifier = Modifier.size(46.dp),
