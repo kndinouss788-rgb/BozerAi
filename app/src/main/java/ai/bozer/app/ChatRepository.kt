@@ -6,6 +6,16 @@ enum class BrainMode(val label: String, val description: String) {
     OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
 
     companion object {
+        fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: AUTO
+    }
+}
+
+enum class BrainMode(val label: String, val description: String) {
+    AUTO("Automatique", "Internet disponible : serveurs BOZER. Sans Internet : cerveau local."),
+    ONLINE("En ligne", "Utilise uniquement les serveurs distants."),
+    OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
+
+    companion object {
         fun from(value: String?): BrainMode = entries.firstOrNull { it.name == value } ?: AUTO
     }
 }
@@ -22,7 +32,8 @@ class ChatRepository(
     private val internetSearch: AndroidPublicSearch = AndroidPublicSearch(),
     private val remoteBrain: RemoteBrainClient? = null
 ) {
-    private val inferenceLock = Mutex()\n    @Volatile var brainMode: BrainMode = BrainMode.AUTO\n    @Volatile var internetAvailable: () -> Boolean = { true }
+    private val inferenceLock = Mutex()
+    @Volatile var brainMode: BrainMode = BrainMode.AUTO\n    @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
     fun clearHistory() = database.clearHistory()
