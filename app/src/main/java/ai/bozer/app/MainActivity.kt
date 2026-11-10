@@ -547,6 +547,7 @@ private fun BozerChat(
             }
         }
     }
+}
 
 @Composable
 private fun AmbientLiquidBackground() {
