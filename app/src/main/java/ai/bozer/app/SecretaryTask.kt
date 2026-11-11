@@ -68,12 +68,12 @@ object SecretaryCommandParser {
             originalTitle ?: add
         })
 
-        val complete = Regex("^(?:termine|terminer|acheve|achever|coche)\\s+(?:la tache\\s+)?(.+)$")
-            .find(normalized)?.groupValues?.get(1)?.trim()
+        val complete = Regex("^(?:termine|terminer|acheve|achever|coche)\\s+(?:(?:la tâche|la tache)\\s+)?(.+)$", RegexOption.IGNORE_CASE)
+            .find(text)?.groupValues?.get(1)?.trim()
         if (!complete.isNullOrBlank()) return SecretaryCommand.Complete(complete)
 
-        val delete = Regex("^(?:supprime|supprimer|efface|effacer)\\s+(?:la tache\\s+)?(.+)$")
-            .find(normalized)?.groupValues?.get(1)?.trim()
+        val delete = Regex("^(?:supprime|supprimer|efface|effacer)\\s+(?:(?:la tâche|la tache)\\s+)?(.+)$", RegexOption.IGNORE_CASE)
+            .find(text)?.groupValues?.get(1)?.trim()
         if (!delete.isNullOrBlank()) return SecretaryCommand.Delete(delete)
 
         if (normalized in setOf("mes taches", "liste mes taches", "montre mes taches", "affiche mes taches", "liste les taches")) {
