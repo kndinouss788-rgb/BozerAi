@@ -168,11 +168,13 @@ class AndroidActionExecutor(private val activity: Activity) {
         val database = ChatDatabase(activity.applicationContext)
         val repository = BozerAlarmRepository(database)
         val id = repository.create(trigger.timeInMillis, label.ifBlank { "Rappel BOZER" })
-        val scheduled = BozerAlarmScheduler(activity.applicationContext).schedule(
+        val scheduler = BozerAlarmScheduler(activity.applicationContext)
+        val scheduled = scheduler.schedule(
             repository.get(id) ?: return "L'alarme a été enregistrée, mais je n'ai pas pu la charger."
         )
         return if (scheduled) {
-            "Alarme BOZER programmée pour %02d:%02d. Elle est enregistrée sur ce téléphone.".format(hour, minute)
+            val precision = if (scheduler.exactAlarmAccessGranted()) "Alarme précise BOZER" else "Alarme BOZER enregistrée (Android peut retarder son déclenchement)"
+            "$precision pour %02d:%02d : elle est stockée sur ce téléphone.".format(hour, minute)
         } else {
             repository.disable(id)
             "L'alarme a été enregistrée, mais Android a refusé sa programmation. Vérifie les autorisations d'alarmes de BOZER."
@@ -184,7 +186,8 @@ class AndroidActionExecutor(private val activity: Activity) {
         val repository = BozerAlarmRepository(ChatDatabase(activity.applicationContext))
         val id = repository.create(triggerAt, label.ifBlank { "Rappel BOZER" })
         val alarm = repository.get(id) ?: return "Le rappel a été enregistré, mais je n'ai pas pu le charger."
-        if (!BozerAlarmScheduler(activity.applicationContext).schedule(alarm)) {
+        val scheduler = BozerAlarmScheduler(activity.applicationContext)
+        if (!scheduler.schedule(alarm)) {
             repository.disable(id)
             return "Android a refusé de programmer ce rappel. Vérifie les autorisations d'alarmes et de notifications de BOZER."
         }
@@ -194,7 +197,8 @@ class AndroidActionExecutor(private val activity: Activity) {
             minutes < 60 -> "${minutes} minute(s)"
             else -> "${minutes / 60} heure(s)" + if (minutes % 60 > 0) " et ${minutes % 60} minute(s)" else ""
         }
-        return "Rappel BOZER programmé dans ${duration} : ${alarm.label}."
+        val precision = if (scheduler.exactAlarmAccessGranted()) "Rappel BOZER précis" else "Rappel BOZER enregistré (Android peut le retarder)"
+        return "$precision dans ${duration} : ${alarm.label}."
     }
 
     private fun setTimer(seconds: Int, label: String): String {
