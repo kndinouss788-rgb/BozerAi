@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.AlarmClock
 import java.text.Normalizer
 import java.util.Locale
+import java.util.Calendar
 
 /**
  * Android action gateway.
@@ -117,13 +118,26 @@ class AndroidActionExecutor(private val activity: Activity) {
     }
 
     private fun setAlarm(hour: Int, minute: Int, label: String): String {
-        val intent = Intent(AlarmClock.ACTION_SET_ALARM)
-            .putExtra(AlarmClock.EXTRA_HOUR, hour)
-            .putExtra(AlarmClock.EXTRA_MINUTES, minute)
-            .putExtra(AlarmClock.EXTRA_MESSAGE, label)
-            .putExtra(AlarmClock.EXTRA_SKIP_UI, false)
-        activity.startActivity(intent)
-        return "J'ai ouvert l'horloge pour programmer l'alarme de $hour h $minute. Confirme son enregistrement."
+        val now = Calendar.getInstance()
+        val trigger = (now.clone() as Calendar).apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= now.timeInMillis) add(Calendar.DAY_OF_YEAR, 1)
+        }
+        val database = ChatDatabase(activity.applicationContext)
+        val repository = BozerAlarmRepository(database)
+        val id = repository.create(trigger.timeInMillis, label.ifBlank { "Rappel BOZER" })
+        val scheduled = BozerAlarmScheduler(activity.applicationContext).schedule(
+            repository.get(id) ?: return "L'alarme a été enregistrée, mais je n'ai pas pu la charger."
+        )
+        return if (scheduled) {
+            "Alarme BOZER programmée pour %02d:%02d. Elle est enregistrée sur ce téléphone.".format(hour, minute)
+        } else {
+            repository.disable(id)
+            "L'alarme a été enregistrée, mais Android a refusé sa programmation. Vérifie les autorisations d'alarmes de BOZER."
+        }
     }
 
     private fun setTimer(seconds: Int, label: String): String {
