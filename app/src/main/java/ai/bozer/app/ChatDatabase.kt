@@ -24,7 +24,7 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         if (oldVersion < 2) createMemoryTable(db)
         if (oldVersion < 3) createSecretaryTable(db)
         if (oldVersion < 4) createBozerAlarmTable(db)
-        if (oldVersion < 5) db.execSQL("ALTER TABLE bozer_alarms ADD COLUMN repeat_days_mask INTEGER NOT NULL DEFAULT 0")
+        if (oldVersion in 4 until 5) db.execSQL("ALTER TABLE bozer_alarms ADD COLUMN repeat_days_mask INTEGER NOT NULL DEFAULT 0")
     }
 
     private fun createSecretaryTable(db: SQLiteDatabase) {
