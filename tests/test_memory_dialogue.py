@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from types import SimpleNamespace
 
 from bozer_brain.dialogue import DialogueEngine
 from bozer_brain.memory import ConversationMemory
@@ -107,11 +108,9 @@ class DialogueTests(unittest.TestCase):
     def test_dialogue_exposes_injected_mission_service(self):
         class FakeMissionService:
             def create_from_objective(self, objective, *, allow_model=False, max_steps=16):
-                class Plan:
-                    objective = objective
-                    summary = "Plan préparé"
-                    steps = ()
-                return "mission-123", Plan()
+                return "mission-123", SimpleNamespace(
+                    objective=objective, summary="Plan préparé", steps=()
+                )
 
             def run(self, mission_id, *, max_steps=20, max_seconds=300.0):
                 return {"mission_id": mission_id, "status": "completed"}
