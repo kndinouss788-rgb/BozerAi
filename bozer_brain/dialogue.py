@@ -29,6 +29,7 @@ class DialogueEngine:
         history_limit: int = 8,
         model_gateway: Optional[ModelGateway] = None,
         eye_search: Optional[EyeSearch] = None,
+        mission_service=None,
     ):
         if history_limit < 0:
             raise ValueError("history_limit must be non-negative")
@@ -37,10 +38,11 @@ class DialogueEngine:
         self.history_limit = history_limit
         self.model_gateway = model_gateway
         self.eye_search = eye_search
+        self.mission_service = mission_service
 
     @classmethod
     def from_environment(cls, memory, *, responder=None, history_limit=8,
-                         eye_search=None, environ=None):
+                         eye_search=None, mission_service=None, environ=None):
         """Create the dialogue brain with a server-configured real model provider."""
         # Prefer a free on-device model. Use a remote provider only when no local endpoint is configured.
         provider = local_llama_provider_from_env(environ) or openai_provider_from_env(environ)
@@ -50,7 +52,38 @@ class DialogueEngine:
             history_limit=history_limit,
             model_gateway=ModelGateway(provider),
             eye_search=eye_search,
+            mission_service=mission_service,
         )
+
+    def create_mission(self, objective: str, *, allow_model: bool = False,
+                       max_steps: int = 16):
+        """Create a persistent mission through the host-injected mission service."""
+        if self.mission_service is None:
+            raise RuntimeError("mission_service_not_configured")
+        mission_id, plan = self.mission_service.create_from_objective(
+            objective, allow_model=allow_model, max_steps=max_steps
+        )
+        return {"mission_id": mission_id, "objective": plan.objective,
+                "summary": plan.summary, "steps": plan.steps}
+
+    def run_mission(self, mission_id: str, *, max_steps: int = 20,
+                    max_seconds: float = 300.0):
+        """Advance a saved mission within explicit per-invocation resource limits."""
+        if self.mission_service is None:
+            raise RuntimeError("mission_service_not_configured")
+        return self.mission_service.run(
+            mission_id, max_steps=max_steps, max_seconds=max_seconds
+        )
+
+    def approve_mission_step(self, mission_id: str, step_id: str):
+        if self.mission_service is None:
+            raise RuntimeError("mission_service_not_configured")
+        return self.mission_service.approve_step(mission_id, step_id)
+
+    def cancel_mission(self, mission_id: str):
+        if self.mission_service is None:
+            raise RuntimeError("mission_service_not_configured")
+        return self.mission_service.cancel(mission_id)
 
     def respond(
         self,
