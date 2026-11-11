@@ -113,9 +113,15 @@ The Android application now contains an initial local-first foundation for BOZER
 
 - **Spoken replies:** optional French text-to-speech through Android's installed speech engine. This does not call a BOZER cloud voice API.
 - **Voice input:** an in-app `SpeechRecognizer` controller replaces the separate system voice-activity screen and prefers Android's on-device recognizer when the device reports that one is available. If unavailable, Android may use its configured recognition service; fully offline speech recognition is not guaranteed.
-- **Local alarms:** one-shot alarms are stored in the app's SQLite database and scheduled through Android `AlarmManager`; they do not require the chat model or network.
+- **Local alarms:** one-shot, daily, and weekday alarms are stored in the app's SQLite database and scheduled through Android `AlarmManager`; they do not require the chat model or network.
+- **Snooze:** alarm notifications offer a separate 10-minute reminder without changing the original recurring schedule.
 - **Notifications:** alarm notifications use a dedicated high-importance channel with alarm sound and vibration.
 - **Recovery:** enabled future alarms are rescheduled after device reboot and after exact-alarm access is granted.
-- **Commands:** examples include `mets une alarme à 7h30`, `réveille-moi à 6h`, `rappelle-moi à 18h15 pour prendre le dossier`, `rappelle-moi dans 10 minutes d'appeler maman`, `quelles sont mes alarmes`, `annule la prochaine alarme`, and `annule toutes les alarmes BOZER`.
+- **Commands:** examples include `mets une alarme à 7h30`, `réveille-moi à 6h`, `programme une alarme tous les jours à 6h`, `mets une alarme du lundi au vendredi à 7h30`, `rappelle-moi à 18h15 pour prendre le dossier`, `rappelle-moi dans 10 minutes d'appeler maman`, `quelles sont mes alarmes`, `annule la prochaine alarme`, and `annule toutes les alarmes BOZER`.
 
-Android 12+ may require the user to grant BOZER exact-alarm access. Without it, BOZER uses Android's inexact idle-safe scheduling fallback and must warn that the alarm can be delayed. Android 13+ also requires notification permission for visible notifications. Device manufacturers can apply additional battery restrictions. These features require APK build validation and real-device tests; always-on wake-word listening, recurring alarms, and a full alarm-clock screen are not claimed as complete yet.
+Android 12+ may require the user to grant BOZER exact-alarm access. Without it, BOZER uses Android's inexact idle-safe scheduling fallback and must warn that the alarm can be delayed. Android 13+ also requires notification permission for visible notifications. Device manufacturers can apply additional battery restrictions. These features require APK build validation and real-device tests; always-on wake-word listening and a full alarm-clock screen are not claimed as complete yet. Recurring alarm and snooze code has automated coverage pending the latest Android build and device validation.
+
+
+## BOZER completion tracking
+
+See [`BOZER_COMPLETION_PLAN.md`](BOZER_COMPLETION_PLAN.md) for the master feature inventory, acceptance criteria, known blockers, and execution order. Features are not considered complete until the required tests and device/backend validation are recorded.
