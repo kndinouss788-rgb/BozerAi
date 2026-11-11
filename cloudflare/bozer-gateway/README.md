@@ -69,10 +69,10 @@ The gateway now contains a separate authenticated mission API and a scheduled D1
 
 ### Required setup before this API can be used
 
-1. Apply the expanded `schema.sql` to the configured D1 database (it creates the `missions` table and indexes).
-2. Set the Worker secret `MISSION_API_TOKEN` to a strong random value. Requests must send it as `Authorization: Bearer <token>`.
+1. Authenticate Wrangler to the correct Cloudflare account, then apply the tracked migration from this directory: `npx wrangler d1 migrations apply bozer-gateway-quota --remote`. The equivalent SQL is also included in `schema.sql` for manual setup.
+2. Set the Worker secret `MISSION_API_TOKEN` to a strong random value with `npx wrangler secret put MISSION_API_TOKEN`. Requests must send it as `Authorization: Bearer <token>`.
 3. Ensure at least one provider secret and positive provider daily cap are configured. The mission planner and each work package consume provider quota.
-4. Deploy the Worker with the configured Cron trigger.
+4. Deploy the Worker with `npx wrangler deploy` so the configured Cron trigger becomes active.
 
 **Do not embed `MISSION_API_TOKEN` in an APK or public source.** This first API is an owner/backend integration protected by a server-held token. A production mobile app needs real user authentication and short-lived user-scoped tokens issued by a trusted backend before this endpoint can safely be exposed to all users.
 
