@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db", null, 3) {
+class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db", null, 4) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """CREATE TABLE messages (
@@ -17,11 +17,13 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         )
         createMemoryTable(db)
         createSecretaryTable(db)
+        createBozerAlarmTable(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) createMemoryTable(db)
         if (oldVersion < 3) createSecretaryTable(db)
+        if (oldVersion < 4) createBozerAlarmTable(db)
     }
 
     private fun createSecretaryTable(db: SQLiteDatabase) {
@@ -39,6 +41,52 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_secretary_tasks_due ON secretary_tasks(status, due_at)")
     }
+
+    private fun createBozerAlarmTable(db: SQLiteDatabase) {
+        db.execSQL("""CREATE TABLE IF NOT EXISTS bozer_alarms (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trigger_at INTEGER NOT NULL,
+            label TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1)),
+            created_at INTEGER NOT NULL
+        )""")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_bozer_alarms_enabled_time ON bozer_alarms(enabled, trigger_at)")
+    }
+
+    fun insertBozerAlarm(triggerAtMillis: Long, label: String): Long {
+        require(triggerAtMillis > System.currentTimeMillis()) { "L'heure de l'alarme doit être dans le futur." }
+        val values = ContentValues().apply {
+            put("trigger_at", triggerAtMillis)
+            put("label", label.trim().take(120).ifBlank { "Rappel BOZER" })
+            put("enabled", 1)
+            put("created_at", System.currentTimeMillis())
+        }
+        return writableDatabase.insertOrThrow("bozer_alarms", null, values)
+    }
+
+    fun bozerAlarm(id: Long): BozerAlarm? =
+        readableDatabase.query("bozer_alarms", arrayOf("id","trigger_at","label","enabled"),
+            "id = ?", arrayOf(id.toString()), null, null, null).use { c ->
+            if (!c.moveToFirst()) null else BozerAlarm(c.getLong(0), c.getLong(1), c.getString(2), c.getInt(3) == 1)
+        }
+
+    fun enabledBozerAlarms(): List<BozerAlarm> {
+        val result = mutableListOf<BozerAlarm>()
+        readableDatabase.query("bozer_alarms", arrayOf("id","trigger_at","label","enabled"),
+            "enabled = 1 AND trigger_at > ?", arrayOf(System.currentTimeMillis().toString()),
+            null, null, "trigger_at ASC").use { c ->
+            while (c.moveToNext()) result += BozerAlarm(c.getLong(0), c.getLong(1), c.getString(2), true)
+        }
+        return result
+    }
+
+    fun setBozerAlarmEnabled(id: Long, enabled: Boolean): Boolean {
+        val values = ContentValues().apply { put("enabled", if (enabled) 1 else 0) }
+        return writableDatabase.update("bozer_alarms", values, "id = ?", arrayOf(id.toString())) > 0
+    }
+
+    fun deleteBozerAlarm(id: Long): Boolean =
+        writableDatabase.delete("bozer_alarms", "id = ?", arrayOf(id.toString())) > 0
 
     private fun createMemoryTable(db: SQLiteDatabase) {
         db.execSQL(
