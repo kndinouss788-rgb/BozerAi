@@ -19,6 +19,16 @@ import java.util.Calendar
  */
 class AndroidActionExecutor(private val activity: Activity) {
     fun execute(command: String): String? {
+        val normalizedCommand = normalize(command)
+        if (normalizedCommand in setOf("annule la prochaine alarme", "annule la prochaine alarme bozer", "annule mon prochain reveil")) {
+            return cancelNextBozerAlarm()
+        }
+        if (normalizedCommand in setOf("annule toutes les alarmes bozer", "supprime toutes les alarmes bozer")) {
+            return cancelAllBozerAlarms()
+        }
+        if (normalizedCommand in setOf("quelles sont mes alarmes", "liste mes alarmes", "mes alarmes bozer")) {
+            return listBozerAlarms()
+        }
         val parsed = AndroidCommandParser.parse(command) ?: return executeOpenApp(command)
         return try {
             when (parsed) {
@@ -115,6 +125,34 @@ class AndroidActionExecutor(private val activity: Activity) {
             .putExtra(Intent.EXTRA_TEXT, body)
         activity.startActivity(intent)
         return "J'ai préparé l'e-mail. Vérifie-le puis appuie sur Envoyer."
+    }
+
+    private fun cancelNextBozerAlarm(): String {
+        val repository = BozerAlarmRepository(ChatDatabase(activity.applicationContext))
+        val next = repository.enabled().minByOrNull { it.triggerAtMillis }
+            ?: return "Tu n'as aucune alarme BOZER active."
+        BozerAlarmScheduler(activity.applicationContext).cancel(next.id)
+        repository.disable(next.id)
+        return "J'ai annulé la prochaine alarme BOZER : ${next.label}."
+    }
+
+    private fun cancelAllBozerAlarms(): String {
+        val repository = BozerAlarmRepository(ChatDatabase(activity.applicationContext))
+        val alarms = repository.enabled()
+        val scheduler = BozerAlarmScheduler(activity.applicationContext)
+        alarms.forEach { scheduler.cancel(it.id); repository.disable(it.id) }
+        return if (alarms.isEmpty()) "Tu n'as aucune alarme BOZER active."
+        else "${alarms.size} alarme(s) BOZER annulée(s)."
+    }
+
+    private fun listBozerAlarms(): String {
+        val alarms = BozerAlarmRepository(ChatDatabase(activity.applicationContext)).enabled()
+            .sortedBy { it.triggerAtMillis }
+        if (alarms.isEmpty()) return "Tu n'as aucune alarme BOZER programmée."
+        val formatter = java.text.SimpleDateFormat("EEE dd/MM à HH:mm", Locale.FRANCE)
+        return "Voici tes alarmes BOZER : " + alarms.take(8).joinToString(" ; ") {
+            "${it.label} — ${formatter.format(java.util.Date(it.triggerAtMillis))}"
+        }
     }
 
     private fun setAlarm(hour: Int, minute: Int, label: String): String {
