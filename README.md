@@ -76,3 +76,32 @@ report = runner.run(mission_id, max_steps=30, max_seconds=900)
 ```
 
 This module is a tested execution core, **not yet a deployed overnight agent**. It does not invent a planner, run arbitrary shell commands, call a model, or provide Android/Cloudflare tool handlers by itself. A trusted host must supply the planner, registered handlers, persistent always-on runtime, authenticated mission API, and user-facing mission controls. GitHub Actions runners are temporary and are not a dependable all-night service. On Android, long missions require a visible foreground service and must respect OS battery/background limits. External messages, calls, purchases, posts, account changes, and destructive actions must pause for explicit user approval.
+
+
+### Model-driven mission planning
+
+`MissionPlanner` and `MissionService` connect the configured `ModelGateway` to the persistent runner:
+
+- `create_from_objective(..., allow_model=True)` asks the configured model to produce a bounded JSON plan.
+- The planner validates every step and rejects unknown tools, malformed arguments, invalid dependencies, cycles, and oversized plans.
+- The model can select only names from the host-provided tool catalog. It cannot register a new tool, grant a permission, or execute an action.
+- Sensitive tool names (messaging, calls, posting, payments, deletion, account changes, etc.) are forced behind a human approval gate.
+- The service runs only the exact matching registered handlers; permissions are checked again by the runner.
+
+Example:
+
+```python
+service = MissionService(
+    store, model_gateway,
+    tools=registered_handlers,
+    tool_catalog=approved_tool_descriptions,
+    granted_permissions=granted_permissions,
+)
+mission_id, plan = service.create_from_objective(
+    "Research the project and prepare a progress report",
+    allow_model=True,
+)
+report = service.run(mission_id, max_steps=20, max_seconds=600)
+```
+
+The host must still implement and register real handlers, expose authenticated mission controls, and provide an always-on runtime. The current repository integration is a Python service boundary; it is not yet connected to the Android UI or deployed as a persistent cloud worker.
