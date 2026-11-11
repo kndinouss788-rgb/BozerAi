@@ -8,9 +8,6 @@ import android.content.Context
 import android.Manifest
 import android.content.pm.PackageManager
 import android.speech.tts.TextToSpeech
-import android.speech.SpeechRecognizer
-import java.util.Locale
-import android.speech.RecognizerIntent
 import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -78,25 +75,16 @@ private val Silver = Color(0xFFB8C8D8)
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
     private val voiceResult = mutableStateOf<String?>(null)
-    private val speechLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        if (result.resultCode == RESULT_OK && !spoken.isNullOrBlank()) voiceResult.value = spoken
-    }
+    private var speechInput: BozerSpeechInput? = null
     private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) launchSpeechRecognition()
-    }
-    private fun launchSpeechRecognition() {
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) return
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Parle à BOZER")
-        }
-        speechLauncher.launch(intent)
+        if (granted) speechInput?.start()
     }
     private fun startVoiceInput() {
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) launchSpeechRecognition()
-        else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            speechInput?.start()
+        } else {
+            microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
     }
 
     private val overlayPermissionLauncher =
@@ -130,6 +118,7 @@ class MainActivity : ComponentActivity() {
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1204)
         }
+        speechInput = BozerSpeechInput(this, onText = { voiceResult.value = it }, onFailure = { /* user may retry */ })
         engine = LocalLlamaEngine()
         val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, applicationContext)
         val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
@@ -152,6 +141,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        speechInput?.stop()
+        speechInput = null
         if (::engine.isInitialized) engine.close()
         super.onDestroy()
     }
@@ -278,26 +269,6 @@ private fun BozerChat(
         }
     }
 
-    val voiceResult = androidx.activity.compose.rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        if (!spoken.isNullOrBlank()) draft = listOf(draft.trim(), spoken).filter { it.isNotBlank() }.joinToString(" ")
-    }
-    val voicePermission = androidx.activity.compose.rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "Parle à BOZER")
-            }
-            voiceResult.launch(intent)
-        }
-    }
-    fun startVoice() { voicePermission.launch(Manifest.permission.RECORD_AUDIO) }
-
     MaterialTheme {
         Surface(Modifier.fillMaxSize(), color = Pearl) {
             Box(Modifier.fillMaxSize().background(
@@ -379,7 +350,7 @@ private fun BozerChat(
                             Box(Modifier.size(46.dp).clip(CircleShape)
                                 .background(Brush.linearGradient(listOf(Color(0xFFECF8FF), Color(0xFFDCECF8))))
                                 .border(1.dp, Color.White, CircleShape)
-                                .clickable { startVoice() }, contentAlignment = Alignment.Center) {
+                                .clickable { onStartVoiceInput() }, contentAlignment = Alignment.Center) {
                                 Text("⌁", color = DeepBlue, fontSize = 26.sp, fontWeight = FontWeight.Light)
                             }
                         } else {
