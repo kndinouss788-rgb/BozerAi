@@ -1,0 +1,36 @@
+name: Deploy BOZER mission worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare/bozer-gateway
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check Cloudflare credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN}" || { echo "::error::Add repository secret CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "${CLOUDFLARE_ACCOUNT_ID}" || { echo "::error::Add repository secret CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+      - name: Install Wrangler
+        run: npm install
+      - name: Apply durable mission D1 migration
+        run: npx wrangler d1 migrations apply bozer-gateway-quota --remote
+      - name: Deploy BOZER gateway and scheduled mission worker
+        run: npx wrangler deploy
