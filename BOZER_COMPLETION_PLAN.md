@@ -133,15 +133,51 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [ ] Real-device acceptance matrix for target TECNO/Redmi-class hardware and Android versions.
 - [ ] Signed release build, reproducible versioning, release notes, and update path.
 
+## 11. Official BOZER website and public presence
+
+- [ ] Define the official public brand kit: BOZER name, logo, colors, typography, product screenshots, founder/company presentation, and international positioning.
+- [ ] Build a responsive, lightweight, multilingual-ready official website (French first; English next) with Home, Features, Download, Premium, FAQ, Support, Contact, Privacy, and Terms pages.
+- [ ] Publish verified product capabilities only; clearly label beta features and device/provider requirements.
+- [ ] Add secure download/version information and release notes; never expose private repository files, API keys, or internal endpoints.
+- [ ] Add analytics only with privacy review and appropriate consent; no advertising trackers by default.
+- [ ] Deploy from the BOZER GitHub repository using Cloudflare Pages or an equivalent low-cost host; test mobile performance, HTTPS, accessibility, and broken links.
+- [ ] Connect an owned domain when affordable; hosting and domain-registration costs must be tracked separately.
+- [ ] Add a secure account/payment portal only after backend authentication and payment verification are ready.
+
+## 12. BOZER promotional mini-series — 11 episodes
+
+- [ ] Define the series concept, target audience, genre, visual identity, main characters, setting, and how BOZER appears naturally in the story.
+- [ ] Write an 11-episode season bible: premise, character arcs, episode summaries, continuity, and finale.
+- [ ] Write and review all 11 scripts with clear duration, dialogue, scene directions, and a BOZER product moment in each episode.
+- [ ] Design consistent characters, locations, props, and reusable visual references before generating footage.
+- [ ] Produce a pilot first; review story clarity, visual consistency, sound, subtitles, and product accuracy before producing the remaining episodes.
+- [ ] Produce localized subtitles and, when feasible, French and English versions; plan formats for vertical social video and a compiled season.
+- [ ] Use only original or properly licensed music, voices, fonts, images, and footage; obtain consent for any real person's likeness or voice.
+- [ ] Never depict unbuilt BOZER capabilities as currently available; distinguish fictional scenes from actual product demonstrations.
+- [ ] Prepare trailers, episode clips, thumbnails, captions, hashtags, publication calendar, and measurable campaign goals.
+- [ ] Obtain final human review and approval before publishing any episode or advertisement.
+
+## 13. International launch and payment operations
+
+- [ ] Define target launch countries and a country-by-country payment availability matrix; global reach must not be assumed from card acceptance alone.
+- [ ] Compare merchant-of-record and payment-gateway providers for a Burkina-based owner: onboarding eligibility, international cards, local methods, currencies, fees, settlement routes, payout minimums, timing, refunds, chargebacks, taxes, and recurring billing.
+- [ ] Obtain written confirmation of a legal payout route to an account in the owner's name before selecting a provider; do not treat personal remittance wallets as commercial settlement accounts.
+- [ ] Design a provider-independent payment interface so providers can be added or replaced without rewriting Premium.
+- [ ] Implement server-side checkout creation, webhook signature verification, idempotency, subscription lifecycle, cancellation, refunds, receipts, fraud controls, and audit logs.
+- [ ] Keep payment secrets only in server-side secret storage; never embed merchant keys in the Android APK or website JavaScript.
+- [ ] Test sandbox flows and failure cases before enabling live payments; obtain owner approval for live merchant onboarding and production activation.
+- [ ] Publish clear prices, supported currencies, renewal terms, cancellation/refund policy, and customer support contacts.
+- [ ] Reconcile gross sales, provider fees, currency conversion, reserves, refunds, and net payouts; maintain accounting records for the owner's jurisdiction.
+
 ## Immediate execution order
 
-1. Finish recurring alarms/snooze and verify the Android build.
-2. Complete the alarm UI and task-linked reminders.
-3. Finish voice session controls and on-device/offline speech assessment.
-4. Stabilize local/remote model routing and measure phone latency.
-5. Connect BOZER ACTION tools to the mission runner and secure persistent runtime.
-6. Resolve Cloudflare deployment permissions and implement real app authentication.
-7. Complete research, Secretary, interface, Premium/payment, and business modules.
-8. Run the full security, device, performance, and release acceptance matrix.
+1. Finish recurring alarms/snooze, verify the Android build, and complete the highest-priority app reliability work.
+2. Complete the alarm UI, Secretary task flows, voice controls, and stable local/remote model routing; measure performance on real devices.
+3. Connect BOZER ACTION tools to the mission runner, secure persistent runtime, resolve Cloudflare deployment permissions, and implement real app authentication.
+4. In parallel, define the public brand kit and build the first lightweight official website; deploy a preview before buying a custom domain.
+5. Finalize the international payment-provider decision only after written confirmation of merchant eligibility and a legal payout route to the owner's name; then implement the provider-independent payment layer.
+6. Develop the 11-episode mini-series bible and scripts; produce and approve a pilot before generating the whole season.
+7. Complete research, Premium, business tools, security, privacy, and customer-support workflows.
+8. Run full automated, emulator, real-device, payment-sandbox, website, and release acceptance checks before public launch.
 
 Update this checklist after each verified implementation. Do not mark external prerequisites or real-device tests complete based only on code changes or CI.
