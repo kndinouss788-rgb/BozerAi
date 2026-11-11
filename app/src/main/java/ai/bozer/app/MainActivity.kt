@@ -259,10 +259,14 @@ private fun BozerChat(
         repository.save(userMessage)
         sending = true
         scope.launch {
-            val answer = actionReply ?: withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
+            val answer = try {
+                actionReply ?: withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
+            } catch (error: Exception) {
+                "Une partie de BOZER est momentanément bloquée : ${error.message ?: "erreur inconnue"}. Tes alarmes et rappels locaux restent indépendants du cerveau."
+            }
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
-            repository.save(assistantMessage)
+            runCatching { repository.save(assistantMessage) }
             if (voiceRepliesEnabled) voiceOutput.speak(answer)
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
