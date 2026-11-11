@@ -40,6 +40,7 @@ class AndroidActionExecutor(private val activity: Activity) {
                 is AndroidCommand.ComposeSms -> composeSms(parsed.number, parsed.body)
                 is AndroidCommand.ComposeEmail -> composeEmail(parsed.address, parsed.subject, parsed.body)
                 is AndroidCommand.SetAlarm -> setAlarm(parsed.hour, parsed.minute, parsed.label)
+                is AndroidCommand.SetReminder -> setRelativeReminder(parsed.delaySeconds, parsed.label)
                 is AndroidCommand.SetTimer -> setTimer(parsed.seconds, parsed.label)
                 is AndroidCommand.CreateCalendarEvent -> createCalendarEvent(parsed.title, parsed.details, parsed.beginAtMillis)
                 is AndroidCommand.ShareText -> shareText(parsed.text)
@@ -178,6 +179,24 @@ class AndroidActionExecutor(private val activity: Activity) {
         }
     }
 
+    private fun setRelativeReminder(delaySeconds: Long, label: String): String {
+        val triggerAt = System.currentTimeMillis() + delaySeconds * 1000L
+        val repository = BozerAlarmRepository(ChatDatabase(activity.applicationContext))
+        val id = repository.create(triggerAt, label.ifBlank { "Rappel BOZER" })
+        val alarm = repository.get(id) ?: return "Le rappel a été enregistré, mais je n'ai pas pu le charger."
+        if (!BozerAlarmScheduler(activity.applicationContext).schedule(alarm)) {
+            repository.disable(id)
+            return "Android a refusé de programmer ce rappel. Vérifie les autorisations d'alarmes et de notifications de BOZER."
+        }
+        val minutes = delaySeconds / 60
+        val duration = when {
+            delaySeconds < 60 -> "${delaySeconds} seconde(s)"
+            minutes < 60 -> "${minutes} minute(s)"
+            else -> "${minutes / 60} heure(s)" + if (minutes % 60 > 0) " et ${minutes % 60} minute(s)" else ""
+        }
+        return "Rappel BOZER programmé dans ${duration} : ${alarm.label}."
+    }
+
     private fun setTimer(seconds: Int, label: String): String {
         val intent = Intent(AlarmClock.ACTION_SET_TIMER)
             .putExtra(AlarmClock.EXTRA_LENGTH, seconds)
@@ -226,6 +245,7 @@ sealed interface AndroidCommand {
     data class ComposeSms(val number: String, val body: String) : AndroidCommand
     data class ComposeEmail(val address: String, val subject: String, val body: String) : AndroidCommand
     data class SetAlarm(val hour: Int, val minute: Int, val label: String) : AndroidCommand
+    data class SetReminder(val delaySeconds: Long, val label: String) : AndroidCommand
     data class SetTimer(val seconds: Int, val label: String) : AndroidCommand
     data class CreateCalendarEvent(val title: String, val details: String, val beginAtMillis: Long) : AndroidCommand
     data class ShareText(val text: String) : AndroidCommand
@@ -252,6 +272,28 @@ object AndroidCommandParser {
 
         Regex("""^(?:itineraire|itinéraire|navigue|guide-moi)\\s+(?:vers|a|à|au|aux)\\s+(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.Navigate(it.groupValues[1].trim()) }
+
+        Regex("""^(?:rappelle-moi|rappelle moi|reveille-moi|réveille-moi)\s+(?:a|à)\s+(\d{1,2})(?:h|:)(\d{0,2})(?:\s+(?:pour|de|intitulee)\s+(.+))?$""", RegexOption.IGNORE_CASE)
+            .find(text)?.let {
+                val hour = it.groupValues[1].toIntOrNull() ?: return null
+                val minute = it.groupValues[2].ifBlank { "0" }.toIntOrNull() ?: return null
+                if (hour !in 0..23 || minute !in 0..59) return null
+                return AndroidCommand.SetAlarm(hour, minute, it.groupValues.getOrNull(3).orEmpty().ifBlank { "BOZER" })
+            }
+
+        Regex("""^(?:rappelle-moi|rappelle moi)\s+dans\s+(\d{1,5})\s*(secondes?|secs?|minutes?|mins?|heures?|h)(?:\s+(?:de|pour)\s+(.+))?$""", RegexOption.IGNORE_CASE)
+            .find(text)?.let {
+                val amount = it.groupValues[1].toLongOrNull() ?: return null
+                val unit = it.groupValues[2].lowercase(Locale.ROOT)
+                val factor = when {
+                    unit.startsWith("h") -> 3600L
+                    unit.startsWith("m") -> 60L
+                    else -> 1L
+                }
+                val delay = amount * factor
+                if (delay !in 1L..604800L) return null
+                return AndroidCommand.SetReminder(delay, it.groupValues.getOrNull(3).orEmpty().ifBlank { "Rappel BOZER" })
+            }
 
         Regex("""^(?:mets|programme|regle)\s+(?:une\s+)?alarme\s+(?:a|à)\s+(\d{1,2})(?:h|:)(\d{0,2})(?:\s+(?:pour|intitulee)\s+(.+))?$""", RegexOption.IGNORE_CASE)
             .find(text)?.let {
