@@ -6,7 +6,9 @@ on:
     branches: [main, feature/remote-ai-quota-router]
     paths:
       - "bozer_brain/mission.py"
+      - "bozer_brain/mission_planner.py"
       - "tests/test_mission.py"
+      - "tests/test_mission_planner.py"
       - ".github/workflows/agent.yml"
 
 jobs:
@@ -20,4 +22,4 @@ jobs:
         with:
           python-version: "3.11"
       - name: Run mission engine tests
-        run: python -m unittest discover -s tests -p 'test_mission.py' -v
+        run: python -m unittest discover -s tests -p 'test_mission*.py' -v
