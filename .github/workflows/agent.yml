@@ -20,4 +20,4 @@ jobs:
         with:
           python-version: "3.11"
       - name: Run mission engine tests
-        run: python -m unittest tests.test_mission -v
+        run: python -m unittest discover -s tests -p 'test_mission.py' -v
