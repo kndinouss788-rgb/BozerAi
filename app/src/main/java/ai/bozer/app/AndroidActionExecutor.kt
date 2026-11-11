@@ -189,7 +189,7 @@ object AndroidCommandParser {
         Regex("""^(?:appelle|telephone)\s+(?:le\s+)?([+0-9][+0-9() .-]{5,})$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.Dial(it.groupValues[1].trim()) }
 
-        Regex("""^(?:envoie|envoye)\s+(?:un\s+)?(?:sms|message)\s+(?:a|au)\s+([+0-9][+0-9() .-]{5,})\s+(?:disant|qui dit|: )\s*(.+)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:envoie|envoye)\\s+(?:un\\s+)?(?:sms|message)\\s+(?:a|à|au)\\s+([+0-9][+0-9() .-]{5,})\\s+(?:disant|qui dit|:)\\s*(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.ComposeSms(it.groupValues[1].trim(), it.groupValues[2].trim()) }
 
         Regex("""^(?:ouvre|va sur|visite)\s+(?:le site\s+)?((?:https?://)?[a-z0-9.-]+\.[a-z]{2,}(?:/[^ ]*)?)$""", RegexOption.IGNORE_CASE)
@@ -198,7 +198,7 @@ object AndroidCommandParser {
         Regex("""^(?:cherche sur internet|recherche sur internet|cherche sur le web)\s+(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.SearchWeb(it.groupValues[1].trim()) }
 
-        Regex("""^(?:itineraire|navigue|guide-moi)\s+(?:vers|a|au|aux)\s+(.+)$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:itineraire|itinéraire|navigue|guide-moi)\\s+(?:vers|a|à|au|aux)\\s+(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.Navigate(it.groupValues[1].trim()) }
 
         Regex("""^(?:mets|programme|regle)\s+(?:une\s+)?alarme\s+(?:a|à)\s+(\d{1,2})(?:h|:)(\d{0,2})(?:\s+(?:pour|intitulee)\s+(.+))?$""", RegexOption.IGNORE_CASE)
