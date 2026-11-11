@@ -2,6 +2,11 @@ name: Deploy BOZER mission worker
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feature/remote-ai-quota-router]
+    paths:
+      - "cloudflare/bozer-gateway/**"
+      - ".github/workflows/deploy-bozer-mission-worker.yml"
 
 permissions:
   contents: read
