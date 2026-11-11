@@ -21,6 +21,23 @@ class AndroidAlarmCommandParserTest {
     }
 
     @Test
+    fun recurringAlarmCalculatesNextAllowedWeekday() {
+        val previous = java.util.Calendar.getInstance().apply {
+            set(2026, java.util.Calendar.NOVEMBER, 9, 6, 0, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val now = java.util.Calendar.getInstance().apply {
+            set(2026, java.util.Calendar.NOVEMBER, 9, 7, 0, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val expected = java.util.Calendar.getInstance().apply {
+            set(2026, java.util.Calendar.NOVEMBER, 10, 6, 0, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        assertEquals(expected, BozerAlarmTime.nextOccurrence(previous, now, 62))
+    }
+
+    @Test
     fun parsesRelativeRemindersAndBoundsThem() {
         assertEquals(AndroidCommand.SetReminder(600, "appeler maman"), AndroidCommandParser.parse("rappelle-moi dans 10 minutes d'appeler maman"))
         assertEquals(AndroidCommand.SetReminder(7200, "Rappel BOZER"), AndroidCommandParser.parse("rappelle-moi dans 2 heures"))
