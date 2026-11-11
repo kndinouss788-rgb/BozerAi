@@ -1,5 +1,6 @@
 package ai.bozer.app
 
+import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.os.SystemClock
 import android.util.Log
@@ -88,8 +89,12 @@ class BozerBrainEndToEndTest {
 
     @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
-        device.executeShellCommand("am force-stop ai.bozer.app")
-        device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
+        // Do not force-stop the target package from its own instrumentation process:
+        // Android may terminate the test runner together with the application.
+        context.startActivity(
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        )
         assertNotNull(
             "Le moteur llama.cpp n'a pas affiché l'état prêt. Vérifier le chargement du GGUF.",
             device.wait(Until.findObject(By.text("Ton compagnon intelligent")), 600_000)
@@ -149,8 +154,12 @@ class BozerBrainEndToEndTest {
                 " search=" + searchMs
         )
 
-        device.executeShellCommand("am force-stop ai.bozer.app")
-        device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
+        device.pressBack()
+        SystemClock.sleep(1_000)
+        context.startActivity(
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        )
         assertNotNull(
             "BOZER ne retrouve pas son modèle après redémarrage",
             device.wait(Until.findObject(By.text("Ton compagnon intelligent")), 180_000)
