@@ -11,16 +11,17 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 
 /** BOZER-owned alarms: local persistence, independent from the AI gateway. */
-data class BozerAlarm(val id: Long, val triggerAtMillis: Long, val label: String, val enabled: Boolean = true) {
+data class BozerAlarm(val id: Long, val triggerAtMillis: Long, val label: String, val enabled: Boolean = true, val repeatDaysMask: Int = 0) {
     init { require(id > 0); require(triggerAtMillis > 0); require(label.isNotBlank()) }
 }
 
 class BozerAlarmRepository(private val database: ChatDatabase) {
-    fun create(triggerAtMillis: Long, label: String): Long = database.insertBozerAlarm(triggerAtMillis, label)
+    fun create(triggerAtMillis: Long, label: String, repeatDaysMask: Int = 0): Long = database.insertBozerAlarm(triggerAtMillis, label, repeatDaysMask)
     fun get(id: Long): BozerAlarm? = database.bozerAlarm(id)
     fun enabled(): List<BozerAlarm> = database.enabledBozerAlarms()
     fun disable(id: Long): Boolean = database.setBozerAlarmEnabled(id, false)
     fun delete(id: Long): Boolean = database.deleteBozerAlarm(id)
+    fun updateTrigger(id: Long, triggerAtMillis: Long): Boolean = database.updateBozerAlarmTrigger(id, triggerAtMillis)
 }
 
 class BozerAlarmScheduler(context: Context) {
@@ -74,7 +75,14 @@ class BozerAlarmReceiver : BroadcastReceiver() {
         val repository = BozerAlarmRepository(ChatDatabase(context))
         val alarm = repository.get(id) ?: return
         if (!alarm.enabled) return
-        repository.disable(id) // one-shot: persist before notifying
+        if (alarm.repeatDaysMask != 0) {
+            val next = BozerAlarmTime.nextOccurrence(alarm.triggerAtMillis, System.currentTimeMillis(), alarm.repeatDaysMask)
+            if (next != null) {
+                repository.updateTrigger(id, next)
+                val updated = repository.get(id)
+                if (updated != null) BozerAlarmScheduler(context).schedule(updated)
+            } else repository.disable(id)
+        } else repository.disable(id)
         showAlarmNotification(context, alarm)
     }
 
@@ -112,5 +120,27 @@ class BozerBootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
             intent.action != AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) return
         BozerAlarmScheduler(context).rescheduleEnabled(BozerAlarmRepository(ChatDatabase(context)))
+    }
+}
+
+
+/** Calculates the next local-calendar occurrence for a recurring alarm. */
+object BozerAlarmTime {
+    fun nextOccurrence(previousTriggerMillis: Long, nowMillis: Long, repeatDaysMask: Int): Long? {
+        if (repeatDaysMask !in 1..127) return null
+        val base = java.util.Calendar.getInstance().apply { timeInMillis = previousTriggerMillis }
+        val candidate = java.util.Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            set(java.util.Calendar.HOUR_OF_DAY, base.get(java.util.Calendar.HOUR_OF_DAY))
+            set(java.util.Calendar.MINUTE, base.get(java.util.Calendar.MINUTE))
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        repeat(8) {
+            val dayBit = 1 shl (candidate.get(java.util.Calendar.DAY_OF_WEEK) - 1)
+            if (candidate.timeInMillis > nowMillis && repeatDaysMask and dayBit != 0) return candidate.timeInMillis
+            candidate.add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+        return null
     }
 }
