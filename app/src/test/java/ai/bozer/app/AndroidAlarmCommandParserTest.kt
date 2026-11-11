@@ -1,0 +1,27 @@
+package ai.bozer.app
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class AndroidAlarmCommandParserTest {
+    @Test
+    fun parsesBozerAlarmAndWakeUpPhrases() {
+        assertEquals(AndroidCommand.SetAlarm(7, 30, "BOZER"), AndroidCommandParser.parse("mets une alarme à 7h30"))
+        assertEquals(AndroidCommand.SetAlarm(6, 0, "BOZER"), AndroidCommandParser.parse("réveille-moi à 6h"))
+        assertEquals(AndroidCommand.SetAlarm(18, 15, "prendre le dossier"), AndroidCommandParser.parse("rappelle-moi à 18h15 pour prendre le dossier"))
+    }
+
+    @Test
+    fun parsesRelativeRemindersAndBoundsThem() {
+        assertEquals(AndroidCommand.SetReminder(600, "appeler maman"), AndroidCommandParser.parse("rappelle-moi dans 10 minutes d'appeler maman"))
+        assertEquals(AndroidCommand.SetReminder(7200, "Rappel BOZER"), AndroidCommandParser.parse("rappelle-moi dans 2 heures"))
+        assertNull(AndroidCommandParser.parse("rappelle-moi dans 999999 minutes"))
+    }
+
+    @Test
+    fun parsesAlarmManagementPhrasesThroughExecutorEntryPointOnly() {
+        assertNull(AndroidCommandParser.parse("annule la prochaine alarme"))
+        assertNull(AndroidCommandParser.parse("quelles sont mes alarmes"))
+    }
+}
