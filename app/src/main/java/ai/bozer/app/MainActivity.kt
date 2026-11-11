@@ -1,6 +1,7 @@
 package ai.bozer.app
 
 import android.os.Bundle
+import android.app.AlarmManager
 import android.os.Build
 import android.content.Intent
 import android.content.Context
@@ -602,6 +603,19 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("FONCTIONS", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                                    if (!alarmManager.canScheduleExactAlarms()) {
+                                        TextButton(onClick = {
+                                            context.startActivity(Intent(
+                                                Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                                Uri.parse("package:${context.packageName}")
+                                            ))
+                                        }, modifier = Modifier.fillMaxWidth()) {
+                                            Text("Autoriser les alarmes précises", color = Color(0xFF258DB8))
+                                        }
+                                    }
+                                }
                                 TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Activer la bulle flottante", color = Color(0xFF258DB8)) }
                                 TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Désactiver la bulle flottante", color = Color(0xFF258DB8)) }
                             }
