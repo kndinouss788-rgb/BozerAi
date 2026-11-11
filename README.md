@@ -43,3 +43,36 @@ BOZER supports a local llama.cpp OpenAI-compatible endpoint with no API key:
 - Model calls still require allow_model=True. Local inference uses device CPU/RAM/battery and does not require paid API credits.
 
 This repository currently adds the provider bridge and tests; it does not yet embed/build llama.cpp in the Android app or bundle/download a model automatically. Android JNI/runtime integration and a real-device inference test remain required. A 0.5B model is a modest starter, not ChatGPT-level intelligence.
+
+
+## BOZER ACTION — Mission mode (execution core)
+
+The persistent mission engine is available in `bozer_brain.mission`.
+
+- Create a mission from an explicit objective and a dependency-ordered set of steps.
+- Persist mission, step status, attempt counts, and event history in SQLite.
+- Execute only tools explicitly registered by the trusted host.
+- Require declared permissions and pause for human approval before sensitive steps.
+- Mark a step successful only when its tool returns a verified result.
+- Retry explicitly retryable failures within a per-step attempt limit.
+- Stop at a step/time budget, cancellation request, missing tool, missing permission, or approval gate.
+- Resume a `limit_reached` mission from its saved checkpoint by calling `run` again.
+
+Minimal host integration:
+
+```python
+from bozer_brain.mission import MissionRunner, MissionStep, MissionStore, MissionTool, ToolResult
+
+store = MissionStore("bozer_missions.sqlite3")
+mission_id = store.create("Prepare a project report", [
+    MissionStep("collect", "Collect project facts", "research", {}),
+    MissionStep("report", "Write the report", "write_report", {}, ("collect",)),
+])
+runner = MissionRunner(store, {
+    "research": MissionTool(research_handler),
+    "write_report": MissionTool(report_handler),
+})
+report = runner.run(mission_id, max_steps=30, max_seconds=900)
+```
+
+This module is a tested execution core, **not yet a deployed overnight agent**. It does not invent a planner, run arbitrary shell commands, call a model, or provide Android/Cloudflare tool handlers by itself. A trusted host must supply the planner, registered handlers, persistent always-on runtime, authenticated mission API, and user-facing mission controls. GitHub Actions runners are temporary and are not a dependable all-night service. On Android, long missions require a visible foreground service and must respect OS battery/background limits. External messages, calls, purchases, posts, account changes, and destructive actions must pause for explicit user approval.
