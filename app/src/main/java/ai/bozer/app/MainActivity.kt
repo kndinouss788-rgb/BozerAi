@@ -50,23 +50,32 @@ private val SoftLilac = Color(0xFFF2F5F7)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
+    private lateinit var voiceOutput: BozerVoiceOutput
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
+        voiceOutput = BozerVoiceOutput(applicationContext)
         val repository = ChatRepository(ChatDatabase(applicationContext), engine)
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(this@MainActivity, repository, modelManager, engine) }
+        setContent { BozerChat(this@MainActivity, repository, modelManager, engine, voiceOutput) }
     }
 
     override fun onDestroy() {
+        if (::voiceOutput.isInitialized) voiceOutput.shutdown()
         if (::engine.isInitialized) engine.close()
         super.onDestroy()
     }
 }
 
 @Composable
-private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, modelManager: LocalModelManager, engine: LocalLlamaEngine) {
+private fun BozerChat(
+    activity: ComponentActivity,
+    repository: ChatRepository,
+    modelManager: LocalModelManager,
+    engine: LocalLlamaEngine,
+    voiceOutput: BozerVoiceOutput
+) {
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
@@ -82,6 +91,10 @@ private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, m
     var confirmClearHistory by remember { mutableStateOf(false) }
     var confirmClearMemory by remember { mutableStateOf(false) }
     var pendingPhoneAction by remember { mutableStateOf<PhoneAction?>(null) }
+    var voiceEnabled by remember {
+        mutableStateOf(activity.getPreferences(android.content.Context.MODE_PRIVATE)
+            .getBoolean("voice_enabled", false))
+    }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val lastUserText = messages.lastOrNull { it.role == "user" }?.content.orEmpty()
@@ -151,6 +164,7 @@ private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, m
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
             repository.save(assistantMessage)
+            if (voiceEnabled) voiceOutput.speak(answer)
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
         }
@@ -347,6 +361,25 @@ private fun BozerChat(activity: ComponentActivity, repository: ChatRepository, m
                         Text(modelStatus, color = Muted, fontSize = 13.sp)
                         Text("Version 0.2.0 · Interface nacrée", color = Muted, fontSize = 12.sp)
                         Text("Tes conversations et souvenirs restent enregistrés sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Lecture vocale", color = Ink, fontWeight = FontWeight.Medium)
+                                Text("Lire les réponses avec la voix Android française.", color = Muted, fontSize = 11.sp)
+                            }
+                            Switch(
+                                checked = voiceEnabled,
+                                onCheckedChange = { enabled ->
+                                    voiceEnabled = enabled
+                                    activity.getPreferences(android.content.Context.MODE_PRIVATE)
+                                        .edit().putBoolean("voice_enabled", enabled).apply()
+                                    if (!enabled) voiceOutput.stop()
+                                }
+                            )
+                        }
                         TextButton(onClick = {
                             memoryFacts = repository.rememberedFacts()
                             settingsOpen = false
