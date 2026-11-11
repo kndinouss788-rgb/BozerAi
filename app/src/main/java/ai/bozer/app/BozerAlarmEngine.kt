@@ -68,9 +68,28 @@ class BozerAlarmScheduler(context: Context) {
 }
 
 class BozerAlarmReceiver : BroadcastReceiver() {
+    companion object {
+        const val ACTION_SNOOZE = "ai.bozer.app.action.SNOOZE_ALARM"
+        const val SNOOZE_MINUTES = 10L
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != BozerAlarmScheduler.ACTION_FIRE) return
         val id = intent.getLongExtra(BozerAlarmScheduler.EXTRA_ALARM_ID, -1L)
+        if (id <= 0) return
+        if (intent.action == ACTION_SNOOZE) {
+            val repository = BozerAlarmRepository(ChatDatabase(context))
+            val original = repository.get(id) ?: return
+            val snoozeId = repository.create(
+                System.currentTimeMillis() + SNOOZE_MINUTES * 60_000L,
+                "Rappel (après répétition) : ${original.label}"
+            )
+            val snooze = repository.get(snoozeId) ?: return
+            if (BozerAlarmScheduler(context).schedule(snooze)) {
+                (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(id.toInt())
+            } else repository.disable(snoozeId)
+            return
+        }
+        if (intent.action != BozerAlarmScheduler.ACTION_FIRE) return
         if (id <= 0) return
         val repository = BozerAlarmRepository(ChatDatabase(context))
         val alarm = repository.get(id) ?: return
@@ -104,12 +123,20 @@ class BozerAlarmReceiver : BroadcastReceiver() {
             PendingIntent.getActivity(context, alarm.id.toInt(), it,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
+        val snoozeIntent = Intent(context, BozerAlarmReceiver::class.java)
+            .setAction(ACTION_SNOOZE)
+            .putExtra(BozerAlarmScheduler.EXTRA_ALARM_ID, alarm.id)
+        val snoozePendingIntent = PendingIntent.getBroadcast(
+            context, alarm.id.toInt(), snoozeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("BOZER — ${alarm.label}")
             .setContentText("C'est l'heure.")
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
+            .addAction(android.R.drawable.ic_lock_idle_alarm, "Répéter 10 min", snoozePendingIntent)
             .setAutoCancel(true).setContentIntent(contentIntent).build()
         manager.notify(alarm.id.toInt(), notification)
     }
