@@ -13,6 +13,14 @@ class AndroidAlarmCommandParserTest {
     }
 
     @Test
+    fun parsesDailyAndWeekdayRecurringAlarms() {
+        assertEquals(AndroidCommand.SetRecurringAlarm(6, 0, "BOZER", 127),
+            AndroidCommandParser.parse("programme une alarme tous les jours à 6h"))
+        assertEquals(AndroidCommand.SetRecurringAlarm(7, 30, "BOZER", 62),
+            AndroidCommandParser.parse("mets une alarme du lundi au vendredi à 7h30"))
+    }
+
+    @Test
     fun parsesRelativeRemindersAndBoundsThem() {
         assertEquals(AndroidCommand.SetReminder(600, "appeler maman"), AndroidCommandParser.parse("rappelle-moi dans 10 minutes d'appeler maman"))
         assertEquals(AndroidCommand.SetReminder(7200, "Rappel BOZER"), AndroidCommandParser.parse("rappelle-moi dans 2 heures"))
