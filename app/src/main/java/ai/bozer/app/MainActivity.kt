@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.Context
 import android.Manifest
 import android.content.pm.PackageManager
+import android.speech.tts.TextToSpeech
 import android.speech.SpeechRecognizer
 import java.util.Locale
 import android.speech.RecognizerIntent
@@ -183,6 +184,9 @@ private fun BozerChat(
     var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", false)) }
+    val voiceOutput = remember(context) { BozerVoiceOutput(context) }
+    DisposableEffect(voiceOutput) { onDispose { voiceOutput.shutdown() } }
     var secretaryOpen by remember { mutableStateOf(false) }
     var tiktokOpen by remember { mutableStateOf(false) }
     var tiktokDescription by remember { mutableStateOf("") }
@@ -267,6 +271,7 @@ private fun BozerChat(
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
             repository.save(assistantMessage)
+            if (voiceRepliesEnabled) voiceOutput.speak(answer)
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
         }
@@ -567,6 +572,18 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             Text(mode.description, color = Color(0xFF7D8A9B), fontSize = 11.sp, lineHeight = 15.sp)
                                         }
                                     }
+                                }
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Réponses vocales BOZER", color = Color(0xFF172538), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                        Text("Lire les réponses à voix haute, directement sur le téléphone", color = Color(0xFF7D8A9B), fontSize = 11.sp)
+                                    }
+                                    Switch(checked = voiceRepliesEnabled, onCheckedChange = {
+                                        voiceRepliesEnabled = it
+                                        context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+                                            .edit().putBoolean("voice_replies", it).apply()
+                                        if (!it) voiceOutput.stop()
+                                    })
                                 }
                                 TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady) {
                                     Text(if (modelReady) "Cerveau local prêt" else if (modelBusy) "Installation en cours…" else "Installer le cerveau local", color = Color(0xFF258DB8))
