@@ -285,7 +285,7 @@ object AndroidCommandParser {
                 return AndroidCommand.SetAlarm(hour, minute, it.groupValues.getOrNull(3).orEmpty().ifBlank { "BOZER" })
             }
 
-        Regex("""^(?:rappelle-moi|rappelle moi)\s+dans\s+(\d{1,5})\s*(secondes?|secs?|minutes?|mins?|heures?|h)(?:\s+(?:de|pour)\s+(.+))?$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:rappelle-moi|rappelle moi)\s+dans\s+(\d{1,5})\s*(secondes?|secs?|minutes?|mins?|heures?|h)(?:\s+(?:(?:de|pour)\s+|d['’])(.+))?$""", RegexOption.IGNORE_CASE)
             .find(text)?.let {
                 val amount = it.groupValues[1].toLongOrNull() ?: return null
                 val unit = it.groupValues[2].lowercase(Locale.ROOT)
