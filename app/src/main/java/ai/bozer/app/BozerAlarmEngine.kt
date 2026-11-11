@@ -43,6 +43,9 @@ class BozerAlarmScheduler(context: Context) {
         } catch (_: SecurityException) { false }
     }
 
+    fun exactAlarmAccessGranted(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+
     fun cancel(id: Long) { alarmPendingIntent(id)?.let(alarmManager::cancel) }
 
     fun rescheduleEnabled(repository: BozerAlarmRepository) {
