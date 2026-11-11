@@ -54,3 +54,28 @@ The Android client calls the HTTPS Worker endpoint using `BOZER_GATEWAY_URL`. Th
 - Add abuse monitoring, a global emergency disable switch, and quota/billing alerts before public launch.
 
 10,000 daily users or any specific daily response volume is **not guaranteed** by combining free tiers. Capacity must be load-tested against actual account quotas and Cloudflare plan limits. When all remote providers are unavailable, Android attempts its local model; that local fallback must also be tested on real target devices.
+
+
+## BOZER ACTION — durable mission worker
+
+The gateway now contains a separate authenticated mission API and a scheduled D1-backed worker:
+
+- `POST /api/missions` creates a bounded mission from an objective and asks the configured model to prepare up to 32 work packages.
+- `GET /api/missions` lists the caller's latest missions.
+- `GET /api/missions/{mission_id}` returns progress, saved results, and the next scheduled run.
+- `POST /api/missions/{mission_id}/cancel` requests cancellation.
+- A Cloudflare Cron trigger wakes every minute. It advances due missions in bounded batches and saves each completed step in D1. A mission can continue when the phone is offline or closed.
+- The default interval is 15 minutes per work package, allowing a 32-step mission to span roughly eight hours. Missions expire after 12 hours. Daily mission model calls have a separate per-installation cap.
+
+### Required setup before this API can be used
+
+1. Apply the expanded `schema.sql` to the configured D1 database (it creates the `missions` table and indexes).
+2. Set the Worker secret `MISSION_API_TOKEN` to a strong random value. Requests must send it as `Authorization: Bearer <token>`.
+3. Ensure at least one provider secret and positive provider daily cap are configured. The mission planner and each work package consume provider quota.
+4. Deploy the Worker with the configured Cron trigger.
+
+**Do not embed `MISSION_API_TOKEN` in an APK or public source.** This first API is an owner/backend integration protected by a server-held token. A production mobile app needs real user authentication and short-lived user-scoped tokens issued by a trusted backend before this endpoint can safely be exposed to all users.
+
+### Current mission scope
+
+The scheduled worker currently performs bounded cognitive work packages using only model reasoning and text generation (`analyze`, `draft`, `review`, `synthesize`). It does not yet browse the web, read or edit GitHub files, run shell commands, operate TikTok, send messages, make calls, buy, delete, or control an Android device. Those capabilities must be implemented as separate registered tools with their own permissions, verification, and human-approval gates. The Python mission engine and this Cloudflare queue are two execution layers; the Android app UI has not yet been connected.
