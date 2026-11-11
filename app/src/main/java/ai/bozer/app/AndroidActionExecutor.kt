@@ -40,6 +40,7 @@ class AndroidActionExecutor(private val activity: Activity) {
                 is AndroidCommand.ComposeSms -> composeSms(parsed.number, parsed.body)
                 is AndroidCommand.ComposeEmail -> composeEmail(parsed.address, parsed.subject, parsed.body)
                 is AndroidCommand.SetAlarm -> setAlarm(parsed.hour, parsed.minute, parsed.label)
+                is AndroidCommand.SetRecurringAlarm -> setRecurringAlarm(parsed.hour, parsed.minute, parsed.label, parsed.repeatDaysMask)
                 is AndroidCommand.SetReminder -> setRelativeReminder(parsed.delaySeconds, parsed.label)
                 is AndroidCommand.SetTimer -> setTimer(parsed.seconds, parsed.label)
                 is AndroidCommand.CreateCalendarEvent -> createCalendarEvent(parsed.title, parsed.details, parsed.beginAtMillis)
@@ -181,6 +182,38 @@ class AndroidActionExecutor(private val activity: Activity) {
         }
     }
 
+    private fun setRecurringAlarm(hour: Int, minute: Int, label: String, repeatDaysMask: Int): String {
+        val now = System.currentTimeMillis()
+        val candidate = Calendar.getInstance().apply {
+            timeInMillis = now
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        var found: Long? = null
+        repeat(8) {
+            val bit = 1 shl (candidate.get(Calendar.DAY_OF_WEEK) - 1)
+            if (candidate.timeInMillis > now && repeatDaysMask and bit != 0) {
+                found = candidate.timeInMillis
+                return@repeat
+            }
+            if (found == null) candidate.add(Calendar.DAY_OF_YEAR, 1)
+        }
+        val trigger = found ?: return "Je n'ai pas trouvé de prochaine date pour cette alarme."
+        val repository = BozerAlarmRepository(ChatDatabase(activity.applicationContext))
+        val id = repository.create(trigger, label.ifBlank { "BOZER" }, repeatDaysMask)
+        val scheduler = BozerAlarmScheduler(activity.applicationContext)
+        val alarm = repository.get(id) ?: return "L'alarme récurrente n'a pas pu être chargée."
+        if (!scheduler.schedule(alarm)) {
+            repository.disable(id)
+            return "Android a refusé de programmer cette alarme. Vérifie les autorisations."
+        }
+        val days = if (repeatDaysMask == 127) "tous les jours" else "du lundi au vendredi"
+        val precision = if (scheduler.exactAlarmAccessGranted()) "Alarme précise" else "Alarme enregistrée (Android peut la retarder)"
+        return "$precision BOZER $days à %02d:%02d.".format(hour, minute)
+    }
+
     private fun setRelativeReminder(delaySeconds: Long, label: String): String {
         val triggerAt = System.currentTimeMillis() + delaySeconds * 1000L
         val repository = BozerAlarmRepository(ChatDatabase(activity.applicationContext))
@@ -249,6 +282,7 @@ sealed interface AndroidCommand {
     data class ComposeSms(val number: String, val body: String) : AndroidCommand
     data class ComposeEmail(val address: String, val subject: String, val body: String) : AndroidCommand
     data class SetAlarm(val hour: Int, val minute: Int, val label: String) : AndroidCommand
+    data class SetRecurringAlarm(val hour: Int, val minute: Int, val label: String, val repeatDaysMask: Int) : AndroidCommand
     data class SetReminder(val delaySeconds: Long, val label: String) : AndroidCommand
     data class SetTimer(val seconds: Int, val label: String) : AndroidCommand
     data class CreateCalendarEvent(val title: String, val details: String, val beginAtMillis: Long) : AndroidCommand
@@ -276,6 +310,23 @@ object AndroidCommandParser {
 
         Regex("""^(?:itineraire|itinéraire|navigue|guide-moi)\s+(?:vers|a|à|au|aux)\s+(.+)$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.Navigate(it.groupValues[1].trim()) }
+
+
+        Regex("""^(?:programme|mets|regle)\\s+(?:une\\s+)?alarme\\s+(?:tous les jours|chaque jour|du lundi au dimanche)\\s+(?:a|à)\\s+(\\d{1,2})(?:h|:)(\\d{0,2})(?:\\s+(?:pour|intitulee)\\s+(.+))?$""", RegexOption.IGNORE_CASE)
+            .find(text)?.let {
+                val hour = it.groupValues[1].toIntOrNull() ?: return null
+                val minute = it.groupValues[2].ifBlank { "0" }.toIntOrNull() ?: return null
+                if (hour !in 0..23 || minute !in 0..59) return null
+                return AndroidCommand.SetRecurringAlarm(hour, minute, it.groupValues.getOrNull(3).orEmpty().ifBlank { "BOZER" }, 127)
+            }
+
+        Regex("""^(?:programme|mets|regle)\\s+(?:une\\s+)?alarme\\s+(?:du lundi au vendredi|en semaine)\\s+(?:a|à)\\s+(\\d{1,2})(?:h|:)(\\d{0,2})(?:\\s+(?:pour|intitulee)\\s+(.+))?$""", RegexOption.IGNORE_CASE)
+            .find(text)?.let {
+                val hour = it.groupValues[1].toIntOrNull() ?: return null
+                val minute = it.groupValues[2].ifBlank { "0" }.toIntOrNull() ?: return null
+                if (hour !in 0..23 || minute !in 0..59) return null
+                return AndroidCommand.SetRecurringAlarm(hour, minute, it.groupValues.getOrNull(3).orEmpty().ifBlank { "BOZER" }, 62)
+            }
 
         Regex("""^(?:rappelle-moi|rappelle moi|reveille-moi|réveille-moi)\s+(?:a|à)\s+(\d{1,2})(?:h|:)(\d{0,2})(?:\s+(?:pour|de|intitulee)\s+(.+))?$""", RegexOption.IGNORE_CASE)
             .find(text)?.let {
