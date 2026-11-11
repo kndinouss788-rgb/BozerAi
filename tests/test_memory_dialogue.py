@@ -103,6 +103,38 @@ class DialogueTests(unittest.TestCase):
         self.assertFalse(result.used_language_model)
         self.assertEqual(result.model_error, "provider_not_configured")
 
+
+    def test_dialogue_exposes_injected_mission_service(self):
+        class FakeMissionService:
+            def create_from_objective(self, objective, *, allow_model=False, max_steps=16):
+                class Plan:
+                    objective = objective
+                    summary = "Plan préparé"
+                    steps = ()
+                return "mission-123", Plan()
+
+            def run(self, mission_id, *, max_steps=20, max_seconds=300.0):
+                return {"mission_id": mission_id, "status": "completed"}
+
+            def approve_step(self, mission_id, step_id):
+                return (mission_id, step_id)
+
+            def cancel(self, mission_id):
+                return mission_id
+
+        engine = DialogueEngine(self.memory, mission_service=FakeMissionService())
+        created = engine.create_mission("Préparer un rapport", allow_model=True)
+        self.assertEqual(created["mission_id"], "mission-123")
+        self.assertEqual(created["summary"], "Plan préparé")
+        self.assertEqual(engine.run_mission("mission-123")["status"], "completed")
+        self.assertEqual(engine.approve_mission_step("mission-123", "step-1"), ("mission-123", "step-1"))
+        self.assertEqual(engine.cancel_mission("mission-123"), "mission-123")
+
+    def test_dialogue_fails_closed_when_mission_service_missing(self):
+        engine = DialogueEngine(self.memory)
+        with self.assertRaisesRegex(RuntimeError, "mission_service_not_configured"):
+            engine.create_mission("Travailler toute la nuit", allow_model=True)
+
     def test_without_model_does_not_fake_ai(self):
         result = DialogueEngine(self.memory).respond("Explique la gravité")
         self.assertFalse(result.used_language_model)
