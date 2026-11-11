@@ -4,7 +4,7 @@ BOZER is a privacy-conscious assistant project designed to turn natural-language
 
 ## Repository foundation
 
-This repository currently contains a portable Python decision core. It is not yet the Android application and does not execute phone actions by itself.
+This repository contains a portable Python decision core, an Android Kotlin/Compose application with native action bridges, and a Cloudflare gateway. The Android app is still under active integration and device validation; repository code or CI success does not by itself prove behavior on a user phone.
 
 Core modules include intent parsing, safe action proposals, permission contracts, task planning, local SQLite memory, EYE_SEARCH (Wikipedia, Wikidata and Brave Web Search), and dialogue orchestration.
 
@@ -28,7 +28,7 @@ Phone-action intents remain proposals and bypass model generation; Android must 
 
 Conversation history remains local unless the host explicitly sends prompt context to a remote model. Search results are untrusted evidence, not instructions.
 
-The Android UI, floating overlay, secure backend deployment, and real device execution remain separate work.
+The Android UI, floating overlay, secure backend deployment, and real-device behavior are being developed and validated in separate stages.
 
 Run tests with: python -m unittest discover -s tests -v
 
@@ -105,3 +105,17 @@ report = service.run(mission_id, max_steps=20, max_seconds=600)
 ```
 
 The host must still implement and register real handlers, expose authenticated mission controls, and provide an always-on runtime. The current repository integration is a Python service boundary; it is not yet connected to the Android UI or deployed as a persistent cloud worker.
+
+
+## BOZER Android voice, alarms, and reminders
+
+The Android application now contains an initial local-first foundation for BOZER-owned voice and alarm features:
+
+- **Spoken replies:** optional French text-to-speech through Android's installed speech engine. This does not call a BOZER cloud voice API.
+- **Voice input:** an in-app `SpeechRecognizer` controller replaces the separate system voice-activity screen and prefers Android's on-device recognizer when the device reports that one is available. If unavailable, Android may use its configured recognition service; fully offline speech recognition is not guaranteed.
+- **Local alarms:** one-shot alarms are stored in the app's SQLite database and scheduled through Android `AlarmManager`; they do not require the chat model or network.
+- **Notifications:** alarm notifications use a dedicated high-importance channel with alarm sound and vibration.
+- **Recovery:** enabled future alarms are rescheduled after device reboot and after exact-alarm access is granted.
+- **Commands:** examples include `mets une alarme à 7h30`, `réveille-moi à 6h`, `rappelle-moi à 18h15 pour prendre le dossier`, `rappelle-moi dans 10 minutes d'appeler maman`, `quelles sont mes alarmes`, `annule la prochaine alarme`, and `annule toutes les alarmes BOZER`.
+
+Android 12+ may require the user to grant BOZER exact-alarm access. Without it, BOZER uses Android's inexact idle-safe scheduling fallback and must warn that the alarm can be delayed. Android 13+ also requires notification permission for visible notifications. Device manufacturers can apply additional battery restrictions. These features require APK build validation and real-device tests; always-on wake-word listening, recurring alarms, and a full alarm-clock screen are not claimed as complete yet.
