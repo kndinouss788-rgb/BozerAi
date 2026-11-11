@@ -28,6 +28,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Normalize copied secret values
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          invisible = {
+              "\\u200e", "\\u200f", "\\u202a", "\\u202b", "\\u202c",
+              "\\u202d", "\\u202e", "\\u2066", "\\u2067", "\\u2068",
+              "\\u2069", "\\u2060", "\\ufeff"
+          }
+          keys = ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "MISSION_API_TOKEN")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              for key in keys:
+                  value = os.environ.get(key, "")
+                  cleaned = "".join(ch for ch in value if ch not in invisible).strip()
+                  if not cleaned or any(ord(ch) > 127 for ch in cleaned):
+                      raise SystemExit("Invalid characters in " + key + "; recreate that GitHub secret.")
+                  print("::add-mask::" + cleaned)
+                  env_file.write(key + "=" + cleaned + "\\n")
+          PY
       - name: Check Cloudflare credentials
         shell: bash
         run: |
