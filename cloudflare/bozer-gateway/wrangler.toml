@@ -9,6 +9,7 @@ binding = "AI"
 binding = "DB"
 database_name = "bozer-gateway-quota"
 database_id = "a346764f-a8ef-4393-b84f-cabb779aabfe"
+migrations_dir = "migrations"
 
 [vars]
 USER_DAILY_REQUEST_CAP = "20"
