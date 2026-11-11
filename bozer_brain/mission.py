@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Tuple
 
 
-TERMINAL_MISSION_STATES = {"completed", "failed", "cancelled", "limit_reached"}
+TERMINAL_MISSION_STATES = {"completed", "failed", "cancelled"}
 VALID_STEP_STATES = {"pending", "running", "succeeded", "failed", "waiting_approval", "blocked"}
 
 
@@ -201,7 +201,7 @@ class MissionRunner:
             for row in rows:
                 (step_id,title,tool_name,args_json,deps_json,needs_confirmation,approved,
                  max_attempts,attempts,step_status,last_result) = row
-                if step_status not in {"pending", "failed"}:
+                if step_status != "pending":
                     continue
                 deps = json.loads(deps_json)
                 if any(states.get(dep) != "succeeded" for dep in deps):
