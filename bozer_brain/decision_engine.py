@@ -21,7 +21,7 @@ from .mission_reasoner import (
 
 
 _SPLIT_ACTIONS = re.compile(
-    r"\s*(?:,?\s+(?:puis|ensuite|et enfin)\s+|\s*;\s*)",
+    r"\s*(?:,?\s+(?:puis|ensuite|et enfin|then|and then|after that|and finally|finally)\s+|\s*;\s*)",
     re.IGNORECASE,
 )
 
