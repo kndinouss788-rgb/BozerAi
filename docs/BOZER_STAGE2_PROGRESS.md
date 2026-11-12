@@ -4,7 +4,7 @@
 
 Cette étape construit une couche Python portable et testable entre une demande en langage naturel et les adaptateurs Android. Elle prépare des décisions structurées ; elle ne réalise pas les actions à la place d'Android.
 
-### Chaîne de décision
+### Façade unifiée\n\n- `brain_facade.py` expose `BozerBrain.respond()` comme point d'entrée unique : les conversations sont déléguées au `DialogueEngine` existant, tandis que les actions passent par la chaîne décisionnelle.\n- Le modèle et la recherche restent désactivés par défaut et ne sont délégués que si l'appelant fournit explicitement les indicateurs d'autorisation.\n- Les demandes d'action et les missions ne passent pas par le dialogue pour éviter de présenter une proposition comme une action déjà exécutée.\n\n### Chaîne de décision
 
 1. **Compréhension déterministe** — réutilise le parseur d'intentions existant pour reconnaître les commandes simples explicitement prises en charge.
 2. **Orientation** — `request_router.py` classe la demande en conversation, recherche, action téléphone, mission multi-étapes ou clarification.
@@ -15,11 +15,11 @@ Cette étape construit une couche Python portable et testable entre une demande 
 
 ## Fichiers ajoutés ou renforcés
 
-- `bozer_brain/request_router.py`
+- `bozer_brain/brain_facade.py`\n- `bozer_brain/request_router.py`
 - `bozer_brain/decision_engine.py`
 - `bozer_brain/verification.py`
 - `tests/test_request_router.py`
-- `tests/test_decision_engine.py`
+- `tests/test_decision_engine.py`\n- `tests/test_brain_facade.py`
 - `bozer_brain/__init__.py`
 
 Les modules existants `intent.py`, `planner.py`, `task_planner.py`, `tools.py`, `memory.py` et `context.py` sont réutilisés, sans remplacement de la mémoire conversationnelle existante.
@@ -51,4 +51,4 @@ Le workflow actuel ne déclenche les tests que pour les pull requests vers `main
 
 ## Critère de clôture de l'étape 2
 
-La fondation décisionnelle, la planification contrôlée, les barrières d'autorisation, la vérification explicite et leurs tests sont présents dans la branche. L'intégration Android, la connexion au raisonneur IA et la validation sur téléphone restent hors de cette étape et doivent être traitées dans les étapes suivantes.
+La façade unifiée, la fondation décisionnelle, la planification contrôlée, les barrières d'autorisation, la vérification explicite et leurs tests sont présents dans la branche. L'intégration Android, la connexion au raisonneur IA et la validation sur téléphone restent hors de cette étape et doivent être traitées dans les étapes suivantes.
