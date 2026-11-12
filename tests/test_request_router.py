@@ -33,6 +33,11 @@ class RequestRouterTests(unittest.TestCase):
         self.assertEqual(result.route, RequestRoute.MULTI_STEP)
         self.assertIn("planning_only_no_execution", result.reasons)
 
+    def test_two_action_verbs_joined_by_et_are_not_collapsed_into_one_action(self):
+        result = analyze_request("Ouvre Settings et appelle Maman")
+        self.assertEqual(result.route, RequestRoute.MULTI_STEP)
+        self.assertIn("unsupported_or_missing_sequence_separator", result.reasons)
+
 
 if __name__ == "__main__":
     unittest.main()
