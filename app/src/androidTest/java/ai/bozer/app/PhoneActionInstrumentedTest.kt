@@ -73,13 +73,19 @@ class PhoneActionInstrumentedTest {
         assertEquals("com.android.settings", intent!!.component?.packageName)
         assertNotNull(intent.resolveActivity(context.packageManager))
 
-        val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"))
-        assertTrue(result.message, result.launched)
-        assertTrue(
-            "Android Settings did not become the foreground application",
-            device.wait(Until.hasObject(By.pkg("com.android.settings")), 10_000)
-        )
-        device.pressBack()
+        val targetActivity = intent.component?.className
+            ?: intent.resolveActivity(context.packageManager)?.className
+        assertNotNull("The Android Settings launch activity could not be resolved", targetActivity)
+        val monitor = instrumentation.addMonitor(targetActivity, null, false)
+        try {
+            val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"))
+            assertTrue(result.message, result.launched)
+            val launchedActivity = instrumentation.waitForMonitorWithTimeout(monitor, 10_000)
+            assertNotNull("Android did not start the Settings activity", launchedActivity)
+            launchedActivity?.finish()
+        } finally {
+            instrumentation.removeMonitor(monitor)
+        }
     }
 
     @Test
