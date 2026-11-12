@@ -2,6 +2,7 @@ package ai.bozer.app
 
 import android.content.Intent
 import android.provider.AlarmClock
+import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -73,20 +74,27 @@ class PhoneActionInstrumentedTest {
         assertEquals("com.android.settings", intent!!.component?.packageName)
         assertNotNull(intent.resolveActivity(context.packageManager))
 
-        val targetActivity = requireNotNull(
-            intent.component?.className
-                ?: intent.resolveActivity(context.packageManager)?.className
-        ) { "The Android Settings launch activity could not be resolved" }
-        val monitor = instrumentation.addMonitor(targetActivity, null, false)
-        try {
-            val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"))
-            assertTrue(result.message, result.launched)
-            val launchedActivity = instrumentation.waitForMonitorWithTimeout(monitor, 10_000)
-            assertNotNull("Android did not start the Settings activity", launchedActivity)
-            launchedActivity?.finish()
-        } finally {
-            instrumentation.removeMonitor(monitor)
+        val targetPackage = requireNotNull(
+            intent.component?.packageName
+                ?: intent.resolveActivity(context.packageManager)?.packageName
+        ) { "The Android Settings package could not be resolved" }
+        assertEquals("com.android.settings", targetPackage)
+
+        val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"))
+        assertTrue(result.message, result.launched)
+
+        // Check Android's activity stack instead of accessibility: the emulator's
+        // Settings UI can display a System UI ANR dialog while the activity is running.
+        var activityDump = ""
+        repeat(20) {
+            activityDump = device.executeShellCommand("dumpsys activity activities")
+            if (activityDump.contains("com.android.settings")) return@repeat
+            SystemClock.sleep(250)
         }
+        assertTrue(
+            "Android Settings was not started. Activity stack: " + activityDump.takeLast(1_500),
+            activityDump.contains("com.android.settings")
+        )
     }
 
     @Test
