@@ -106,7 +106,11 @@ class BozerBrainEndToEndTest {
         )
         // Open the existing settings dialog to wait for the actual local-model status,
         // rather than relying on copy from an older version of the interface.
-        device.click((device.displayWidth * 0.045f).toInt(), (device.displayHeight * 0.052f).toInt())
+        device.click((device.displayWidth * 0.12f).toInt(), (device.displayHeight * 0.052f).toInt())
+        assertNotNull(
+            "Le panneau Réglages BOZER ne s'est pas ouvert.",
+            device.wait(Until.findObject(By.text("Réglages BOZER")), 20_000)
+        )
         assertNotNull(
             "Le moteur llama.cpp n'a pas affiché l'état prêt. Vérifier le chargement du GGUF.",
             device.wait(Until.findObject(By.text("Cerveau local prêt — hors ligne.")), 600_000)
