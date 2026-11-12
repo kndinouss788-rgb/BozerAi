@@ -62,9 +62,9 @@ class BozerDecisionEngine:
                 )
             steps = tuple(
                 TaskStep(
-                    step_id=f"step-{index + 1}",
+                    step_id=f"step-{index}",
                     proposal=proposal,
-                    depends_on=(f"step-{index}",) if index > 1 else (),
+                    depends_on=(f"step-{index - 1}",) if index > 1 else (),
                 )
                 for index, proposal in enumerate(proposals, start=1)
             )
