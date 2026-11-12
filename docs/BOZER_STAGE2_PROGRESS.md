@@ -2,9 +2,9 @@
 
 ## Ce que cette livraison apporte
 
-Cette PR construit une couche Python entre les demandes en langage naturel et les adaptateurs Android. Elle ajoute une façade unifiée, un routeur déterministe, une préparation de missions ordonnées, un raisonneur de missions optionnel, des contrôles de permissions/confirmations et un vérificateur de résultat.
+Cette PR construit une couche Python entre les demandes en langage naturel et les adaptateurs Android. Elle ajoute une façade unifiée, un routeur déterministe, une préparation de missions ordonnées, un raisonneur de missions optionnel, des contrôles de permissions/confirmations, un routage de fournisseurs à coût contrôlé et un vérificateur de résultat.
 
-Cette livraison renforce substantiellement l'étape 2. Elle ne doit pas être présentée comme la clôture intégrale de tous les critères de l'étape 2 du plan directeur tant que les vérifications sur vrais fournisseurs et appareils, la qualité linguistique et les mesures de latence ne sont pas disponibles.
+Cette livraison est une fondation décisionnelle importante de l'étape 2. Elle ne doit pas être présentée comme la clôture intégrale de tous les critères du plan directeur tant que les vérifications sur vrais fournisseurs et appareils, la qualité linguistique et les mesures de latence ne sont pas disponibles.
 
 ## Chaîne de décision livrée
 
@@ -57,9 +57,11 @@ Commande exécutée par GitHub Actions :
 python -m unittest discover -s tests -v
 \`\`\`
 
-Le premier lot avait 95 tests et a révélé deux échecs de numérotation, corrigés ensuite. Un passage ultérieur a validé 95/95. La suite a ensuite été élargie avec le raisonneur de mission, le routage fournisseur et les cas anglais ; le résultat du passage CI couvrant tous ces changements doit être relu dans le run le plus récent avant de figer le nombre total.
-
-Les tests du raisonneur utilisent un faux fournisseur pour vérifier l'analyse JSON, la gestion des erreurs, les permissions, les confirmations et le rejet des commandes non reconnues. Ils ne constituent pas un appel à un service IA réel.
+- Workflow GitHub Actions **BOZER core tests**, run **#325** : succès.
+- Résultat : **123 tests exécutés, 123 réussis, 0 échec**.
+- Le premier lot de 95 tests avait révélé deux échecs de numérotation, corrigés et validés ; les nouvelles briques de raisonnement, de routage fournisseur et les cas anglais sont ensuite passés dans le run #325.
+- Les tests du raisonneur et du routeur fournisseur utilisent des faux fournisseurs. Ils valident les contrats, les contrôles et les échecs, mais ne constituent pas un appel à un service IA réel.
+- La PR #11 est prête pour revue et non fusionnée.
 
 ## État des critères officiels de l'étape 2
 
@@ -69,7 +71,7 @@ Selon \`docs/BOZER_MASTER_PLAN.md\` :
 |---|---|
 | NLU, contexte, planificateur, mémoire de travail et vérificateur | Fondations présentes et tests existants |
 | Conversation / recherche / action / mission | Routage français et anglais élémentaire couvert par tests |
-| Modèle pour demandes ouvertes | Le DialogueEngine existant peut appeler un modèle avec opt-in ; aucun test de qualité réelle du fournisseur dans cette PR |
+| Modèle pour demandes ouvertes | Le DialogueEngine existant peut appeler un modèle avec opt-in ; qualité réelle du fournisseur non évaluée ici |
 | Modèle pour missions complexes | Raisonneur structuré optionnel intégré à la façade Python ; testé avec faux fournisseur, validation live restante |
 | Permissions et absence d'action déclenchée par une simple réponse chat | Contrôles locaux conservés et testés |
 | Délais, tailles de réponse et erreurs fournisseur | Capacités existantes de ModelGateway testées |
@@ -86,4 +88,4 @@ Selon \`docs/BOZER_MASTER_PLAN.md\` :
 4. Mesurer la latence sur des échanges simples avec le modèle configuré, notamment sur le téléphone cible ; ne revendiquer la cible 2–5 secondes que si les chiffres l'établissent.
 5. Effectuer les essais d'intégration sur Android et sur le téléphone de l'utilisateur lors des étapes adaptées.
 
-La fondation décisionnelle est prête pour revue et intégration. La clôture intégrale de l'étape 2 doit attendre les validations réelles restantes ; les 95 tests verts de l'ancienne révision ne doivent pas être présentés comme la validation de tous les nouveaux modules.
+La fondation décisionnelle est prête pour revue et intégration. La clôture intégrale de l'étape 2 doit attendre les validations réelles restantes ; les 123 tests verts ne doivent pas être présentés comme la preuve d'une validation sur téléphone ou d'une qualité linguistique complète.
