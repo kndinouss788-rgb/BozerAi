@@ -19,6 +19,7 @@ class LocalLlamaEngine : ConversationModel {
     private external fun nativeRelease()
 
     @Volatile private var loaded = false
+    val isLoaded: Boolean get() = loaded
     @Volatile private var nativeAttempted = false
 
     @Synchronized
