@@ -226,20 +226,45 @@ private fun BozerChat(
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
         repository.save(userMessage)
+
+        // Snapshot Compose state on the UI thread. Never read the snapshot-backed
+        // message list from Dispatchers.IO: doing so can crash during Send.
+        val historySnapshot = messages.toList()
         val phoneAction = PhoneActionPlanner.parse(text)
         if (phoneAction != null) {
             pendingPhoneAction = phoneAction
             return
         }
+
         sending = true
         scope.launch {
-            val answer = withContext(Dispatchers.IO) { repository.reply(messages.toList()) }
-            val assistantMessage = ChatMessage(role = "assistant", content = answer)
-            messages.add(assistantMessage)
-            repository.save(assistantMessage)
-            if (voiceEnabled) voiceOutput.speak(answer)
-            sending = false
-            listState.animateScrollToItem(messages.lastIndex)
+            try {
+                val answer = withContext(Dispatchers.IO) {
+                    repository.reply(historySnapshot)
+                }
+                val assistantMessage = ChatMessage(role = "assistant", content = answer)
+                messages.add(assistantMessage)
+                repository.save(assistantMessage)
+                if (voiceEnabled) voiceOutput.speak(answer)
+            } catch (error: Exception) {
+                val failureMessage = ChatMessage(
+                    role = "assistant",
+                    content = "Je n'ai pas pu terminer cette réponse : " +
+                        (error.message ?: "une erreur inattendue est survenue") +
+                        ". Tu peux réessayer."
+                )
+                messages.add(failureMessage)
+                try {
+                    repository.save(failureMessage)
+                } catch (_: Exception) {
+                    // Keep the visible error even if local persistence is unavailable.
+                }
+            } finally {
+                sending = false
+                if (messages.isNotEmpty()) {
+                    listState.animateScrollToItem(messages.lastIndex)
+                }
+            }
         }
     }
 
