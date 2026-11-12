@@ -73,9 +73,10 @@ class PhoneActionInstrumentedTest {
         assertEquals("com.android.settings", intent!!.component?.packageName)
         assertNotNull(intent.resolveActivity(context.packageManager))
 
-        val targetActivity = intent.component?.className
-            ?: intent.resolveActivity(context.packageManager)?.className
-        assertNotNull("The Android Settings launch activity could not be resolved", targetActivity)
+        val targetActivity = requireNotNull(
+            intent.component?.className
+                ?: intent.resolveActivity(context.packageManager)?.className
+        ) { "The Android Settings launch activity could not be resolved" }
         val monitor = instrumentation.addMonitor(targetActivity, null, false)
         try {
             val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"))
