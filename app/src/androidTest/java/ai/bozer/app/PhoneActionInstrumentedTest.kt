@@ -1,5 +1,6 @@
 package ai.bozer.app
 
+import android.Manifest
 import android.content.Intent
 import android.provider.AlarmClock
 import android.os.SystemClock
@@ -21,6 +22,22 @@ class PhoneActionInstrumentedTest {
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
     private val device get() = UiDevice.getInstance(instrumentation)
+
+    @Test
+    fun platformReadinessProbeIsReadOnlyAndDoesNotPretendAssistantServiceExists() {
+        val permissionBefore = context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+        val readiness = BozerPlatformReadinessProbe.inspect(context)
+        val permissionAfter = context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+
+        assertEquals(permissionBefore, permissionAfter)
+        assertEquals(
+            context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_MICROPHONE),
+            readiness.hasMicrophoneHardware
+        )
+        // The current APK intentionally has no VoiceInteractionService declaration.
+        assertFalse(readiness.voiceInteractionServiceDeclared)
+        assertFalse(readiness.canOfferAssistantSetup)
+    }
 
     @Test
     fun plannerParsesSupportedCommandsAndRejectsInvalidAlarmTimes() {
