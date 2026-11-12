@@ -34,18 +34,24 @@ class RequestAnalysis:
 
 _RESEARCH = re.compile(
     r"\b(recherche|cherche|trouve|vérifie|verifie|compare|actualit[eé]s?|"
-    r"sur internet|sur le web|sources?|informations? récentes?)\b",
+    r"sur internet|sur le web|sources?|informations? récentes?|"
+    r"search|look up|find|latest news|on the web|on the internet)\b",
     re.IGNORECASE,
 )
 _ACTION_HINT = re.compile(
     r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute|"
+    r"open|launch|call|phone|send|schedule|set|create|delete|share|add)\b",
     re.IGNORECASE,
 )
-_MULTI_CONNECTOR = re.compile(r"\b(puis|ensuite|après|apres|et enfin)\b", re.IGNORECASE)
+_MULTI_CONNECTOR = re.compile(
+    r"\b(puis|ensuite|après|apres|et enfin|then|after that|and finally|finally)\b",
+    re.IGNORECASE,
+)
 _ACTION_VERBS = re.compile(
     r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute|"
+    r"open|launch|call|phone|send|schedule|set|create|delete|share|add)\b",
     re.IGNORECASE,
 )
 
@@ -61,7 +67,7 @@ def analyze_request(message: str) -> RequestAnalysis:
 
     verbs = _ACTION_VERBS.findall(text)
     # Never collapse two action verbs into one target, even when the user joins
-    # them with an unsupported connector such as "et". The decision engine will
+    # them with an unsupported connector. The decision engine will either
     # decompose supported separators or fail closed with a clarification.
     if len(verbs) >= 2:
         reasons = ["multiple_action_verbs_detected"]
