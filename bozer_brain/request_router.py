@@ -33,19 +33,19 @@ class RequestAnalysis:
 
 
 _RESEARCH = re.compile(
-    r"\\b(recherche|cherche|trouve|vérifie|verifie|compare|actualit[eé]s?|"
-    r"sur internet|sur le web|sources?|informations? récentes?)\\b",
+    r"\b(recherche|cherche|trouve|vérifie|verifie|compare|actualit[eé]s?|"
+    r"sur internet|sur le web|sources?|informations? récentes?)\b",
     re.IGNORECASE,
 )
 _ACTION_HINT = re.compile(
-    r"\\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\\b",
+    r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
     re.IGNORECASE,
 )
-_MULTI_CONNECTOR = re.compile(r"\\b(puis|ensuite|après|apres|et enfin)\\b", re.IGNORECASE)
+_MULTI_CONNECTOR = re.compile(r"\b(puis|ensuite|après|apres|et enfin)\b", re.IGNORECASE)
 _ACTION_VERBS = re.compile(
-    r"\\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\\b",
+    r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
     re.IGNORECASE,
 )
 
@@ -58,14 +58,13 @@ def analyze_request(message: str) -> RequestAnalysis:
 
     intent = parse_intent(text)
     proposal = plan_action(intent)
-    reasons = []
 
     verbs = _ACTION_VERBS.findall(text)
     # Never collapse two action verbs into one target, even when the user joins
     # them with an unsupported connector such as "et". The decision engine will
     # decompose supported separators or fail closed with a clarification.
     if len(verbs) >= 2:
-        reasons.append("multiple_action_verbs_detected")
+        reasons = ["multiple_action_verbs_detected"]
         if _MULTI_CONNECTOR.search(text):
             reasons.append("sequential_connector_detected")
         else:
@@ -94,11 +93,11 @@ def analyze_request(message: str) -> RequestAnalysis:
         )
 
     if _ACTION_HINT.search(text):
-        reasons.append("action_language_detected_but_no_supported_complete_parameters")
         return RequestAnalysis(
             RequestRoute.CLARIFICATION, 0.62,
             "Une action semble demandée, mais ses paramètres sont incomplets ou non pris en charge.",
-            intent.kind, proposal, True, tuple(reasons),
+            intent.kind, proposal, True,
+            ("action_language_detected_but_no_supported_complete_parameters",),
         )
 
     return RequestAnalysis(
