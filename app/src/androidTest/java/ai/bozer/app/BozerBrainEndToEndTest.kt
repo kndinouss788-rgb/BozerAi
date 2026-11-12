@@ -96,9 +96,13 @@ class BozerBrainEndToEndTest {
             Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         )
+        assertTrue(
+            "L'activité BOZER n'est pas devenue visible au premier plan.",
+            device.wait(Until.hasObject(By.pkg(context.packageName)), 120_000)
+        )
         assertNotNull(
-            "L'interface BOZER n'a pas démarré.",
-            device.wait(Until.findObject(By.text("Je suis là.")), 30_000)
+            "L'interface BOZER n'a pas terminé son premier rendu Compose.",
+            device.wait(Until.findObject(By.text("Je suis là.")), 120_000)
         )
         // Open the existing settings dialog to wait for the actual local-model status,
         // rather than relying on copy from an older version of the interface.

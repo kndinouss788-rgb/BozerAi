@@ -8,7 +8,7 @@ MODEL_DIR="/data/user/0/ai.bozer.app/files/models"
 DEVICE_MODEL="$MODEL_DIR/$MODEL_NAME"
 
 collect_diagnostics() {
-  adb logcat -d -v threadtime -s BOZER_E2E:I BOZER_PERF:I BOZER_SEARCH:I AndroidRuntime:E > bozer-emulator-test.log 2>&1 || true
+  adb logcat -d -v threadtime > bozer-emulator-test.log 2>&1 || true
   adb exec-out screencap -p > bozer-smoke.png 2>/dev/null || true
   adb shell dumpsys meminfo "$APP_ID" > bozer-memory.txt 2>&1 || true
 }
@@ -22,6 +22,10 @@ adb shell run-as "$APP_ID" cp /data/local/tmp/bozer-qwen.gguf "$DEVICE_MODEL"
 DEVICE_SHA="$(adb shell run-as "$APP_ID" sha256sum "$DEVICE_MODEL" | awk '{print $1}' | tr -d '\\r')"
 test "$DEVICE_SHA" = "$MODEL_SHA"
 adb shell run-as "$APP_ID" test -s "$DEVICE_MODEL"
+# The test runner independently verified the full GGUF checksum. Install the
+# same marker written by LocalModelManager so app startup does not hash 491 MB
+# again while Compose and the emulator are warming up.
+adb shell run-as "$APP_ID" sh -c "printf '%s' '$MODEL_SHA' > '$MODEL_DIR/$MODEL_NAME.sha256'"
 echo "MODEL_SHA256=$DEVICE_SHA"
 
 adb logcat -c

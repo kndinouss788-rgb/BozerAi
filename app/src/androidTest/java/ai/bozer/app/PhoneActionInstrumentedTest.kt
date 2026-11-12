@@ -65,6 +65,27 @@ class PhoneActionInstrumentedTest {
     }
 
     @Test
+    fun phoneActionsCannotLaunchWithoutExplicitConfirmation() {
+        val actions = listOf(
+            PhoneAction.OpenApp("Settings"),
+            PhoneAction.SetAlarm(6, 45),
+            PhoneAction.DialNumber("+22670123456"),
+            PhoneAction.ComposeSms("+22670123456", "Bonjour")
+        )
+        actions.forEach { action ->
+            val result = PhoneActionPlanner.execute(context, action)
+            assertFalse(
+                "Une action a été lancée sans confirmation explicite : $action",
+                result.launched
+            )
+            assertTrue(
+                "Le refus doit expliquer que la confirmation est requise",
+                result.message.contains("confirmation", ignoreCase = true)
+            )
+        }
+    }
+
+    @Test
     fun confirmedOpenAppActionLaunchesAndroidSettings() {
         val intent = PhoneActionPlanner.createIntent(
             context,
@@ -80,7 +101,7 @@ class PhoneActionInstrumentedTest {
         ) { "The Android Settings package could not be resolved" }
         assertEquals("com.android.settings", targetPackage)
 
-        val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"))
+        val result = PhoneActionPlanner.execute(context, PhoneAction.OpenApp("Settings"), confirmed = true)
         assertTrue(result.message, result.launched)
 
         // Check Android's activity stack instead of accessibility: the emulator's
@@ -109,11 +130,23 @@ class PhoneActionInstrumentedTest {
 
         val resolved = intent.resolveActivity(context.packageManager)
         assertNotNull("No clock application handles ACTION_SET_ALARM", resolved)
-        val result = PhoneActionPlanner.execute(context, action)
+        val result = PhoneActionPlanner.execute(context, action, confirmed = true)
         assertTrue(result.message, result.launched)
+
+        // ACTION_SET_ALARM is handled by a short-lived API activity before
+        // Clock opens its main screen. Inspect Android's activity stack rather
+        // than relying on accessibility nodes while System UI is under load.
+        val clockPackage = resolved!!.packageName
+        var activityDump = ""
+        for (attempt in 0 until 40) {
+            activityDump = device.executeShellCommand("dumpsys activity activities")
+            if (activityDump.contains(clockPackage)) break
+            SystemClock.sleep(500)
+        }
         assertTrue(
-            "The clock application did not become the foreground application",
-            device.wait(Until.hasObject(By.pkg(resolved!!.packageName)), 10_000)
+            "The Clock application did not appear in Android's activity stack: " +
+                activityDump.takeLast(1_500),
+            activityDump.contains(clockPackage)
         )
         device.pressBack()
     }

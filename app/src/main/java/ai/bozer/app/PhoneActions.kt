@@ -129,7 +129,14 @@ object PhoneActionPlanner {
         }
     }
 
-    fun execute(context: Context, action: PhoneAction): ActionExecutionResult {
+    fun execute(
+        context: Context,
+        action: PhoneAction,
+        confirmed: Boolean = false
+    ): ActionExecutionResult {
+        if (!confirmed) {
+            return ActionExecutionResult(false, "Confirmation requise. Rien n'a été lancé.")
+        }
         val intent = createIntent(context, action)
             ?: return ActionExecutionResult(false, "Application introuvable. Rien n'a été ouvert.")
         if (intent.resolveActivity(context.packageManager) == null) {
