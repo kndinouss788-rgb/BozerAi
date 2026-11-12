@@ -94,7 +94,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
         voiceOutput = BozerVoiceOutput(applicationContext)
-        val repository = ChatRepository(ChatDatabase(applicationContext), engine)
+        val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, applicationContext)
+        val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
+        repository.internetAvailable = { hasValidatedInternet() }
         val modelManager = LocalModelManager(applicationContext)
         setContent { BozerChat(this@MainActivity, repository, modelManager, engine, voiceOutput) }
     }
@@ -120,6 +122,14 @@ class MainActivity : ComponentActivity() {
             voiceResultHandler = null
             Toast.makeText(this, "La reconnaissance vocale n'est pas disponible sur ce téléphone.", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun hasValidatedInternet(): Boolean {
+        val manager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
     override fun onDestroy() {
@@ -210,10 +220,6 @@ private fun BozerChat(
     fun send() {
         val text = draft.trim()
         if (text.isEmpty() || sending) return
-        if (!modelReady) {
-            settingsOpen = true
-            return
-        }
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
