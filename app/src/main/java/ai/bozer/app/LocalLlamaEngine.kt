@@ -2,6 +2,7 @@ package ai.bozer.app
 
 /** Small seam that lets repository behavior be tested without loading native weights. */
 interface ConversationModel {
+    val isLoaded: Boolean
     fun generate(prompt: String): String
 }
 
@@ -19,7 +20,7 @@ class LocalLlamaEngine : ConversationModel {
     private external fun nativeRelease()
 
     @Volatile private var loaded = false
-    val isLoaded: Boolean get() = loaded
+    override val isLoaded: Boolean get() = loaded
     @Volatile private var nativeAttempted = false
 
     @Synchronized
