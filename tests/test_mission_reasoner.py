@@ -1,6 +1,8 @@
 import unittest
 from types import SimpleNamespace
 
+from bozer_brain.brain_facade import BozerBrain
+from bozer_brain.decision_engine import BozerDecisionEngine
 from bozer_brain.mission_reasoner import (
     MissionReasoningStatus,
     StructuredMissionReasoner,
@@ -145,6 +147,49 @@ class StructuredMissionReasonerTests(unittest.TestCase):
         prompt = gateway.calls[0][0]
         self.assertLessEqual(len(prompt), 3000)
         self.assertEqual(gateway.calls[0][2], 2400)
+
+ 
+class MissionReasonerIntegrationTests(unittest.TestCase):
+    def test_decision_engine_uses_model_only_after_explicit_opt_in(self):
+        gateway = FakeGateway('{"steps":["Ouvre Settings","Appelle Maman"]}')
+        engine = BozerDecisionEngine(
+            mission_reasoner=StructuredMissionReasoner(gateway)
+        )
+        denied = engine.decide("Ouvre Settings et appelle Maman")
+        self.assertEqual(denied.route.value, "clarification")
+        self.assertEqual(gateway.calls, [])
+
+        allowed = engine.decide(
+            "Ouvre Settings et appelle Maman",
+            allow_model_reasoning=True,
+        )
+        self.assertEqual(allowed.route.value, "multi_step")
+        self.assertEqual(len(allowed.task_plan.steps), 2)
+        self.assertEqual(allowed.task_plan.steps[1].status, "blocked")
+        self.assertIn("model_proposed_steps_locally_validated", allowed.reasons)
+
+    def test_facade_uses_dialogue_gateway_for_opted_in_mission_reasoning(self):
+        class DialogueWithGateway:
+            def __init__(self):
+                self.model_gateway = FakeGateway(
+                    '{"steps":["Ouvre Settings","Appelle Maman"]}'
+                )
+                self.calls = []
+
+            def respond(self, message, *, allow_model=False, allow_search=False):
+                self.calls.append(message)
+                return SimpleNamespace(reply="Réponse test")
+
+        dialogue = DialogueWithGateway()
+        brain = BozerBrain(dialogue)
+        result = brain.respond(
+            "Ouvre Settings et appelle Maman",
+            allow_model_reasoning=True,
+        )
+        self.assertEqual(result.decision.route.value, "multi_step")
+        self.assertEqual(len(dialogue.model_gateway.calls), 1)
+        self.assertEqual(dialogue.calls, [])
+        self.assertIn("Aucune action n'a encore été exécutée.", result.reply)
 
 
 if __name__ == "__main__":
