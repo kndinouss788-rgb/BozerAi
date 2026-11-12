@@ -209,7 +209,11 @@ private fun BozerChat(
 
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty() || sending || !modelReady) return
+        if (text.isEmpty() || sending) return
+        if (!modelReady) {
+            settingsOpen = true
+            return
+        }
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
@@ -392,14 +396,14 @@ private fun BozerChat(
                             modifier = Modifier.size(43.dp)
                                 .shadow(5.dp, CircleShape)
                                 .background(
-                                    if (draft.isNotBlank() && modelReady && !sending) {
+                                    if (draft.isNotBlank() && !sending) {
                                         Brush.linearGradient(listOf(Color(0xFFC99BD3), Color(0xFFAD79BC)))
                                     } else {
                                         Brush.linearGradient(listOf(Color(0xFFE9DDEB), Color(0xFFE4DCE8)))
                                     },
                                     CircleShape
                                 )
-                                .clickable(enabled = draft.isNotBlank() && modelReady && !sending) { send() },
+                                .clickable(enabled = draft.isNotBlank() && !sending) { send() },
                             contentAlignment = Alignment.Center
                         ) {
                             ToolbarGlyph("send", Color.White)
