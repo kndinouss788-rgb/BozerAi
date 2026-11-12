@@ -6,7 +6,7 @@ any metered fallback can be attempted.
 """
 from dataclasses import dataclass
 from enum import Enum
-from typing import Tuple
+from typing import Protocol, Tuple
 
 from .model_gateway import ModelRequest, ModelResponse
 
@@ -16,7 +16,7 @@ class ProviderCostClass(str, Enum):
     METERED = "metered"
 
 
-class ModelProvider:
+class ModelProvider(Protocol):
     """Structural contract for a provider accepted by the router."""
 
     @property
