@@ -86,9 +86,9 @@ class PhoneActionInstrumentedTest {
         // Check Android's activity stack instead of accessibility: the emulator's
         // Settings UI can display a System UI ANR dialog while the activity is running.
         var activityDump = ""
-        repeat(20) {
+        for (attempt in 0 until 20) {
             activityDump = device.executeShellCommand("dumpsys activity activities")
-            if (activityDump.contains("com.android.settings")) return@repeat
+            if (activityDump.contains("com.android.settings")) break
             SystemClock.sleep(250)
         }
         assertTrue(
