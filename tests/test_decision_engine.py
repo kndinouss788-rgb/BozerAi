@@ -74,6 +74,17 @@ class DecisionEngineTests(unittest.TestCase):
         self.assertEqual(decision.route, RequestRoute.CLARIFICATION)
         self.assertIsNone(decision.task_plan)
 
+    def test_english_multi_step_mission_is_decomposed_in_order(self):
+        decision = self.engine.decide("Open Settings then call Mom")
+        self.assertEqual(decision.route, RequestRoute.MULTI_STEP)
+        self.assertEqual(
+            [step.step_id for step in decision.task_plan.steps],
+            ["step-1", "step-2"],
+        )
+        self.assertEqual(decision.task_plan.steps[0].status, "ready")
+        self.assertEqual(decision.task_plan.steps[1].status, "blocked")
+        self.assertEqual(decision.task_plan.steps[1].reason, "permission_not_granted")
+
 
 class OutcomeVerificationTests(unittest.TestCase):
     def test_exact_observed_state_is_verified(self):
