@@ -38,6 +38,26 @@ class RequestRouterTests(unittest.TestCase):
         self.assertEqual(result.route, RequestRoute.MULTI_STEP)
         self.assertIn("unsupported_or_missing_sequence_separator", result.reasons)
 
+    def test_english_open_command_routes_to_device_action(self):
+        result = analyze_request("Open Settings")
+        self.assertEqual(result.route, RequestRoute.DEVICE_ACTION)
+        self.assertEqual(result.action_proposal.action, "open_app")
+
+    def test_english_call_command_routes_to_device_action(self):
+        result = analyze_request("Call Mom")
+        self.assertEqual(result.route, RequestRoute.DEVICE_ACTION)
+        self.assertEqual(result.action_proposal.action, "make_call")
+
+    def test_english_search_command_routes_to_research(self):
+        result = analyze_request("Search the web for recent Android news")
+        self.assertEqual(result.route, RequestRoute.RESEARCH)
+        self.assertIn("external_search_requires_explicit_opt_in", result.reasons)
+
+    def test_english_multiple_actions_are_detected(self):
+        result = analyze_request("Open Settings then call Mom")
+        self.assertEqual(result.route, RequestRoute.MULTI_STEP)
+        self.assertIn("sequential_connector_detected", result.reasons)
+
 
 if __name__ == "__main__":
     unittest.main()
