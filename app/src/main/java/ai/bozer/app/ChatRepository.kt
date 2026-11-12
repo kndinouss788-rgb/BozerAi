@@ -62,7 +62,7 @@ class ChatRepository(
             return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le cerveau local."
         }
 
-        val searchQuery = if (selectedMode == BrainMode.OFFLINE || !onlineAvailable) null else extractSearchQuery(latestUserText)
+        val searchQuery = if (!onlineAvailable) null else extractSearchQuery(latestUserText)
         val searchResults = if (searchQuery != null) {
             try {
                 internetSearch.search(searchQuery)
