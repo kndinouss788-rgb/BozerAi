@@ -1,54 +1,63 @@
 # BOZER — étape 2 : fondation du cerveau décisionnel
 
-## Périmètre livré dans cette étape
+## Objectif de l'étape
 
-Cette étape construit une couche Python portable et testable entre une demande en langage naturel et les adaptateurs Android. Elle prépare des décisions structurées ; elle ne réalise pas les actions à la place d'Android.
+Construire une couche Python portable entre une demande en langage naturel et les adaptateurs Android. Cette couche doit comprendre les demandes prises en charge, préparer des décisions structurées, appliquer les barrières d'autorisation et empêcher BOZER d'annoncer une action comme accomplie sans vérification.
 
-### Façade unifiée\n\n- `brain_facade.py` expose `BozerBrain.respond()` comme point d'entrée unique : les conversations sont déléguées au `DialogueEngine` existant, tandis que les actions passent par la chaîne décisionnelle.\n- Le modèle et la recherche restent désactivés par défaut et ne sont délégués que si l'appelant fournit explicitement les indicateurs d'autorisation.\n- Les demandes d'action et les missions ne passent pas par le dialogue pour éviter de présenter une proposition comme une action déjà exécutée.\n\n### Chaîne de décision
+Cette étape ne prétend pas fournir à elle seule un raisonneur général de niveau ChatGPT ni un contrôle universel du téléphone.
 
-1. **Compréhension déterministe** — réutilise le parseur d'intentions existant pour reconnaître les commandes simples explicitement prises en charge.
-2. **Orientation** — `request_router.py` classe la demande en conversation, recherche, action téléphone, mission multi-étapes ou clarification.
-3. **Planification** — `decision_engine.py` décompose les missions simples séparées par « puis », « ensuite » ou « et enfin », et crée des dépendances ordonnées.
-4. **Autorisation** — `TaskPlanner` et `ToolRegistry` contrôlent les outils connus, les arguments requis, les permissions et les confirmations.
-5. **Vérification** — `verification.py` distingue résultat vérifié, échec et résultat non vérifiable. Une réponse positive de l'adaptateur sans état observé ne suffit pas pour annoncer une réussite.
-6. **API publique** — `bozer_brain/__init__.py` expose les contrats de décision et de vérification.
+## Chaîne de décision livrée
 
-## Fichiers ajoutés ou renforcés
+1. **Façade unifiée** — `brain_facade.py` expose `BozerBrain.respond()`. Les conversations sont déléguées au `DialogueEngine` existant ; les demandes d'action passent par le moteur de décision.
+2. **Orientation** — `request_router.py` classe les demandes en conversation, recherche, action téléphone, mission multi-étapes ou clarification.
+3. **Planification** — `decision_engine.py` décompose les missions simples séparées par « puis », « ensuite », « et enfin » ou un point-virgule. Les étapes sont identifiées et leurs dépendances sont explicites.
+4. **Échec prudent** — plusieurs verbes d'action ne sont jamais fusionnés dans une seule cible. Si les séparateurs ne sont pas reconnus ou si une étape reste ambiguë, BOZER demande une précision et ne prépare aucun plan exécutable.
+5. **Autorisation** — `TaskPlanner` et `ToolRegistry` vérifient les outils connus, les arguments requis, les permissions et les confirmations.
+6. **Dépendances** — une étape dépendante reste bloquée si l'étape dont elle dépend n'est pas autorisée.
+7. **Vérification** — `verification.py` renvoie `VERIFIED`, `FAILED` ou `UNVERIFIED`. Un simple rapport positif de l'adaptateur ne suffit pas sans état observé concordant.
+8. **API publique** — `bozer_brain/__init__.py` expose les contrats de décision et de vérification.
 
-- `bozer_brain/brain_facade.py`\n- `bozer_brain/request_router.py`
+## Fichiers concernés
+
+- `bozer_brain/brain_facade.py`
+- `bozer_brain/request_router.py`
 - `bozer_brain/decision_engine.py`
 - `bozer_brain/verification.py`
-- `tests/test_request_router.py`
-- `tests/test_decision_engine.py`\n- `tests/test_brain_facade.py`
 - `bozer_brain/__init__.py`
+- `tests/test_brain_facade.py`
+- `tests/test_request_router.py`
+- `tests/test_decision_engine.py`
 
-Les modules existants `intent.py`, `planner.py`, `task_planner.py`, `tools.py`, `memory.py` et `context.py` sont réutilisés, sans remplacement de la mémoire conversationnelle existante.
+Les modules existants de dialogue, d'intention, de planification, de mémoire et de registre d'outils sont réutilisés. Le cœur conversationnel, les prompts, les fournisseurs IA, le modèle local et l'interface Android ne sont pas modifiés.
 
-## Garanties de sécurité
+## Sécurité et limites
 
-- Aucun appel réseau, recherche web, fournisseur IA ou modèle local n'est lancé depuis cette couche.
-- Aucune action Android n'est exécutée par le planificateur.
-- Les missions partiellement comprises sont renvoyées en clarification ; les paramètres manquants ne sont pas inventés.
-- Les permissions Android et confirmations utilisateur restent obligatoires.
-- Le vérificateur n'annonce pas de succès sans état attendu et état observé concordants.
+- Aucun appel Android ni aucune action réelle n'est exécuté par le planificateur.
+- Les permissions Android restent contrôlées par le système.
+- Les actions sensibles restent soumises à une confirmation explicite.
+- Les paramètres manquants ne sont pas inventés.
+- Les appels au modèle et à la recherche ne sont pas activés implicitement par la façade.
+- Le `DialogueEngine` peut utiliser ses capacités existantes de modèle ou de recherche uniquement lorsque l'appelant les active explicitement.
+- Le moteur de décision de cette étape reste déterministe : il ne confie pas encore la décomposition ou l'autorisation des missions à un LLM.
+- Les adaptateurs Android réels, l'assistant vocal permanent et le contrôle universel des applications ne sont pas livrés dans cette étape.
 
-## Limites explicites
+## Tests
 
-Cette étape fournit une **fondation décisionnelle déterministe**, pas encore un raisonnement général de niveau ChatGPT. Le parseur actuel ne comprend qu'un ensemble limité de formulations et de commandes. Les missions multi-étapes ne sont décomposées que lorsqu'elles contiennent des actions reconnues et des séparateurs pris en charge.
+Commande de référence :
 
-La connexion à un modèle de raisonnement, à la recherche web et aux adaptateurs Android réels est laissée aux étapes d'intégration ultérieures. Aucun mot-clé vocal permanent ni contrôle universel de toutes les applications n'est livré ici.
-
-## Tests et validation
-
-Tests ajoutés pour les cinq routes, les demandes incomplètes, la décomposition séquentielle, les blocages d'autorisation et les trois états de vérification.
-
-La commande CI du dépôt est :
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-Le workflow actuel ne déclenche les tests que pour les pull requests vers `main` et les pushs sur `main`. La PR de cette étape cible la branche de fondation de l'étape 1 ; par conséquent, aucun résultat CI n'est revendiqué pour cette branche tant que le workflow n'est pas déclenché dans une configuration compatible. Les tests écrits ne sont pas présentés comme exécutés.
+Les tests ciblent le routage, la façade, les missions ordonnées, les permissions, les confirmations, les dépendances et les états de vérification. La validation réelle doit être lue dans les résultats GitHub Actions de la PR ; la présence de tests dans le dépôt ne signifie pas qu'ils ont déjà été exécutés.
 
-## Critère de clôture de l'étape 2
+Le workflow `.github/workflows/tests.yml` est configuré pour contrôler les PR vers `main` et vers `feature/platform-assistant-foundation`. La branche de fondation de l'étape 1 contient l'ajustement nécessaire pour que la PR de l'étape 2 déclenche ce contrôle.
 
-La façade unifiée, la fondation décisionnelle, la planification contrôlée, les barrières d'autorisation, la vérification explicite et leurs tests sont présents dans la branche. L'intégration Android, la connexion au raisonneur IA et la validation sur téléphone restent hors de cette étape et doivent être traitées dans les étapes suivantes.
+## Critères de clôture
+
+L'étape 2 peut être déclarée terminée lorsque :
+- les tests Python de la PR sont terminés avec succès ;
+- le diff et les contrôles automatiques ne signalent aucun défaut bloquant ;
+- la PR est prête à être intégrée dans la branche de fondation.
+
+Cette clôture valide la fondation du cerveau décisionnel, pas les fonctions Android des étapes suivantes ni les essais sur téléphone réel.
