@@ -31,6 +31,10 @@ class ChatRepository(
     fun save(message: ChatMessage) = database.save(message)
     fun rememberedFacts(): List<String> = database.rememberedFacts()
     fun clearRememberedFacts() = database.clearRememberedFacts()
+    fun forgetRememberedFact(content: String): Boolean = database.forgetRememberedFact(content)
+    fun updateRememberedFact(oldContent: String, newContent: String): Boolean =
+        database.updateRememberedFact(oldContent, newContent)
+    fun clearMemory() = database.clearRememberedFacts()
 
     suspend fun reply(history: List<ChatMessage>): String = inferenceLock.withLock {
         val latestUserText = history.lastOrNull { it.role == "user" }?.content.orEmpty()
