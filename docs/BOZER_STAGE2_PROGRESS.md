@@ -57,9 +57,9 @@ Commande exécutée par GitHub Actions :
 python -m unittest discover -s tests -v
 \`\`\`
 
-- Workflow GitHub Actions **BOZER core tests**, run **#325** : succès.
+- Workflow GitHub Actions **BOZER core tests**, run **#327** : succès.
 - Résultat : **123 tests exécutés, 123 réussis, 0 échec**.
-- Le premier lot de 95 tests avait révélé deux échecs de numérotation, corrigés et validés ; les nouvelles briques de raisonnement, de routage fournisseur et les cas anglais sont ensuite passés dans le run #325.
+- Le premier lot de 95 tests avait révélé deux échecs de numérotation, corrigés et validés ; les nouvelles briques de raisonnement, de routage fournisseur, les cas anglais et la revue finale de typage sont passés dans le run #327.
 - Les tests du raisonneur et du routeur fournisseur utilisent des faux fournisseurs. Ils valident les contrats, les contrôles et les échecs, mais ne constituent pas un appel à un service IA réel.
 - La PR #11 est prête pour revue et non fusionnée.
 
