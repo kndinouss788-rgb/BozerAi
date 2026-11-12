@@ -6,7 +6,7 @@ any metered fallback can be attempted.
 """
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol, Tuple
+from typing import Tuple
 
 from .model_gateway import ModelRequest, ModelResponse
 
@@ -16,19 +16,27 @@ class ProviderCostClass(str, Enum):
     METERED = "metered"
 
 
-class ModelProvider(Protocol):
+class ModelProvider:
+    """Structural contract for a provider accepted by the router."""
+
     @property
     def provider_name(self) -> str:
-        ...
+        raise NotImplementedError
 
     def generate(self, request: ModelRequest) -> ModelResponse:
-        ...
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)
 class ProviderCandidate:
     provider: ModelProvider
     cost_class: ProviderCostClass
+
+    def __post_init__(self):
+        if not isinstance(self.cost_class, ProviderCostClass):
+            raise ValueError("provider cost class must be LOCAL or METERED")
+        if not callable(getattr(self.provider, "generate", None)):
+            raise ValueError("provider must expose generate(request)")
 
 
 class ProviderRouter:
@@ -45,7 +53,13 @@ class ProviderRouter:
     ):
         if not candidates:
             raise ValueError("at least one provider candidate is required")
-        if not isinstance(max_metered_attempts, int) or not 0 <= max_metered_attempts <= 2:
+        if any(not isinstance(candidate, ProviderCandidate) for candidate in candidates):
+            raise ValueError("all candidates must be ProviderCandidate instances")
+        if (
+            isinstance(max_metered_attempts, bool)
+            or not isinstance(max_metered_attempts, int)
+            or not 0 <= max_metered_attempts <= 2
+        ):
             raise ValueError("max_metered_attempts must be between 0 and 2")
         self.candidates = tuple(candidates)
         self.allow_metered_fallback = bool(allow_metered_fallback)
