@@ -33,19 +33,19 @@ class RequestAnalysis:
 
 
 _RESEARCH = re.compile(
-    r"\\b(recherche|cherche|trouve|vérifie|verifie|compare|actualit[eé]s?|"
-    r"sur internet|sur le web|sources?|informations? récentes?)\\b",
+    r"\b(recherche|cherche|trouve|vérifie|verifie|compare|actualit[eé]s?|"
+    r"sur internet|sur le web|sources?|informations? récentes?)\b",
     re.IGNORECASE,
 )
 _ACTION_HINT = re.compile(
-    r"\\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\\b",
+    r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
     re.IGNORECASE,
 )
-_MULTI_CONNECTOR = re.compile(r"\\b(puis|ensuite|après|apres|et enfin)\\b", re.IGNORECASE)
+_MULTI_CONNECTOR = re.compile(r"\b(puis|ensuite|après|apres|et enfin)\b", re.IGNORECASE)
 _ACTION_VERBS = re.compile(
-    r"\\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\\b",
+    r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
     re.IGNORECASE,
 )
 
