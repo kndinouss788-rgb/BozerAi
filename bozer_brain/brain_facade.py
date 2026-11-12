@@ -1,15 +1,18 @@
 """Top-level BOZER brain facade combining dialogue and safe decisions.
 
 The facade delegates ordinary conversation to the existing DialogueEngine and
-routes device actions through the deterministic decision pipeline. It does not
-execute Android actions; the platform adapter must consume authorized plans.
+routes device actions through the deterministic decision pipeline. Optional
+model mission reasoning is opt-in and cannot bypass local authorization gates.
+It does not execute Android actions.
 """
 from dataclasses import dataclass
 from typing import FrozenSet, Optional
 
 from .decision_engine import BozerDecisionEngine, BrainDecision
 from .dialogue import DialogueEngine, DialogueResult
+from .mission_reasoner import StructuredMissionReasoner
 from .request_router import RequestRoute
+from .tools import ToolRegistry
 
 
 @dataclass(frozen=True)
@@ -30,7 +33,18 @@ class BozerBrain:
         if dialogue is None:
             raise ValueError("dialogue engine is required")
         self.dialogue = dialogue
-        self.decisions = decision_engine or BozerDecisionEngine()
+        if decision_engine is not None:
+            self.decisions = decision_engine
+        else:
+            registry = ToolRegistry.android_defaults()
+            reasoner = StructuredMissionReasoner(
+                getattr(dialogue, "model_gateway", None),
+                registry=registry,
+            )
+            self.decisions = BozerDecisionEngine(
+                registry=registry,
+                mission_reasoner=reasoner,
+            )
 
     def respond(
         self,
@@ -38,6 +52,7 @@ class BozerBrain:
         *,
         allow_model: bool = False,
         allow_search: bool = False,
+        allow_model_reasoning: bool = False,
         granted_permissions: FrozenSet[str] = frozenset(),
         confirmed_step_ids: FrozenSet[str] = frozenset(),
     ) -> BrainResponse:
@@ -45,6 +60,7 @@ class BozerBrain:
             message,
             granted_permissions=granted_permissions,
             confirmed_step_ids=confirmed_step_ids,
+            allow_model_reasoning=allow_model_reasoning,
         )
 
         if decision.route in {RequestRoute.CHAT, RequestRoute.RESEARCH}:
