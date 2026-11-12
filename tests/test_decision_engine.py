@@ -35,8 +35,42 @@ class DecisionEngineTests(unittest.TestCase):
         self.assertEqual(len(decision.task_plan.ready_steps), 0)
         self.assertEqual(decision.task_plan.steps[0].reason, "permission_not_granted")
 
+    def test_sensitive_action_requires_confirmation_even_with_permission(self):
+        decision = self.engine.decide(
+            "Appelle Maman",
+            granted_permissions=frozenset({"CALL_PHONE"}),
+        )
+        self.assertEqual(len(decision.task_plan.ready_steps), 0)
+        self.assertEqual(decision.task_plan.steps[0].reason, "confirmation_required")
+
+    def test_sensitive_action_is_ready_only_after_permission_and_confirmation(self):
+        decision = self.engine.decide(
+            "Appelle Maman",
+            granted_permissions=frozenset({"CALL_PHONE"}),
+            confirmed_step_ids=frozenset({"step-1"}),
+        )
+        self.assertEqual(len(decision.task_plan.ready_steps), 1)
+
+    def test_blocked_step_prevents_dependent_step_from_becoming_ready(self):
+        decision = self.engine.decide(
+            "Ouvre Settings puis appelle Maman puis ouvre Clock"
+        )
+        self.assertEqual(decision.route, RequestRoute.MULTI_STEP)
+        self.assertEqual(decision.task_plan.steps[0].status, "ready")
+        self.assertEqual(decision.task_plan.steps[1].status, "blocked")
+        self.assertTrue(decision.task_plan.steps[2].status == "blocked")
+        self.assertEqual(
+            decision.task_plan.steps[2].reason,
+            "dependency_not_ready:step-2",
+        )
+
     def test_unknown_multi_step_is_not_guessed(self):
         decision = self.engine.decide("Ouvre Settings puis supprime toutes les données")
+        self.assertEqual(decision.route, RequestRoute.CLARIFICATION)
+        self.assertIsNone(decision.task_plan)
+
+    def test_unsupported_multi_action_separator_returns_clarification(self):
+        decision = self.engine.decide("Ouvre Settings et appelle Maman")
         self.assertEqual(decision.route, RequestRoute.CLARIFICATION)
         self.assertIsNone(decision.task_plan)
 
