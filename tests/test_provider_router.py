@@ -1,6 +1,6 @@
 import unittest
 
-from bozer_brain.model_gateway import ModelRequest, ModelResponse
+from bozer_brain.model_gateway import ModelGateway, ModelRequest, ModelResponse
 from bozer_brain.provider_router import (
     ProviderCandidate,
     ProviderCostClass,
@@ -113,6 +113,29 @@ class ProviderRouterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             router.generate(ModelRequest(" "))
         self.assertEqual(local.calls, 0)
+
+    def test_model_gateway_opt_in_is_still_required_before_router_is_called(self):
+        local = FakeProvider("local", "Réponse locale")
+        remote = FakeProvider("remote", "Réponse distante")
+        router = ProviderRouter((
+            ProviderCandidate(local, ProviderCostClass.LOCAL),
+            ProviderCandidate(remote, ProviderCostClass.METERED),
+        ))
+        gateway = ModelGateway(router)
+        disabled = gateway.generate("Bonjour")
+        self.assertEqual(disabled.error, "provider_use_not_enabled")
+        self.assertEqual(local.calls, 0)
+        enabled = gateway.generate("Bonjour", enabled=True)
+        self.assertTrue(enabled.ok)
+        self.assertEqual(local.calls, 1)
+        self.assertEqual(remote.calls, 0)
+
+    def test_unknown_cost_class_is_rejected_instead_of_bypassing_cost_gate(self):
+        local = FakeProvider("local", "Réponse locale")
+        with self.assertRaises(ValueError):
+            ProviderCandidate(local, "free_unmetered")
+        with self.assertRaises(ValueError):
+            ProviderCandidate(local, "metered")
 
 
 if __name__ == "__main__":
