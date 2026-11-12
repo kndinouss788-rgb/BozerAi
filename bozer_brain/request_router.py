@@ -33,19 +33,19 @@ class RequestAnalysis:
 
 
 _RESEARCH = re.compile(
-    r"\b(recherche|cherche|trouve|vérifie|verifie|compare|actualit[eé]s?|"
-    r"sur internet|sur le web|sources?|informations? récentes?)\b",
+    r"\\b(recherche|cherche|trouve|vérifie|verifie|compare|actualit[eé]s?|"
+    r"sur internet|sur le web|sources?|informations? récentes?)\\b",
     re.IGNORECASE,
 )
 _ACTION_HINT = re.compile(
-    r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
+    r"\\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\\b",
     re.IGNORECASE,
 )
-_MULTI_CONNECTOR = re.compile(r"\b(puis|ensuite|après|apres|et enfin)\b", re.IGNORECASE)
+_MULTI_CONNECTOR = re.compile(r"\\b(puis|ensuite|après|apres|et enfin)\\b", re.IGNORECASE)
 _ACTION_VERBS = re.compile(
-    r"\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
-    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\b",
+    r"\\b(ouvre|lance|appelle|téléphone|telephone|envoie|envoi|programme|"
+    r"règle|regle|mets|met|crée|cree|supprime|partage|ajoute)\\b",
     re.IGNORECASE,
 )
 
@@ -61,12 +61,20 @@ def analyze_request(message: str) -> RequestAnalysis:
     reasons = []
 
     verbs = _ACTION_VERBS.findall(text)
-    if len(verbs) >= 2 and (_MULTI_CONNECTOR.search(text) or len(verbs) >= 3):
+    # Never collapse two action verbs into one target, even when the user joins
+    # them with an unsupported connector such as "et". The decision engine will
+    # decompose supported separators or fail closed with a clarification.
+    if len(verbs) >= 2:
+        reasons.append("multiple_action_verbs_detected")
+        if _MULTI_CONNECTOR.search(text):
+            reasons.append("sequential_connector_detected")
+        else:
+            reasons.append("unsupported_or_missing_sequence_separator")
+        reasons.append("planning_only_no_execution")
         return RequestAnalysis(
             RequestRoute.MULTI_STEP, 0.78,
-            "Demande contenant plusieurs actions à décomposer.",
-            intent.kind, proposal, False,
-            ("multiple_action_verbs_detected", "planning_only_no_execution"),
+            "Demande contenant plusieurs actions à décomposer ou à faire préciser.",
+            intent.kind, proposal, False, tuple(reasons),
         )
 
     if proposal.safe_to_execute:
