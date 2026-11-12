@@ -7,12 +7,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 enum class BrainMode(val label: String, val description: String) {
-    AUTO("Automatique", "Internet disponible : serveurs BOZER. Sans Internet : cerveau local."),
+    AUTO("Automatique", "Utilise une passerelle seulement si elle est explicitement configurée ; sinon le cerveau local."),
     ONLINE("En ligne", "Utilise uniquement les serveurs distants."),
     OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
 
     companion object {
-        fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: AUTO
+        fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: OFFLINE
     }
 }
 
@@ -23,7 +23,7 @@ class ChatRepository(
     private val remoteBrain: RemoteBrainClient? = null
 ) {
     private val inferenceLock = Mutex()
-    @Volatile var brainMode: BrainMode = BrainMode.AUTO
+    @Volatile var brainMode: BrainMode = BrainMode.OFFLINE
     @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
@@ -51,6 +51,9 @@ class ChatRepository(
         val selectedMode = brainMode
         if (selectedMode == BrainMode.ONLINE && !onlineAvailable) {
             return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
+        }
+        if (selectedMode == BrainMode.ONLINE && !remoteConfigured) {
+            return@withLock "Le mode En ligne est indisponible : aucune passerelle HTTPS n'est configurée. Aucun appel distant n'a été effectué."
         }
         if (selectedMode == BrainMode.OFFLINE && !model.isLoaded) {
             return@withLock "Le cerveau local n'est pas encore installé ou chargé. Installe-le une première fois pour utiliser le mode Hors ligne."

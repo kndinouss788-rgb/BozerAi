@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
         voiceOutput = BozerVoiceOutput(applicationContext)
-        val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, applicationContext)
+        val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL)
         val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
         repository.internetAvailable = { hasValidatedInternet() }
         val modelManager = LocalModelManager(applicationContext)

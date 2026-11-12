@@ -6,7 +6,7 @@ plugins {
 
 val gatewayUrl = providers.gradleProperty("BOZER_GATEWAY_URL")
     .orElse(providers.environmentVariable("BOZER_GATEWAY_URL"))
-    .getOrElse("https://bozerai.bozerpdg.workers.dev")
+    .getOrElse("")
 
 android {
     namespace = "ai.bozer.app"

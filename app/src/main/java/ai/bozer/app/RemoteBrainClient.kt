@@ -1,11 +1,9 @@
 package ai.bozer.app
 
-import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,10 +12,8 @@ import kotlinx.coroutines.withContext
  * packaged in the Android APK.
  */
 class RemoteBrainClient(
-    private val endpoint: String,
-    context: Context
+    private val endpoint: String
 ) {
-    private val appContext = context.applicationContext
     val isConfigured: Boolean get() = endpoint.startsWith("https://")
 
     suspend fun reply(history: List<ChatMessage>, extraContext: String = ""): String = withContext(Dispatchers.IO) {
@@ -44,7 +40,6 @@ class RemoteBrainClient(
             readTimeout = 35_000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            setRequestProperty("X-Bozer-Client", installId())
         }
         try {
             connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
@@ -80,15 +75,6 @@ class RemoteBrainClient(
         } finally {
             connection.disconnect()
         }
-    }
-
-    private fun installId(): String {
-        val preferences = appContext.getSharedPreferences("bozer_remote", Context.MODE_PRIVATE)
-        val existing = preferences.getString("install_id", null)
-        if (!existing.isNullOrBlank()) return existing
-        val created = UUID.randomUUID().toString()
-        preferences.edit().putString("install_id", created).apply()
-        return created
     }
 
     private companion object {
