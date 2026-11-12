@@ -80,6 +80,20 @@ Future modules must remain disabled until all prerequisites are verified:
 - `DEVICE_HEALTH_MONITOR`: each metric mapped to a public API, tested on target Android versions, and accompanied by truthful limits.
 - `OEM_PRIVILEGED_MODE`: written OEM integration agreement plus signed system image/allowlist.
 
+
+## Android platform facts verified against official documentation
+
+- The selected `VoiceInteractionService` is kept running by Android to support background hotwording; its implementation must remain lightweight. This is the supported app-level route to investigate first.
+- Android microphone access is privacy-signaled. BOZER must not try to hide or spoof the microphone indicator.
+- Ordinary microphone foreground services are restricted when started from the background, especially on newer Android versions. A genuine selected `VoiceInteractionService` has a distinct system role and must be implemented correctly; a generic background service is not an equivalent workaround.
+- Privileged apps are installed in a system-image `priv-app` partition and privileged permissions are allowlisted by the system-image integrator/OEM. A GitHub commit or APK update cannot grant those privileges by itself.
+
+Official references:
+- https://developer.android.com/reference/android/service/voice/VoiceInteractionService
+- https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+- https://source.android.com/docs/core/permissions/privapp-permissions
+- https://source.android.com/docs/core/permissions/privacy-indicators
+
 ## Immediate next engineering tasks
 
 1. Wait for and inspect the current Android emulator workflow; fix only reproducible failures.
