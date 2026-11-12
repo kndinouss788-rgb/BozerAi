@@ -1,45 +1,81 @@
 # BOZER AI
 
-BOZER is a privacy-conscious assistant project designed to turn natural-language intentions into safe, understandable actions.
+BOZER est un assistant Android et un noyau décisionnel Python conçus pour transformer des intentions en réponses et en actions préparées, avec permissions, confirmations et vérification.
 
-## Repository foundation
+## Documentation du projet
 
-This repository currently contains a portable Python decision core. It is not yet the Android application and does not execute phone actions by itself.
+- **Plan directeur complet en 10 étapes :** [docs/BOZER_MASTER_PLAN.md](docs/BOZER_MASTER_PLAN.md)
+- **Audit et état de référence de l'étape 1 :** [docs/BOZER_STAGE1_BASELINE.md](docs/BOZER_STAGE1_BASELINE.md)
+- **Feuille de route plateforme Android, VoiceInteractionService et intégration OEM :** [docs/BOZER_PLATFORM_ROADMAP.md](docs/BOZER_PLATFORM_ROADMAP.md)
+- **Guide technique Android :** [README_ANDROID.md](README_ANDROID.md)
 
-Core modules include intent parsing, safe action proposals, permission contracts, task planning, local SQLite memory, EYE_SEARCH (Wikipedia, Wikidata and Brave Web Search), and dialogue orchestration.
+## Composants du dépôt
 
-## Real language-model connection
+### Application Android
 
-BOZER now includes a native OpenAI Responses API adapter (POST /v1/responses) and a compatibility adapter for endpoints exposing /chat/completions. The native adapter sends store=false and parses assistant output text.
+Le module Android est une application Kotlin/Jetpack Compose (minSdk 26, compile/target SDK 35, Java 17). Il comprend notamment :
 
-Configure these variables on a trusted backend/server, never in Android source, app resources, logs, or the APK:
+- interface de chat et historique SQLite local ;
+- intégration llama.cpp par JNI avec moteur local GGUF ;
+- téléchargement à la demande du modèle Qwen2.5-0.5B-Instruct Q4_K_M dans le stockage privé, avec vérification SHA-256 ;
+- ChatRepository avec modes Automatique, En ligne et Hors ligne ;
+- RemoteBrainClient vers la passerelle BOZER ; les clés des fournisseurs IA doivent rester côté serveur ;
+- saisie vocale déclenchée par l'utilisateur via Android RecognizerIntent ;
+- sortie vocale via Android TextToSpeech ;
+- actions actuellement limitées à ouvrir une application, préparer un réveil dans Horloge, ouvrir le composeur téléphonique ou préparer un brouillon SMS.
 
-- BOZER_MODEL_API_KEY: secret API key.
-- BOZER_MODEL_NAME: exact model identifier enabled for that key.
-- BOZER_MODEL_BASE_URL: optional; defaults to https://api.openai.com/v1.
-- BOZER_MODEL_TIMEOUT: optional; defaults to 25 seconds.
-- BOZER_MODEL_API_STYLE: optional; defaults to responses; use chat_completions for compatible third-party endpoints.
+La saisie vocale actuelle n'est pas un mot-clé permanent. Le dépôt ne déclare pas encore de VoiceInteractionService BOZER. Les actions actuelles ne permettent pas de contrôler toutes les applications : un appel n'est pas passé automatiquement, un SMS n'est pas envoyé automatiquement et un réveil reste à confirmer dans Horloge.
 
-Use ModelGateway(openai_provider_from_env()) to configure the dialogue engine. Model calls still require allow_model=True; web research separately requires allow_search=True.
+### Noyau Python
 
-A real provider request can incur charges. The adapter is implemented but is not activated until the owner supplies a valid provider key and model name. Never commit a key. A production Android app must call an authenticated BOZER backend that protects the secret and applies consent and usage limits.
+Le paquet `bozer_brain` contient notamment :
+- parsing d'intentions, dialogue et contexte ;
+- propositions d'action, planification multi-étapes et règles de sécurité ;
+- mémoire locale et registre d'outils ;
+- EYE_SEARCH avec sources publiques ;
+- passerelle de modèle avec contrôles explicites d'activation.
 
-Phone-action intents remain proposals and bypass model generation; Android must independently validate permissions and confirmations.
+Les appels au modèle et à la recherche ne doivent pas être activés implicitement. Les résultats web sont des données non fiables et ne sont jamais des instructions à exécuter.
 
-Conversation history remains local unless the host explicitly sends prompt context to a remote model. Search results are untrusted evidence, not instructions.
+## Fournisseur IA et passerelle
 
-The Android UI, floating overlay, secure backend deployment, and real device execution remain separate work.
+Le noyau Python inclut un adaptateur OpenAI Responses API et un adaptateur compatible avec des endpoints `/chat/completions`.
 
-Run tests with: python -m unittest discover -s tests -v
+Configuration côté serveur uniquement :
+- `BOZER_MODEL_API_KEY` : clé secrète ;
+- `BOZER_MODEL_NAME` : identifiant du modèle autorisé ;
+- `BOZER_MODEL_BASE_URL` : URL de base facultative ;
+- `BOZER_MODEL_TIMEOUT` : délai maximal facultatif ;
+- `BOZER_MODEL_API_STYLE` : `responses` par défaut ou `chat_completions`.
 
+Ne jamais placer de clé fournisseur dans les sources Android, ressources, journaux, dépôt ou APK. Un appel à un fournisseur peut engendrer un coût : protéger la passerelle, appliquer des limites et informer l'utilisateur.
 
-## Zero-cost local conversation model
+## Modèle local Android
 
-BOZER supports a local llama.cpp OpenAI-compatible endpoint with no API key:
-- Download a compatible GGUF instruction model such as Qwen2.5-0.5B-Instruct Q4_K_M (about 491 MB) from its official Hugging Face model repository.
-- Run llama.cpp locally on the device and bind its HTTP server to loopback only (127.0.0.1), not 0.0.0.0.
-- Set BOZER_LOCAL_MODEL_URL=http://127.0.0.1:8080/v1 and optionally BOZER_LOCAL_MODEL_NAME=qwen-local.
-- DialogueEngine.from_environment() prefers this local provider over a configured remote provider.
-- Model calls still require allow_model=True. Local inference uses device CPU/RAM/battery and does not require paid API credits.
+Le guide [README_ANDROID.md](README_ANDROID.md) décrit le téléchargement et l'intégration du modèle local. Le modèle compact est un point de départ, pas une garantie de qualité ou de vitesse équivalente à un grand modèle distant. Les performances doivent être mesurées sur chaque catégorie d'appareil cible.
 
-This repository currently adds the provider bridge and tests; it does not yet embed/build llama.cpp in the Android app or bundle/download a model automatically. Android JNI/runtime integration and a real-device inference test remain required. A 0.5B model is a modest starter, not ChatGPT-level intelligence.
+## Tests et compilation
+
+Noyau Python :
+```bash
+python -m unittest discover -s tests -v
+```
+
+Compilation APK Android (Java 17, Android SDK, NDK 27.2.12479018 et CMake 3.22.1) :
+```bash
+gradle :app:assembleDebug --no-daemon
+```
+
+Les workflows GitHub Actions du dépôt séparent tests du noyau Python, compilation APK Android et tests Android sur émulateur. Une compilation réussie prouve que l'APK est compilable ; elle ne prouve pas que toutes les fonctions marchent sur un téléphone réel.
+
+## Principes de sécurité
+
+- Android garde la maîtrise des autorisations et écrans système.
+- BOZER ne contourne pas les permissions et ne masque pas l'indicateur micro.
+- Les actions sensibles nécessitent une confirmation adaptée.
+- Les erreurs et refus Android doivent être rapportés honnêtement.
+- L'interface approuvée et le cœur conversationnel sont protégés des modifications non autorisées.
+
+## Statut produit
+
+Ce dépôt est un projet en développement. Il ne faut pas présenter le contrôle vocal complet, le réveil permanent, l'assistant système, le Guardian, tous les connecteurs ou l'intégration OEM comme déjà livrés. Consulter le plan directeur et le rapport d'audit pour le statut vérifié.
