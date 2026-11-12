@@ -3,6 +3,7 @@ package ai.bozer.app
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.os.SystemClock
+import android.view.KeyEvent
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -76,10 +77,10 @@ class BozerBrainEndToEndTest {
         val previous = assistantCount()
         field!!.click()
         field.setText(text)
-        val send = device.wait(Until.findObject(By.text("↑")), 10_000)
-        assertNotNull("Bouton d'envoi BOZER introuvable", send)
         val started = SystemClock.elapsedRealtime()
-        send!!.click()
+        // The accepted glass send control is drawn on Canvas and has no text node.
+        // Use the keyboard's Send action, which is wired to the same send() callback.
+        device.pressKeyCode(KeyEvent.KEYCODE_ENTER)
         val reply = waitForAssistantReply(previous)
         val elapsed = SystemClock.elapsedRealtime() - started
         assertRealReply(reply, turn)
@@ -96,9 +97,17 @@ class BozerBrainEndToEndTest {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         )
         assertNotNull(
-            "Le moteur llama.cpp n'a pas affiché l'état prêt. Vérifier le chargement du GGUF.",
-            device.wait(Until.findObject(By.text("Ton compagnon intelligent")), 600_000)
+            "L'interface BOZER n'a pas démarré.",
+            device.wait(Until.findObject(By.text("Je suis là.")), 30_000)
         )
+        // Open the existing settings dialog to wait for the actual local-model status,
+        // rather than relying on copy from an older version of the interface.
+        device.click((device.displayWidth * 0.045f).toInt(), (device.displayHeight * 0.052f).toInt())
+        assertNotNull(
+            "Le moteur llama.cpp n'a pas affiché l'état prêt. Vérifier le chargement du GGUF.",
+            device.wait(Until.findObject(By.text("Cerveau local prêt — hors ligne.")), 600_000)
+        )
+        device.pressBack()
 
         val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 1)
         assertTrue("La salutation semble être une erreur", greeting.length >= 2)
@@ -162,7 +171,7 @@ class BozerBrainEndToEndTest {
         )
         assertNotNull(
             "BOZER ne retrouve pas son modèle après redémarrage",
-            device.wait(Until.findObject(By.text("Ton compagnon intelligent")), 180_000)
+            device.wait(Until.findObject(By.text("Je suis là.")), 180_000)
         )
         assertNotNull(
             "La salutation n'a pas été restaurée",
