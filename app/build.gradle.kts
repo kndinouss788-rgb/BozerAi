@@ -4,12 +4,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val gatewayUrl = providers.gradleProperty("BOZER_GATEWAY_URL")
+    .orElse(providers.environmentVariable("BOZER_GATEWAY_URL"))
+    .getOrElse("https://bozerai.bozerpdg.workers.dev")
+
 android {
     namespace = "ai.bozer.app"
     compileSdk = 35
     ndkVersion = "27.2.12479018"
 
     defaultConfig {
+        buildConfigField("String", "BOZER_GATEWAY_URL", "\"" + gatewayUrl.replace("\"", "\\\"") + "\"")
         applicationId = "ai.bozer.app"
         minSdk = 26
         targetSdk = 35
@@ -32,7 +37,7 @@ android {
         }
     }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
