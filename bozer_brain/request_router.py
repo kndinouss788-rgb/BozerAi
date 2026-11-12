@@ -9,7 +9,7 @@ from enum import Enum
 import re
 
 from .intent import parse_intent
-from .models import IntentKind
+from .models import ActionProposal, IntentKind
 from .planner import plan_action
 
 
@@ -27,7 +27,7 @@ class RequestAnalysis:
     confidence: float
     summary: str
     intent_kind: IntentKind
-    action_proposal: object
+    action_proposal: ActionProposal
     requires_user_input: bool
     reasons: tuple[str, ...]
 
