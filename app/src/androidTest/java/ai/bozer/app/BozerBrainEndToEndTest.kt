@@ -189,6 +189,16 @@ class BozerBrainEndToEndTest {
             "Le rappel n'a pas été restauré",
             device.wait(Until.findObject(By.text("Quel est mon animal préféré ? Réponds en un seul mot.")), 20_000)
         )
+        device.click((device.displayWidth * 0.12f).toInt(), (device.displayHeight * 0.052f).toInt())
+        assertNotNull(
+            "Le panneau des réglages n'a pas été restauré après redémarrage.",
+            device.wait(Until.findObject(By.text("Réglages BOZER")), 20_000)
+        )
+        assertNotNull(
+            "Le modèle local n'a pas été rechargé après redémarrage.",
+            device.wait(Until.findObject(By.text("Cerveau local prêt — hors ligne.")), 600_000)
+        )
+        device.pressBack()
         assertTrue("L'historique ne contient pas sept réponses", assistantCount() >= 7)
         assertTrue("La mémoire explicite n'a pas survécu au redémarrage", rememberedFactCount() >= 1)
         val (persistentRecall, persistentRecallMs) = sendMessage(
