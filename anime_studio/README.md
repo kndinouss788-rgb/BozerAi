@@ -27,7 +27,11 @@ This repository is the source of truth for production documents. External image/
 9. Continuity review and episode approval
 
 ## Current milestone
-**Stage 1 — Foundation:** create the source-of-truth documents and production workflow. No episode footage has been generated or approved yet.
+**Stage 1 — Foundation: COMPLETED.** The series bible, character and world registries, and production workflow are in place.
+
+**Stage 2 — Production workspace: COMPLETED.** The studio now has a dashboard, asset register, reusable scene and shot templates, and an Episode 1 shot manifest. These tools organize production; they are not animation footage.
+
+**Stage 3 — Episode 1 story development: NOT STARTED.** The premise, beat sheet and screenplay still need to be developed and approved.
 
 ## Documents
 - SERIES_BIBLE.md — confirmed canon and narrative rules.
