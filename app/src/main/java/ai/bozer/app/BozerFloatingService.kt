@@ -110,6 +110,7 @@ class BozerFloatingService : Service() {
             elevation = dp(9).toFloat()
             isClickable = true
             isFocusable = true
+            setOnClickListener { openMainActivity() }
             setOnTouchListener(::handleBubbleTouch)
         }
 
@@ -137,6 +138,20 @@ class BozerFloatingService : Service() {
         } catch (error: WindowManager.BadTokenException) {
             Log.e(TAG, "Android rejected the overlay window.", error)
             stopSelf()
+        }
+    }
+
+    private fun openMainActivity() {
+        try {
+            startActivity(
+                Intent(this, MainActivity::class.java).addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            )
+        } catch (error: Exception) {
+            Log.e(TAG, "Unable to open BOZER from the floating bubble.", error)
         }
     }
 
@@ -222,8 +237,4 @@ class BozerFloatingService : Service() {
         private const val NOTIFICATION_ID = 19019
     }
 
-    init {
-        // Keep click handling separate from drag handling for accessibility.
-        // TextView.performClick() reaches this listener when the user taps.
-    }
 }
