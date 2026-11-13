@@ -4,9 +4,12 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -68,6 +71,22 @@ class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
     private lateinit var voiceOutput: BozerVoiceOutput
     private var voiceResultHandler: ((String) -> Unit)? = null
+    private var floatingBubbleResultHandler: ((Boolean) -> Unit)? = null
+
+    private val overlaySettingsLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        val granted = Settings.canDrawOverlays(this)
+        val active = granted && startFloatingBubbleService()
+        getPreferences(MODE_PRIVATE).edit()
+            .putBoolean("floating_bubble_enabled", active)
+            .apply()
+        floatingBubbleResultHandler?.invoke(active)
+        floatingBubbleResultHandler = null
+        if (!granted) {
+            Toast.makeText(this, "Autorise l'affichage par-dessus les autres applications pour activer la bulle.", Toast.LENGTH_LONG).show()
+        }
+    }
 
     private val speechRecognitionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -100,7 +119,57 @@ class MainActivity : ComponentActivity() {
         val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
         repository.internetAvailable = { hasValidatedInternet() }
         val modelManager = LocalModelManager(applicationContext)
+        if (
+            getPreferences(MODE_PRIVATE).getBoolean("floating_bubble_enabled", false) &&
+            Settings.canDrawOverlays(this)
+        ) {
+            startFloatingBubbleService()
+        }
         setContent { BozerChatExperience(this@MainActivity, repository, modelManager, engine, voiceOutput) }
+    }
+
+    fun hasFloatingBubblePermission(): Boolean = Settings.canDrawOverlays(this)
+
+    fun setFloatingBubbleEnabled(enabled: Boolean, onResult: (Boolean) -> Unit) {
+        val preferences = getPreferences(MODE_PRIVATE)
+        if (!enabled) {
+            stopService(Intent(this, BozerFloatingService::class.java))
+            preferences.edit().putBoolean("floating_bubble_enabled", false).apply()
+            onResult(false)
+            return
+        }
+
+        if (Settings.canDrawOverlays(this)) {
+            val active = startFloatingBubbleService()
+            preferences.edit().putBoolean("floating_bubble_enabled", active).apply()
+            onResult(active)
+            return
+        }
+
+        floatingBubbleResultHandler = onResult
+        val permissionIntent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:$packageName")
+        )
+        overlaySettingsLauncher.launch(permissionIntent)
+    }
+
+    private fun startFloatingBubbleService(): Boolean = try {
+        val serviceIntent = Intent(this, BozerFloatingService::class.java)
+            .setAction(BozerFloatingService.ACTION_START)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+        true
+    } catch (error: Exception) {
+        Toast.makeText(
+            this,
+            "Impossible d'activer la bulle BOZER : " + (error.message ?: "erreur Android"),
+            Toast.LENGTH_LONG
+        ).show()
+        false
     }
 
     fun startVoiceInput(onResult: (String) -> Unit) {
