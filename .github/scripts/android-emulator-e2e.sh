@@ -22,10 +22,13 @@ adb shell run-as "$APP_ID" cp /data/local/tmp/bozer-qwen.gguf "$DEVICE_MODEL"
 DEVICE_SHA="$(adb shell run-as "$APP_ID" sha256sum "$DEVICE_MODEL" | awk '{print $1}' | tr -d '\\r')"
 test "$DEVICE_SHA" = "$MODEL_SHA"
 adb shell run-as "$APP_ID" test -s "$DEVICE_MODEL"
-# The test runner independently verified the full GGUF checksum. Install the
-# same marker written by LocalModelManager so app startup does not hash 491 MB
-# again while Compose and the emulator are warming up.
-adb shell run-as "$APP_ID" sh -c "printf '%s' '$MODEL_SHA' > '$MODEL_DIR/$MODEL_NAME.sha256'"
+# The test runner independently verified the full GGUF checksum. Push the
+# marker to shared temporary storage, then copy it as the app UID. This avoids
+# adb shell parsing the redirection outside run-as (which caused EACCES).
+printf '%s' "$MODEL_SHA" > .ci-cache/model.sha256
+adb push .ci-cache/model.sha256 /data/local/tmp/bozer-model.sha256
+adb shell run-as "$APP_ID" cp /data/local/tmp/bozer-model.sha256 "$MODEL_DIR/$MODEL_NAME.sha256"
+adb shell run-as "$APP_ID" test -s "$MODEL_DIR/$MODEL_NAME.sha256"
 echo "MODEL_SHA256=$DEVICE_SHA"
 
 adb logcat -c
