@@ -9,9 +9,9 @@
 | Series canon | FOUNDATION CREATED | Creator review of unresolved canon |
 | Character registry | TEMPLATE READY | Confirm lead cast and visual anchors |
 | World / locations | TEMPLATE READY | Select the first episode's locations |
-| Season 1, Episode 1 | IDEA | Approve premise and beat sheet |
-| Screenplay | NOT STARTED | Write after premise approval |
-| Storyboard | NOT STARTED | Build from locked screenplay |
+| Season 1, Episode 1 | FIRST STORY DRAFT | Creator review of premise and beats |
+| Screenplay | FIRST DRAFT | Creator review and revision |
+| Shot plan | DRAFT | Review after screenplay lock |
 | Visual references | NOT STARTED | Create approved character/location sheets |
 | Animated footage | NONE | Generate only after storyboard approval |
 | Editing / sound | NOT STARTED | Wait for reviewed shots |
