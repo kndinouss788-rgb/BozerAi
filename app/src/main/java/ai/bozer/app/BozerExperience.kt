@@ -101,6 +101,12 @@ internal fun BozerChatExperience(
     var plusMenuOpen by remember { mutableStateOf(false) }
     val preferences = remember { activity.getPreferences(Context.MODE_PRIVATE) }
     var voiceEnabled by remember { mutableStateOf(preferences.getBoolean("voice_enabled", false)) }
+    var floatingBubbleEnabled by remember {
+        mutableStateOf(
+            preferences.getBoolean("floating_bubble_enabled", false) &&
+                activity.hasFloatingBubblePermission()
+        )
+    }
     var brainMode by remember {
         mutableStateOf(BrainMode.from(preferences.getString("brain_mode", repository.brainMode.name)))
     }
@@ -404,6 +410,30 @@ internal fun BozerChatExperience(
                                     voiceEnabled = enabled
                                     preferences.edit().putBoolean("voice_enabled", enabled).apply()
                                     if (!enabled) voiceOutput.stop()
+                                }
+                            )
+                        }
+                        Divider(color = BozerLine)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Bulle flottante", color = BozerInk, fontWeight = FontWeight.Medium)
+                                Text(
+                                    "Afficher un raccourci déplaçable au-dessus des autres applications. Android demandera une autorisation spéciale.",
+                                    color = BozerMuted,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                            }
+                            Switch(
+                                checked = floatingBubbleEnabled,
+                                onCheckedChange = { enabled ->
+                                    activity.setFloatingBubbleEnabled(enabled) { active ->
+                                        floatingBubbleEnabled = active
+                                    }
                                 }
                             )
                         }
