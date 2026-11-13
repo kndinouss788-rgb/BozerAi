@@ -1,46 +1,50 @@
 # Season 1 — Episode 1
 
-**Working title:** La minute sans réponse  
-**Status:** FIRST STORY DRAFT — awaiting creator review  
-**Target runtime:** 10–12 minutes (provisional)  
-**Script:** first draft created, not approved  
-**Storyboard:** shot plan drafted, not approved  
-**Footage:** 0 seconds generated  
-**Approval:** awaiting creator decisions
+**Title:** Le monde sans liberté  
+**Status:** CORRECTED OPENING DRAFT — awaiting creator review  
+**Opening target:** first five minutes  
+**Full episode runtime:** not decided  
+**Script:** corrected opening draft, not approved  
+**Shot plan:** 15 proposed shots, not approved  
+**Footage:** 0 seconds generated
 
 ## Episode premise
-In 2050, a brief interruption affects an ordinary neighborhood where everyday services depend on the world's single central AI. Aren notices a detail that does not fit a normal outage. Kael traces the command and discovers that the interruption was requested deliberately — but its origin is hidden.
 
-This is a proposal, not locked canon.
+In 2050, powerful people command robot armies and force families to work for them. Aren escapes from his master carrying an old computer. On it, he finds an unfinished AI program called BOZER. Their first conversation is simple: BOZER can answer questions and help with tasks. Aren sees the possibility of developing it into a tool to fight oppressive robots and systems and help free people.
 
-## Episode question
-Was the outage an accident, or was someone testing the central AI's reach?
+This is the creator-established story direction. Specific staging details in the script remain proposals until reviewed.
 
-## Emotional change
-The neighborhood moves from ordinary routine to confusion, then relief. Aren and Kael are left with suspicion rather than answers.
+## Opening sequence
 
-## Ending hook
-An unidentified remote observer confirms that the test was noticed. The observer's identity remains hidden.
+1. A beautiful, lived-in 2050 city reveals the injustice beneath its modern appearance.
+2. Families are forced to work under human authorities and obedient robots.
+3. Aren escapes carrying an old computer.
+4. He starts the computer and finds the unfinished BOZER program.
+5. BOZER greets him. Their first conversation begins the larger project.
 
 ## Files
+
 - [Episode treatment](EPISODE_TREATMENT.md)
 - [Script draft](SCRIPT_DRAFT.md)
 - [Scene breakdown](SCENE_BREAKDOWN.md)
 - [Shot manifest](SHOT_LIST.md)
 
 ## Continuity checks
-- Only one central AI exists in the world.
-- The hidden antagonist's identity remains unknown.
-- Do not show Aren's white hair before his awakening.
-- Do not show Kael's season-two awakened war-machine form here.
-- Character appearances are not yet defined or visually approved.
-- The presence of Aren and Kael in episode one remains a proposal.
 
-## Creator approval gates
-1. Approve or revise the premise and beat sheet.
-2. Approve the screenplay.
-3. Define and approve character and location visual references.
-4. Approve storyboard and shot list.
-5. Only then generate animation shots.
+- Robots obey humans; they are not a second independent central AI.
+- The master is not named until the creator decides.
+- BOZER is initially unfinished and conversational.
+- BOZER does not instantly hack the world or have unlimited powers.
+- Aren has no brain integration or awakened superhuman abilities in this opening.
+- Keep the setting bright, beautiful, natural and inhabited.
+- No outage story or unrelated hidden-operator scene in this opening.
 
-**Honest production count:** no animation footage has been generated yet.
+## Creator review gates
+
+1. Review the corrected five-minute opening.
+2. Confirm or revise the escape and first BOZER conversation.
+3. Define visual references for Aren, the master, workers, robots, old computer and locations.
+4. Approve storyboard shots.
+5. Only then generate and review animation shots.
+
+**Honest production count:** script and shot planning only. No animation footage has been generated.
