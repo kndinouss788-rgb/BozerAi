@@ -50,7 +50,12 @@ The exact identity, motives, timeline and methods of this hidden antagonist rema
 - Action can be spectacular, but emotional consequences must remain clear.
 - Dialogue should sound like people speaking, not exposition machines.
 
-## 5. Continuity rules
+## 5. Official BOZER IA logo — CREATOR-APPROVED REFERENCE
+The creator selected the spiral-and-segmented-rings symbol stored at [`BRAND_IDENTITY.md`](BRAND_IDENTITY.md) as BOZER IA's official logo for the series.
+
+Its white/silver metallic treatment on a charcoal-black background is part of the approved reference. The symbol's geometry, spiral, ring segments, gaps, proportions and line details must not be redesigned or recolored. The interface may evolve, but the logo artwork remains stable.
+
+## 6. Continuity rules
 1. Never change a confirmed fact silently.
 2. Keep proposals separate from canon until approved.
 3. Once a character reference is approved, preserve face, hair, body proportions and key costume elements across shots.
@@ -58,7 +63,7 @@ The exact identity, motives, timeline and methods of this hidden antagonist rema
 5. Track each scene's time, place, characters, clothing, injuries, emotional state and preceding events.
 6. Do not treat AI-generated output as canon until it has been reviewed and approved.
 
-## 6. Open questions — NOT YET DECIDED
+## 7. Open questions — NOT YET DECIDED
 - Full main cast and relationships.
 - Exact city names, geography, architecture and everyday life in 2050.
 - Detailed timeline and political/social structure.
@@ -70,7 +75,7 @@ The exact identity, motives, timeline and methods of this hidden antagonist rema
 - Exact designs for Aren, Kael, BOZER, Vorak and supporting characters.
 - Voice casting, languages, sound direction and target episode length.
 
-## 7. Approval vocabulary
+## 8. Approval vocabulary
 - **CONFIRMED:** creator-approved canon.
 - **PROPOSAL:** an option to consider; not canon.
 - **IN DEVELOPMENT:** being written or designed.

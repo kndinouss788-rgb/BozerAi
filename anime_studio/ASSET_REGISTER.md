@@ -4,9 +4,11 @@ Use one row per generated or manually created production asset. Keep the origina
 
 | Asset ID | Type | Character / location / scene | Version | Source tool | File or URL | Duration | Status | Review notes |
 |---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | NOT STARTED | No production assets registered yet |
+| BRAND-BOZER-LOGO-001 | LOGO | BOZER IA — official symbol | v001 | Creator-supplied image | assets/branding/bozer-logo-master.jpg | — | APPROVED REFERENCE | Exact creator-selected spiral and segmented-rings mark; geometry and monochrome treatment are locked |
+| — | — | — | — | — | — | — | NOT STARTED | No approved character, location, storyboard or animation assets registered yet |
 
 ## ID convention
+- Brand / logo: `BRAND-[NAME]-LOGO-v001`
 - Character reference: `CHR-[NAME]-REF-v001`
 - Location reference: `LOC-[NAME]-REF-v001`
 - Storyboard frame: `S01E01-SC01-SH001-BOARD-v001`
@@ -29,3 +31,6 @@ Use one row per generated or manually created production asset. Keep the origina
 `GENERATED` → `IN REVIEW` → `APPROVED` or `NEEDS REVISION`.
 
 An output is not approved just because a tool generated it successfully.
+
+## Logo preservation
+The approved BOZER IA logo is documented in [BRAND_IDENTITY.md](BRAND_IDENTITY.md). Never alter the source geometry, colors or distinctive details. Any proposed alternate treatment must be presented separately and requires the creator's approval.
