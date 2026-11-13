@@ -31,6 +31,11 @@ adb shell run-as "$APP_ID" cp /data/local/tmp/bozer-model.sha256 "$MODEL_DIR/$MO
 adb shell run-as "$APP_ID" test -s "$MODEL_DIR/$MODEL_NAME.sha256"
 echo "MODEL_SHA256=$DEVICE_SHA"
 
+# Grant the emulator's test package the same special overlay permission that
+# the user must explicitly enable in Android Settings on a physical device.
+adb shell appops set "$APP_ID" SYSTEM_ALERT_WINDOW allow
+adb shell appops get "$APP_ID" SYSTEM_ALERT_WINDOW
+
 adb logcat -c
 gradle :app:connectedDebugAndroidTest --no-daemon
 
