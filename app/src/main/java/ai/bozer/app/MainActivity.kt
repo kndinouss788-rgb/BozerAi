@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
         val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
         repository.internetAvailable = { hasValidatedInternet() }
         val modelManager = LocalModelManager(applicationContext)
-        setContent { BozerChat(this@MainActivity, repository, modelManager, engine, voiceOutput) }
+        setContent { BozerChatExperience(this@MainActivity, repository, modelManager, engine, voiceOutput) }
     }
 
     fun startVoiceInput(onResult: (String) -> Unit) {
