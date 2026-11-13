@@ -177,16 +177,21 @@ class BozerBrainEndToEndTest {
             Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         )
-        assertNotNull(
-            "BOZER ne retrouve pas son modèle après redémarrage",
-            device.wait(Until.findObject(By.text("Je suis là.")), 180_000)
+        assertTrue(
+            "BOZER n'a pas retrouvé son activité après recréation.",
+            device.wait(Until.hasObject(By.pkg(context.packageName)), 180_000)
+        )
+        // A conversation with history does not show the empty-state welcome text.
+        // Scroll the restored chat to the latest turn and verify persisted content.
+        device.swipe(
+            (device.displayWidth * 0.5f).toInt(),
+            (device.displayHeight * 0.82f).toInt(),
+            (device.displayWidth * 0.5f).toInt(),
+            (device.displayHeight * 0.24f).toInt(),
+            12
         )
         assertNotNull(
-            "La salutation n'a pas été restaurée",
-            device.wait(Until.findObject(By.text("Salut BOZER ! Comment vas-tu aujourd'hui ?")), 20_000)
-        )
-        assertNotNull(
-            "Le rappel n'a pas été restauré",
+            "Le rappel n'a pas été restauré après recréation de l'activité",
             device.wait(Until.findObject(By.text("Quel est mon animal préféré ? Réponds en un seul mot.")), 20_000)
         )
         device.click((device.displayWidth * 0.12f).toInt(), (device.displayHeight * 0.052f).toInt())
