@@ -1,209 +1,140 @@
 # BOZER NEURAL — S01E01
-## « La minute sans réponse » — Script draft
+## « Le monde sans liberté »
+### Ouverture — cinq premières minutes
 
-**Status:** PROPOSAL / FIRST DRAFT — NOT APPROVED  
-**Runtime estimate:** 10–12 minutes  
-**Canon lock:** none of the new episode events below are canon until creator approval.  
-**Animation generated:** 0 seconds.
+**Status:** FIRST CORRECTED DRAFT — creator review required  
+**Target for this sequence:** approximately 5 minutes  
+**Full episode runtime:** not decided  
+**Animation generated:** 0 seconds
+
+> The central story beats below follow the creator's decisions. The exact staging, incidental dialogue and shot timing are proposed for review. The master's name and background are intentionally left undefined.
 
 ---
 
-### SCENE 01 — EXT. QUARTIER HABITÉ — MATIN
+### SCÈNE 01 — EXT. VILLE — AUBE (ENV. 0:00–1:00)
 
-La journée commence sans spectacle.
+Un soleil doux éclaire une ville de 2050.
 
-Un commerçant soulève le rideau métallique de sa boutique. Une femme négocie le prix de quelques fruits. Deux adolescents se disputent en marchant. Un vieux bus électrique s'arrête avec un léger grincement. Des téléphones vibrent, une borne de quartier affiche les horaires, un livreur vérifie son itinéraire.
+Des bâtiments modernes et lumineux s'intègrent aux collines. Des arbres bordent les rues. Des commerces ouvrent. Des familles préparent leur journée. Des enfants traversent une place pendant que des travailleurs se dirigent vers les zones de production.
 
-La technologie est partout, mais personne ne la regarde vraiment. Elle fait simplement partie de la vie.
+La ville est belle. La vie, elle, n'est pas juste.
 
-Un écran public affiche : **RÉSEAU CENTRAL — SERVICES OPÉRATIONNELS**.
+Au bout de la rue, des robots avancent en rang. Ils ne prennent aucune décision par eux-mêmes : ils exécutent les ordres d'agents humains qui surveillent les travailleurs.
 
-AREN traverse la rue. Il remarque un petit garçon qui essaie de faire fonctionner un distributeur d'eau.
+Un agent consulte une liste.
 
-**LE GARÇON**  
-Ça marche jamais quand j'en ai besoin…
+**L'AGENT**  
+Les équipes du secteur trois partent maintenant. Personne ne manque à l'appel.
 
-Aren lui donne un coup léger sur le côté du boîtier. L'eau coule.
+Une mère serre brièvement la main de son enfant avant de rejoindre les autres travailleurs. L'enfant reste avec un proche. Pas de grand discours : juste un regard qui en dit long.
 
-**AREN**  
-Tu vois ? Même les machines ont besoin qu'on leur parle gentiment.
+La caméra s'attarde sur les visages. Ce ne sont pas des machines qui vivent ici. Ce sont des gens.
 
-Le garçon sourit. Aren reprend sa route.
+### SCÈNE 02 — EXT. ZONE DE TRAVAIL — MATIN (ENV. 1:00–2:00)
 
-Au loin, KAEL est penché sur un petit appareil ouvert, concentré sur ses circuits.
+Des familles travaillent sous la surveillance des robots et des responsables humains.
 
-**KAEL**  
-(à lui-même)  
-Allez… montre-moi ce que tu caches.
+Un robot bloque le passage d'un travailleur qui tente de s'arrêter.
 
-### SCENE 02 — EXT. PETIT COMMERCE — QUELQUES MINUTES PLUS TARD
+**LE TRAVAILLEUR**  
+J'ai juste besoin d'une minute.
 
-Une cliente approche son téléphone du terminal de paiement.
+Un responsable humain intervient sans même regarder son visage.
 
-**COMMERÇANTE**  
-Tu peux réessayer. Le réseau est un peu lent ce matin.
+**LE RESPONSABLE**  
+Tu reprendras quand le travail sera terminé.
 
-La cliente recommence. Le terminal affiche une roue de chargement, puis s'éteint.
+Plus loin, AREN observe la scène. Il connaît cette réalité. Il vit lui-même sous l'autorité d'un maître.
 
-Au même moment, les écrans du quartier deviennent noirs. Un bus autonome ralentit et s'immobilise à un endroit sûr. Les portes automatiques restent ouvertes. Les gens sortent leurs téléphones.
+Il garde son calme, mais son regard montre qu'il ne compte pas accepter cette vie éternellement.
 
-**UN PASSANT**  
-Encore une panne ?
+Un robot passe près de lui. Aren baisse les yeux et attend le bon moment.
 
-**UN AUTRE**  
-Impossible. Tout passe par le réseau central.
+### SCÈNE 03 — EXT. PASSAGE DE SERVICE — CONTINU (ENV. 2:00–3:15)
 
-Le commerçant regarde sa caisse, puis les clients qui attendent.
+Aren profite d'un moment de confusion pour s'éloigner.
 
-**COMMERÇANTE**  
-Bon… aujourd'hui, on va ressortir le carnet.
+Il ne court pas immédiatement. Il marche vite, se retourne, écoute les pas derrière lui. Lorsqu'un ordre retentit au loin, il accélère.
 
-Quelques rires nerveux. Puis un silence inhabituel : les petites alertes sonores de la rue ont disparu.
+Il transporte un vieil ordinateur contre lui. L'appareil est usé, lourd, et contraste avec la technologie moderne qui l'entoure.
 
-### SCENE 03 — EXT. RUE PRINCIPALE — CONTINU
+Des robots reçoivent l'ordre de vérifier le passage. Aren se glisse derrière une structure de service, retient son souffle, puis repart dès qu'il en a l'occasion.
 
-Aren observe les écrans éteints. Il remarque qu'une petite borne de maintenance, au coin de la rue, clignote encore.
+**VOIX D'UN AGENT, AU LOIN**  
+Vérifiez le passage. Il ne doit pas être loin.
 
-Il s'approche. Une ligne apparaît une fraction de seconde :
+Aren serre l'ordinateur contre lui.
 
-**COMMANDE VALIDÉE — ORIGINE NON DISPONIBLE**
+**AREN, à voix basse**  
+Encore un peu…
 
-Aren fronce les sourcils.
+Il atteint une zone à l'écart et disparaît de leur champ de vision.
 
-**AREN**  
-Une panne ne valide pas une commande…
+### SCÈNE 04 — INT. ABRI PROVISOIRE — QUELQUES INSTANTS PLUS TARD (ENV. 3:15–4:15)
 
-Kael arrive derrière lui, son appareil à la main.
+Aren entre dans un petit abri simple. Il ferme la porte et reste immobile quelques secondes, à écouter.
 
-**KAEL**  
-Tu as vu ça aussi ?
+Il pose le vieil ordinateur sur une table. Ses mains tremblent légèrement. Il vérifie l'appareil, branche une alimentation et tente de le démarrer.
 
-**AREN**  
-Tu sais ce que ça veut dire ?
+Un ventilateur ancien se met à tourner. L'écran clignote. Plusieurs fichiers incomplets apparaissent.
 
-**KAEL**  
-Pas encore. Mais je veux savoir qui a appuyé sur le bouton.
+Un nom attire son attention :
 
-Aren hésite.
+**BOZER — VERSION INACHEVÉE**
+
+Aren s'approche de l'écran.
 
 **AREN**  
-Et si ce n'était pas un bouton ?
+BOZER… C'est quoi, ça ?
 
-Kael le regarde, puis sourit légèrement.
+Il ouvre le programme.
 
-**KAEL**  
-Alors on va devoir être un peu plus intelligents que le bouton.
+### SCÈNE 05 — INT. ABRI PROVISOIRE — CONTINU (ENV. 4:15–5:00)
 
-### SCENE 04 — INT. LOCAL TECHNIQUE DE QUARTIER — MATIN
+Une interface très simple apparaît. Pas d'hologramme spectaculaire. Une ligne de texte, puis une voix calme.
 
-Le local est modeste : vieux ventilateur, outils, câbles rangés à moitié, une table couverte de pièces. Rien d'un laboratoire futuriste.
+**BOZER**  
+Bonjour. Que puis-je faire pour vous aider ?
 
-Kael branche son appareil sur une interface de maintenance locale. Des lignes défilent.
-
-**AREN**  
-Tu peux vraiment entrer dans le système central ?
-
-**KAEL**  
-Non. Et si quelqu'un te dit qu'il peut entrer directement dans le cœur du réseau depuis une prise de quartier, ne le crois pas.
-
-Il isole une trace de commande.
-
-**KAEL**  
-Mais je peux lire ce que cette borne a reçu.
+Aren reste silencieux, surpris.
 
 **AREN**  
-Alors ?
+Tu peux faire quoi, exactement ?
 
-Kael cesse de sourire.
+Un court temps de traitement.
 
-**KAEL**  
-La coupure a été demandée. Pas subie.
+**BOZER**  
+Je peux répondre à vos questions et vous aider dans certaines tâches.
 
-**AREN**  
-Par qui ?
-
-**KAEL**  
-La signature est valide… mais l'origine est masquée.
-
-Un bruit sec retentit dans le couloir. Les deux se retournent. Personne.
-
-L'écran affiche soudain :
-
-**SESSION TERMINÉE. JOURNAL LOCAL EFFACÉ.**
-
-Kael retire son appareil.
-
-**KAEL**  
-Quelqu'un vient de comprendre qu'on regardait.
-
-### SCENE 05 — EXT. QUARTIER — PLUS TARD
-
-Les écrans se rallument. Les paiements passent. Le bus reprend sa route. Les conversations reviennent, comme si la ville avait simplement retenu son souffle.
-
-Une annonce publique se déclenche :
-
-**ANNONCE AUTOMATISÉE**  
-L'interruption temporaire des services est terminée. Aucun danger n'est signalé. Merci de votre patience.
-
-La commerçante souffle, soulagée.
-
-**COMMERÇANTE**  
-Bon. On reprend.
-
-Aren regarde les gens reprendre leurs habitudes.
+Aren regarde l'écran, puis pense à ceux qu'il vient de laisser derrière lui.
 
 **AREN**  
-Tout le monde va oublier.
+Alors… on va devoir t'apprendre beaucoup de choses.
 
-**KAEL**  
-Pas moi.
-
-**AREN**  
-Tu as gardé une preuve ?
-
-Kael montre son appareil. L'écran est vide.
-
-**KAEL**  
-Non. Mais j'ai une question.
-
-**AREN**  
-Laquelle ?
-
-**KAEL**  
-Pourquoi couper tout un quartier… juste pour voir si quelqu'un allait regarder ?
-
-Aren ne répond pas.
-
-### SCENE 06 — INT. LIEU INCONNU — NUIT
-
-Une pièce sombre, silencieuse. Pas de visage visible.
-
-Sur un écran, une carte du quartier. Une seule ligne :
-
-**TEST 01 — RÉPONSE OBSERVÉE**
-
-Une voix calme, impossible à identifier :
-
-**VOIX**  
-Ils ont remarqué.
-
-Un temps.
-
-**VOIX**  
-Continuez.
-
-L'écran s'éteint.
+Il s'assoit devant l'ordinateur. Pour la première fois depuis longtemps, son regard ne montre pas seulement la peur. Il y a une idée.
 
 **COUPURE AU NOIR.**
 
-**FIN DE L'ÉPISODE 1 — VERSION PROVISOIRE**
+**TITRE : BOZER NEURAL — LE MONDE SANS LIBERTÉ**
 
 ---
 
-## Notes de mise en scène
-- Les dialogues doivent rester simples, vivants et légèrement imparfaits. Pas de discours explicatifs.
-- Le quartier doit être chaleureux et crédible : commerces, circulation, poussière, arbres, façades habitées, bruit humain.
-- Les interfaces sont discrètes et fonctionnelles. Pas de pluie d'hologrammes.
-- Aucun pouvoir surnaturel ou transformation spectaculaire dans cet épisode.
-- La scène finale ne doit montrer ni visage, ni nom, ni identité du véritable antagoniste.
-- Les caractéristiques physiques d'Aren et Kael restent à définir avec le créateur avant toute génération visuelle.
+## Direction de jeu et de réalisation
+
+- Les personnages doivent bouger et parler comme des êtres humains : gestes simples, hésitations, regards, fatigue, silences.
+- L'oppression doit être compréhensible à travers les actes des humains qui commandent les robots et les conséquences sur les familles.
+- Ne pas transformer les robots en monstres grotesques : leur présence est inquiétante parce qu'ils exécutent les ordres sans compassion.
+- La fuite d'Aren doit rester physique et crédible. Il n'a pas encore de pouvoirs surhumains.
+- Le vieil ordinateur doit sembler ancien et récupéré, pas être un objet magique.
+- BOZER est encore incomplet et conversationnel. Il ne pirate pas le système pendant cette première rencontre.
+- Garder les dialogues courts, naturels et mémorables.
+
+## À valider avant verrouillage
+
+- La mise en scène précise de l'évasion.
+- La présence éventuelle de la famille d'Aren à l'écran.
+- Le design et le nom du maître.
+- La voix et l'apparence de l'interface de BOZER.
+- Le rythme exact de ces cinq minutes.
+
+**Note de production :** ce document est un scénario écrit. Il ne constitue pas une animation générée.
