@@ -1,27 +1,31 @@
 # S01E01 — Shot Manifest
 
-**Status:** DRAFT — shots are proposed, not approved  
+**Title:** Le monde sans liberté  
+**Status:** DRAFT — corrected opening, not approved  
+**Scope:** first five minutes  
 **Footage generated:** 0 shots  
 **Approved shots:** 0
 
 | Shot ID | Scene | Shot purpose | Reference assets | Planned duration | Status | Output |
 |---|---|---|---|---:|---|---|
-| S01E01-SC01-SH001 | SC01 | Establish neighborhood at morning | Location ref pending | 8s | DRAFT | — |
-| S01E01-SC01-SH002 | SC01 | Show shop opening and street life | Location ref pending | 6s | DRAFT | — |
-| S01E01-SC01-SH003 | SC01 | Introduce Aren and child at water point | Aren ref pending | 10s | DRAFT | — |
-| S01E01-SC02-SH001 | SC02 | Payment terminal fails | Shop / prop refs pending | 6s | DRAFT | — |
-| S01E01-SC02-SH002 | SC02 | Neighborhood screens go dark | Location ref pending | 8s | DRAFT | — |
-| S01E01-SC03-SH001 | SC03 | Aren notices maintenance kiosk | Aren / location refs pending | 7s | DRAFT | — |
-| S01E01-SC03-SH002 | SC03 | First two-shot of Aren and Kael | Aren / Kael refs pending | 10s | DRAFT | — |
-| S01E01-SC04-SH001 | SC04 | Reveal modest technical room | Location ref pending | 7s | DRAFT | — |
-| S01E01-SC04-SH002 | SC04 | Kael reads command trace | Kael / device refs pending | 8s | DRAFT | — |
-| S01E01-SC04-SH003 | SC04 | Local log is erased; reaction close-ups | Character refs pending | 8s | DRAFT | — |
-| S01E01-SC05-SH001 | SC05 | Services return to the same street | Location ref pending | 8s | DRAFT | — |
-| S01E01-SC05-SH002 | SC05 | Aren and Kael exchange final question | Character refs pending | 10s | DRAFT | — |
-| S01E01-SC06-SH001 | SC06 | Unknown operator's map screen | Environment ref pending | 6s | DRAFT | — |
-| S01E01-SC06-SH002 | SC06 | Final line and cut to black | No face reference; voice only | 5s | DRAFT | — |
+| S01E01-SC01-SH001 | SC01 | Establish bright 2050 city among hills and greenery | City ref pending | 12s | DRAFT | — |
+| S01E01-SC01-SH002 | SC01 | Show ordinary families beginning their day | Crowd / location refs pending | 10s | DRAFT | — |
+| S01E01-SC01-SH003 | SC01 | Reveal robots following human agents' orders | Robot / agent refs pending | 12s | DRAFT | — |
+| S01E01-SC01-SH004 | SC01 | Show a family separated for forced work | Human character refs pending | 12s | DRAFT | — |
+| S01E01-SC02-SH001 | SC02 | Show workers under supervision | Worksite ref pending | 12s | DRAFT | — |
+| S01E01-SC02-SH002 | SC02 | Human supervisor orders a worker back to work | Supervisor / worker refs pending | 12s | DRAFT | — |
+| S01E01-SC02-SH003 | SC02 | Aren watches and quietly reacts | Aren ref pending | 12s | DRAFT | — |
+| S01E01-SC03-SH001 | SC03 | Aren begins moving away from the controlled area | Aren / location refs pending | 12s | DRAFT | — |
+| S01E01-SC03-SH002 | SC03 | Close detail of old computer carried by Aren | Computer prop ref pending | 8s | DRAFT | — |
+| S01E01-SC03-SH003 | SC03 | Robots search the passage while Aren hides | Robot / passage refs pending | 14s | DRAFT | — |
+| S01E01-SC04-SH001 | SC04 | Aren reaches a modest temporary shelter | Shelter ref pending | 10s | DRAFT | — |
+| S01E01-SC04-SH002 | SC04 | Old computer powers on; unfinished BOZER files appear | Computer / interface refs pending | 12s | DRAFT | — |
+| S01E01-SC05-SH001 | SC05 | BOZER's first greeting appears on screen | BOZER interface ref pending | 10s | DRAFT | — |
+| S01E01-SC05-SH002 | SC05 | Aren asks what BOZER can do; reaction close-up | Aren ref pending | 12s | DRAFT | — |
+| S01E01-SC05-SH003 | SC05 | Aren realizes the AI could become a way to help others | Aren ref pending | 10s | DRAFT | — |
 
 ## Shot acceptance checklist
+
 - Character identity matches approved references.
 - Location, props, clothing and screen direction match continuity.
 - Action and emotion are readable.
