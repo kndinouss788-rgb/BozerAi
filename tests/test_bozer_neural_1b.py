@@ -87,12 +87,12 @@ def test_rope_preserves_tensor_shape_and_dtype():
 def test_padded_bpe_vocabulary_round_trips_without_changing_active_tokens():
     tokenizer = BozerByteBPETokenizer.train(
         "Bonjour BOZER. Bonjour, comment vas-tu ?",
-        vocab_size=270,
-        pad_to_vocab_size=270,
+        vocab_size=300,
+        pad_to_vocab_size=300,
     )
     restored = BozerByteBPETokenizer.from_dict(tokenizer.to_dict())
-    assert tokenizer.vocab_size == 270
-    assert tokenizer.active_vocab_size <= tokenizer.vocab_size
+    assert tokenizer.vocab_size == 300
+    assert tokenizer.active_vocab_size < tokenizer.vocab_size
     assert restored.vocab_size == tokenizer.vocab_size
     assert restored.active_vocab_size == tokenizer.active_vocab_size
     encoded = tokenizer.encode("Bonjour BOZER !")
