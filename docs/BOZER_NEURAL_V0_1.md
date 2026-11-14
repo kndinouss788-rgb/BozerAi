@@ -8,7 +8,7 @@ Le vocabulaire commence avec 259 identifiants (trois marqueurs et 256 octets UTF
 
 Le but est de représenter les morceaux fréquents du français avec moins de tokens qu'un encodage octet par octet. Le tokenizer demeure réversible sur du texte UTF-8.
 
-## Corpus français V0.2
+## Corpus français V0.3
 Dossier : `data/bozer_neural_v0_3/`.
 - Entraînement : 108 exemples, 18 par catégorie.
 - Validation : 12 exemples, 2 par catégorie.
@@ -31,4 +31,4 @@ La perte d'entraînement et celle de validation sont mesurées séparément. Le 
 L'évaluation affiche la perte sur le fichier test et quelques productions du modèle à comparer aux réponses de référence. Le checkpoint contient les poids, la configuration et le tokenizer correspondant.
 
 ## Limites
-Le corpus V0.3 n'a que 108 exemples d'entraînement et le modèle reste minuscule. Un entraînement de démonstration validera la chaîne technique, pas une compétence conversationnelle fiable. Une revue humaine et des tests ciblés sont indispensables. Le modèle n'est pas encore intégré à Android.
+Le corpus V0.3 ne contient que 108 exemples d'entraînement et le modèle reste minuscule. Un entraînement de démonstration validera la chaîne technique, pas une compétence conversationnelle fiable. Une revue humaine et des tests ciblés sont indispensables. Le modèle n'est pas encore intégré à Android.
