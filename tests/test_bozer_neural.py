@@ -3,11 +3,12 @@ import tempfile
 import unittest
 from pathlib import Path
 import torch
-from bozer_neural.data import get_batch, load_corpus, split_corpus
+from bozer_neural.data import get_batch, load_corpus, read_records, split_corpus
 from bozer_neural.evaluate import evaluate
+from bozer_neural.config import BozerConfig
 from bozer_neural.model import BozerTransformer
-from bozer_neural.tokenizer import BozerByteTokenizer, BozerByteBPETokenizer
-from bozer_neural.train import train
+from bozer_neural.tokenizer import BOS, EOS, BozerByteTokenizer, BozerByteBPETokenizer
+from bozer_neural.train import train, scheduled_learning_rate
 from bozer_neural.learning import submit_feedback, approve_feedback
 from bozer_neural.validate_corpus import validate_splits
 
@@ -86,9 +87,12 @@ class NeuralTests(unittest.TestCase):
             )
             self.assertTrue(output.is_file())
             saved = torch.load(output, map_location="cpu", weights_only=False)
-            self.assertEqual(saved["format"], "bozer-neural-v0.3")
+            self.assertEqual(saved["format"], "bozer-neural-v0.4")
             self.assertEqual(saved["training"]["split_mode"], "separate_file")
             self.assertEqual(saved["config"]["vocab_size"], saved["tokenizer"]["vocab_size"])
+            self.assertIn("optimizer_state_dict", saved)
+            self.assertEqual(saved["training"]["global_step"], 2)
+            self.assertTrue(output.with_name("model.best.pt").is_file())
             self.assertTrue(all(torch.isfinite(torch.tensor(value)).item() for value in (first, last, best)))
 
             result = evaluate(str(output), str(test_file), batches=1, batch_size=2,
@@ -150,13 +154,55 @@ class NeuralTests(unittest.TestCase):
             train(str(training), str(checkpoint), steps=2, batch_size=2,
                   eval_interval=1, eval_batches=1, validation_data_path=str(validation))
             first = torch.load(checkpoint, map_location="cpu", weights_only=False)
-            self.assertEqual(first["format"], "bozer-neural-v0.3")
+            self.assertEqual(first["format"], "bozer-neural-v0.4")
             train(str(training), str(next_checkpoint), steps=2, batch_size=2,
                   eval_interval=1, eval_batches=1, validation_data_path=str(validation),
                   resume_checkpoint=str(checkpoint))
             second = torch.load(next_checkpoint, map_location="cpu", weights_only=False)
             self.assertEqual(second["training"]["resumed_from"], str(checkpoint))
+            self.assertEqual(second["training"]["global_step"], 4)
             self.assertEqual(second["tokenizer"], first["tokenizer"])
+            self.assertIn("optimizer_state_dict", second)
+
+    def test_jsonl_loader_adds_boundaries_to_each_dialogue(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dialogues.jsonl"
+            rows = [
+                {"category": "dialogue_naturel", "user": "Bonjour", "assistant": "Salut"},
+                {"category": "dialogue_naturel", "user": "Tu es là ?", "assistant": "Oui"},
+            ]
+            path.write_text(
+                "\\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\\n",
+                encoding="utf-8")
+            records = read_records(path)
+            tokens = load_corpus(path, BozerByteTokenizer()).tolist()
+            self.assertEqual(len(records), 2)
+            self.assertEqual(tokens[0], BOS)
+            self.assertEqual(tokens.count(BOS), 2)
+            self.assertEqual(tokens.count(EOS), 2)
+
+    def test_batch_sampler_includes_last_legal_window(self):
+        tokens = torch.arange(30)
+        x, y = get_batch(
+            tokens, batch_size=4096, context_length=8,
+            generator=torch.Generator().manual_seed(7)
+        )
+        matching = (x[:, 0] == 21).nonzero(as_tuple=True)[0]
+        self.assertGreater(matching.numel(), 0)
+        self.assertEqual(int(y[matching[0], -1]), 29)
+
+    def test_config_validation_and_learning_rate_schedule(self):
+        with self.assertRaises(ValueError):
+            BozerConfig(n_heads=0)
+        with self.assertRaises(ValueError):
+            BozerConfig(dropout=1.0)
+        self.assertAlmostEqual(
+            scheduled_learning_rate(0, 100, 1e-3, warmup_steps=10), 1e-4
+        )
+        self.assertAlmostEqual(
+            scheduled_learning_rate(100, 100, 1e-3, warmup_steps=10),
+            1e-4, places=8
+        )
 
 
 if __name__ == "__main__":
