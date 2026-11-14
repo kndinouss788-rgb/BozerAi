@@ -65,7 +65,7 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--data", default="data/bozer_neural_v0_2/test_fr.jsonl")
+    parser.add_argument("--data", default="data/bozer_neural_v0_3/test_fr.jsonl")
     parser.add_argument("--batches", type=int, default=12)
     parser.add_argument("--samples", type=int, default=6)
     parser.add_argument("--max-new-tokens", type=int, default=96)
