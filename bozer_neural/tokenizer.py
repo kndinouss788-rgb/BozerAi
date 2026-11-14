@@ -31,16 +31,23 @@ class BozerByteTokenizer:
 class BozerByteBPETokenizer:
     """Byte-level BPE vocabulary trained only from the supplied BOZER corpus."""
 
-    def __init__(self, merges=()):
+    def __init__(self, merges=(), padded_vocab_size=None):
         self.merges = [(int(left), int(right)) for left, right in merges]
-        self.vocab_size = BASE_VOCAB_SIZE + len(self.merges)
+        self.active_vocab_size = BASE_VOCAB_SIZE + len(self.merges)
+        self.vocab_size = (
+            self.active_vocab_size if padded_vocab_size is None
+            else int(padded_vocab_size)
+        )
+        if self.vocab_size < self.active_vocab_size:
+            raise ValueError("padded vocabulary cannot be smaller than active vocabulary")
         self._expansions = {
             BASE_VOCAB_SIZE + index: pair
             for index, pair in enumerate(self.merges)
         }
 
     @classmethod
-    def train(cls, text: str, vocab_size: int = 512, min_frequency: int = 2):
+    def train(cls, text: str, vocab_size: int = 512, min_frequency: int = 2,
+              pad_to_vocab_size=None):
         if vocab_size < BASE_VOCAB_SIZE:
             raise ValueError(f"vocab_size must be at least {BASE_VOCAB_SIZE}")
         if min_frequency < 2:
@@ -78,7 +85,7 @@ class BozerByteBPETokenizer:
                         cursor += 1
                 sequences[index] = merged
             merges.append(pair)
-        return cls(merges)
+        return cls(merges, padded_vocab_size=pad_to_vocab_size)
 
     def encode(self, text: str, add_special_tokens: bool = True):
         sequence = [value + BYTE_OFFSET for value in text.encode("utf-8")]
@@ -106,6 +113,10 @@ class BozerByteBPETokenizer:
                 left, right = self._expansions[token]
                 append_bytes(left)
                 append_bytes(right)
+            elif self.active_vocab_size <= token < self.vocab_size:
+                # Reserved vocabulary rows are masked during generation and
+                # safely ignored if an external checkpoint nevertheless emits one.
+                return
             else:
                 raise ValueError(f"token id out of range: {token}")
 
@@ -119,20 +130,25 @@ class BozerByteBPETokenizer:
         return raw.decode("utf-8", errors="replace")
 
     def to_dict(self):
-        return {
+        payload = {
             "type": "byte_bpe",
             "base_vocab_size": BASE_VOCAB_SIZE,
             "vocab_size": self.vocab_size,
             "merges": [list(pair) for pair in self.merges],
         }
+        if self.active_vocab_size != self.vocab_size:
+            payload["active_vocab_size"] = self.active_vocab_size
+        return payload
 
     @classmethod
     def from_dict(cls, payload):
         if payload.get("type") != "byte_bpe" or payload.get("base_vocab_size") != BASE_VOCAB_SIZE:
             raise ValueError("unsupported BOZER tokenizer format")
-        tokenizer = cls(payload.get("merges", []))
-        if payload.get("vocab_size") != tokenizer.vocab_size:
-            raise ValueError("tokenizer vocabulary size does not match its merges")
+        merges = payload.get("merges", [])
+        active_vocab_size = BASE_VOCAB_SIZE + len(merges)
+        if payload.get("active_vocab_size", active_vocab_size) != active_vocab_size:
+            raise ValueError("tokenizer active vocabulary size does not match its merges")
+        tokenizer = cls(merges, padded_vocab_size=payload.get("vocab_size"))
         for index, (left, right) in enumerate(tokenizer.merges):
             upper_bound = BASE_VOCAB_SIZE + index
             if not (0 <= left < upper_bound and 0 <= right < upper_bound):
