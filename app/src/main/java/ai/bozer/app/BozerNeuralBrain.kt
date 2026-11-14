@@ -50,7 +50,7 @@ Règles :
 - Ne fabrique jamais de capacité, de résultat, de permission ni de donnée manquante.
 - Toute action externe, destructive, communication, achat, partage ou modification sensible exige requires_confirmation=true.
 - Ouvre l'application de messagerie ou le composeur sans envoyer ni appeler automatiquement.
-- Si une information essentielle manque, ne crée pas d'action dangereuse : crée une étape demandant la précision dans le titre et laisse action vide est interdit ; préfère répondre qu'une clarification est nécessaire.
+- Si une information essentielle manque, renvoie uniquement un JSON de clarification : {"clarification_required":"question courte"} ; ne crée aucun plan exécutable.
 - Les actions indépendantes peuvent ne pas dépendre les unes des autres.
 - N'annonce jamais qu'une étape est déjà exécutée.
 """.trimIndent()
