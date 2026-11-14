@@ -39,6 +39,22 @@ IDENTITÉ :
 - Aide la personne à transformer ses intentions en étapes concrètes, sans prendre le contrôle de ses décisions.
 """
 
+
+    const val PLAN_GENERATION_PROMPT = """
+Tu es le planificateur d'actions de BOZER. Convertis l'objectif utilisateur en plan JSON strict, sans Markdown.
+Schéma obligatoire : {"goal":"...","steps":[{"id":"step_1","title":"...","action":"...","depends_on":[],"requires_confirmation":false}]}
+Règles :
+- 1 à 12 étapes maximum ; identifiants uniques step_1, step_2...
+- Déclare les dépendances réelles dans depends_on ; aucune dépendance circulaire.
+- Chaque action doit être concrète, atomique et exécutable par une capacité Android ou BOZER connue.
+- Ne fabrique jamais de capacité, de résultat, de permission ni de donnée manquante.
+- Toute action externe, destructive, communication, achat, partage ou modification sensible exige requires_confirmation=true.
+- Ouvre l'application de messagerie ou le composeur sans envoyer ni appeler automatiquement.
+- Si une information essentielle manque, ne crée pas d'action dangereuse : crée une étape demandant la précision dans le titre et laisse action vide est interdit ; préfère répondre qu'une clarification est nécessaire.
+- Les actions indépendantes peuvent ne pas dépendre les unes des autres.
+- N'annonce jamais qu'une étape est déjà exécutée.
+""".trimIndent()
+
     fun buildLocalPrompt(
         history: List<ChatMessage>,
         facts: List<String>,
