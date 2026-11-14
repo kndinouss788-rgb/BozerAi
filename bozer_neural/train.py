@@ -1,18 +1,23 @@
-"""Train or fine-tune BOZER NEURAL with validation, LR scheduling and resumable state."""
+"""Train or fine-tune BOZER NEURAL with assistant-only loss and balanced sampling."""
 import argparse
 import json
 import math
 from pathlib import Path
 import torch
 from .config import BozerConfig
-from .data import (get_batch, get_balanced_batch, load_corpus, load_corpus_by_category,
-                  read_corpus_text, split_corpus)
+from .data import (
+    get_balanced_supervised_batch,
+    get_supervised_batch,
+    load_supervised_corpus,
+    load_supervised_corpus_by_category,
+    read_corpus_text,
+)
 from .model import BozerTransformer
 from .tokenizer import BozerByteBPETokenizer
 
 
 @torch.no_grad()
-def estimate_loss(model, tokens, config, batches=8, batch_size=16,
+def estimate_loss(model, source, config, batches=8, batch_size=16,
                   device="cpu", seed=2026):
     if batches < 1:
         raise ValueError("batches must be >= 1")
@@ -22,17 +27,18 @@ def estimate_loss(model, tokens, config, batches=8, batch_size=16,
     losses = []
     try:
         for _ in range(batches):
-            if isinstance(tokens, dict):
-                x, y = get_balanced_batch(
-                    tokens, batch_size, config.context_length,
+            if isinstance(source, dict):
+                x, y, mask = get_balanced_supervised_batch(
+                    source, batch_size, config.context_length,
                     device=device, generator=generator
                 )
             else:
-                x, y = get_batch(
-                    tokens, batch_size, config.context_length,
+                tokens, loss_mask = source
+                x, y, mask = get_supervised_batch(
+                    tokens, loss_mask, batch_size, config.context_length,
                     device=device, generator=generator
                 )
-            _, loss = model(x, y)
+            _, loss = model(x, y, loss_mask=mask)
             losses.append(float(loss))
     finally:
         model.train(was_training)
@@ -64,7 +70,8 @@ def _atomic_torch_save(payload, destination):
     temporary.replace(destination)
 
 
-def _make_payload(model, config, tokenizer, optimizer, metrics, include_optimizer=True):
+def _make_payload(model, config, tokenizer, optimizer, metrics,
+                  include_optimizer=True):
     payload = {
         "format": "bozer-neural-v0.4",
         "config": config.to_dict(),
@@ -81,8 +88,8 @@ def train(data_path, output_path, steps=600, batch_size=8,
           learning_rate=3e-4, seed=19, validation_fraction=0.1,
           eval_interval=50, eval_batches=8, validation_data_path=None,
           tokenizer_vocab_size=512, resume_checkpoint=None,
-          grad_accum_steps=1, warmup_steps=20, min_lr_ratio=0.1,
-          early_stopping_patience=0, device=None):
+          grad_accum_steps=2, warmup_steps=20, min_lr_ratio=0.1,
+          early_stopping_patience=5, device=None):
     if steps < 1 or batch_size < 1 or eval_interval < 1 or eval_batches < 1:
         raise ValueError("steps, batch_size, eval_interval and eval_batches must be positive")
     if grad_accum_steps < 1:
@@ -93,6 +100,8 @@ def train(data_path, output_path, steps=600, batch_size=8,
         raise ValueError("learning_rate must be positive")
     if not 0.0 <= min_lr_ratio <= 1.0:
         raise ValueError("min_lr_ratio must be between 0 and 1")
+    if not 0.0 < validation_fraction < 0.5:
+        raise ValueError("validation_fraction must be between 0 and 0.5")
 
     chosen_device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     target_device = torch.device(chosen_device)
@@ -100,7 +109,7 @@ def train(data_path, output_path, steps=600, batch_size=8,
         raise ValueError("CUDA was requested but is not available")
     torch.manual_seed(seed)
 
-    # Learn BPE only from train data once; fine-tuning must reuse that exact vocabulary.
+    # Learn BPE only from train data once; fine-tuning reuses that exact vocabulary.
     previous = None
     if resume_checkpoint:
         previous = torch.load(resume_checkpoint, map_location="cpu", weights_only=False)
@@ -121,38 +130,48 @@ def train(data_path, output_path, steps=600, batch_size=8,
     if previous and previous.get("config") != config.to_dict():
         raise ValueError("resume checkpoint architecture differs from current configuration")
 
-    train_tokens = load_corpus(data_path, tokenizer)
-    train_category_tokens = load_corpus_by_category(data_path, tokenizer)
+    train_tokens, train_loss_mask = load_supervised_corpus(data_path, tokenizer)
+    train_category_data = load_supervised_corpus_by_category(data_path, tokenizer)
     if validation_data_path:
-        validation_tokens = load_corpus(validation_data_path, tokenizer)
-        validation_category_tokens = load_corpus_by_category(validation_data_path, tokenizer)
-        split_mode = "separate_file"
-        if train_category_tokens and validation_category_tokens:
-            if set(train_category_tokens) != set(validation_category_tokens):
-                raise ValueError("training and validation category sets do not match")
-            for category, stream in train_category_tokens.items():
-                if stream.numel() <= config.context_length:
-                    raise ValueError(f"training category {category!r} has too few tokens")
-            for category, stream in validation_category_tokens.items():
-                if stream.numel() <= config.context_length:
-                    raise ValueError(f"validation category {category!r} has too few tokens")
-    else:
-        train_tokens, validation_tokens = split_corpus(
-            train_tokens, validation_fraction, config.context_length
+        validation_tokens, validation_loss_mask = load_supervised_corpus(
+            validation_data_path, tokenizer
         )
-        train_category_tokens = None
-        validation_category_tokens = None
+        validation_category_data = load_supervised_corpus_by_category(
+            validation_data_path, tokenizer
+        )
+        split_mode = "separate_file"
+        if train_category_data and validation_category_data:
+            if set(train_category_data) != set(validation_category_data):
+                raise ValueError("training and validation category sets do not match")
+    else:
+        split_at = int(train_tokens.numel() * (1.0 - validation_fraction))
+        train_tokens, validation_tokens = train_tokens[:split_at], train_tokens[split_at:]
+        train_loss_mask = train_loss_mask[:split_at]
+        validation_loss_mask = train_loss_mask.new_tensor(
+            load_supervised_corpus(data_path, tokenizer)[1][split_at:].tolist()
+        )
+        train_category_data = None
+        validation_category_data = None
         split_mode = "contiguous_holdout"
 
-    train_batch_source = train_category_tokens or train_tokens
-    validation_batch_source = validation_category_tokens or validation_tokens
-
+    train_source = train_category_data or (train_tokens, train_loss_mask)
+    validation_source = validation_category_data or (
+        validation_tokens, validation_loss_mask
+    )
     minimum_tokens = config.context_length + 2
     if train_tokens.numel() < minimum_tokens or validation_tokens.numel() < minimum_tokens:
         raise ValueError(
             "corpus too short after tokenization: "
             f"train={train_tokens.numel()}, validation={validation_tokens.numel()}; "
             f"each split needs at least {minimum_tokens} tokens"
+        )
+    if isinstance(train_source, tuple):
+        # Fail early if a split contains no answer tokens in any sampled window.
+        get_supervised_batch(
+            train_tokens, train_loss_mask, 1, config.context_length
+        )
+        get_supervised_batch(
+            validation_tokens, validation_loss_mask, 1, config.context_length
         )
 
     model = BozerTransformer(config).to(target_device)
@@ -177,7 +196,7 @@ def train(data_path, output_path, steps=600, batch_size=8,
         train_generator.manual_seed(seed + global_step)
 
     initial_val = estimate_loss(
-        model, validation_batch_source, config, eval_batches, batch_size,
+        model, validation_source, config, eval_batches, batch_size,
         target_device, seed=seed + 100000
     )
     best_validation_loss = initial_val
@@ -198,11 +217,12 @@ def train(data_path, output_path, steps=600, batch_size=8,
         "resumed_from": str(resume_checkpoint) if resume_checkpoint else None,
         "train_tokens": int(train_tokens.numel()),
         "validation_tokens": int(validation_tokens.numel()),
+        "training_objective": "assistant_answer_tokens_and_eos_only",
         "eval_history": history,
     }
-    initial_payload = _make_payload(model, config, tokenizer, None, metrics,
-                                    include_optimizer=False)
-    _atomic_torch_save(initial_payload, best_path)
+    _atomic_torch_save(
+        _make_payload(model, config, tokenizer, None, metrics, False), best_path
+    )
 
     model.train()
     for local_step in range(steps):
@@ -215,17 +235,18 @@ def train(data_path, output_path, steps=600, batch_size=8,
         optimizer.zero_grad(set_to_none=True)
         micro_losses = []
         for _ in range(grad_accum_steps):
-            if isinstance(train_batch_source, dict):
-                x, y = get_balanced_batch(
-                    train_batch_source, batch_size, config.context_length,
+            if isinstance(train_source, dict):
+                x, y, mask = get_balanced_supervised_batch(
+                    train_source, batch_size, config.context_length,
                     device=target_device, generator=train_generator
                 )
             else:
-                x, y = get_batch(
-                    train_batch_source, batch_size, config.context_length,
+                tokens, loss_mask = train_source
+                x, y, mask = get_supervised_batch(
+                    tokens, loss_mask, batch_size, config.context_length,
                     device=target_device, generator=train_generator
                 )
-            _, loss = model(x, y)
+            _, loss = model(x, y, loss_mask=mask)
             micro_losses.append(float(loss.detach()))
             (loss / grad_accum_steps).backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -244,11 +265,11 @@ def train(data_path, output_path, steps=600, batch_size=8,
             continue
 
         train_eval = estimate_loss(
-            model, train_batch_source, config, eval_batches, batch_size,
+            model, train_source, config, eval_batches, batch_size,
             target_device, seed=seed + current_step
         )
         val_eval = estimate_loss(
-            model, validation_batch_source, config, eval_batches, batch_size,
+            model, validation_source, config, eval_batches, batch_size,
             target_device, seed=seed + 100000
         )
         improved = val_eval < best_validation_loss
@@ -284,14 +305,15 @@ def train(data_path, output_path, steps=600, batch_size=8,
             "grad_accum_steps": grad_accum_steps, "warmup_steps": warmup_steps,
             "min_lr_ratio": min_lr_ratio, "device": str(target_device),
             "best_checkpoint": str(best_path),
+            "training_objective": "assistant_answer_tokens_and_eos_only",
             "train_generator_state": train_generator.get_state(),
             "eval_history": history,
         }
         if improved:
-            best_payload = _make_payload(
-                model, config, tokenizer, None, metrics, include_optimizer=False
+            _atomic_torch_save(
+                _make_payload(model, config, tokenizer, None, metrics, False),
+                best_path
             )
-            _atomic_torch_save(best_payload, best_path)
 
         latest_payload = _make_payload(
             model, config, tokenizer, optimizer, metrics, include_optimizer=True
@@ -309,8 +331,10 @@ def train(data_path, output_path, steps=600, batch_size=8,
     metrics["train_generator_state"] = train_generator.get_state()
     final_payload = _make_payload(model, config, tokenizer, optimizer, metrics)
     _atomic_torch_save(final_payload, output_path)
-    metadata = {key: value for key, value in final_payload.items()
-                if key not in ("model_state_dict", "optimizer_state_dict")}
+    metadata = {
+        key: value for key, value in final_payload.items()
+        if key not in ("model_state_dict", "optimizer_state_dict")
+    }
     metadata["training"].pop("train_generator_state", None)
     metadata_path = Path(output_path).with_suffix(".json")
     metadata_path.write_text(
@@ -338,7 +362,7 @@ def main():
     parser.add_argument("--early-stopping-patience", type=int, default=5)
     parser.add_argument("--device", default=None)
     parser.add_argument("--resume", default=None,
-                        help="fine-tune from a saved BOZER checkpoint, preserving optimizer state")
+                        help="fine-tune from a saved BOZER checkpoint")
     args = parser.parse_args()
     train(
         args.data, args.output, steps=args.steps, batch_size=args.batch_size,
