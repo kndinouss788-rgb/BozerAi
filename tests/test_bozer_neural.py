@@ -203,7 +203,7 @@ class NeuralTests(unittest.TestCase):
         prompt = format_prompt(item)
         self.assertIn("Je préfère les réponses courtes.", prompt)
         self.assertIn("Je montrerai les étapes.", prompt)
-        self.assertTrue(prompt.endswith("Utilisateur : Combien font 12 plus 8 ?\\nBOZER : "))
+        self.assertTrue(prompt.endswith("Utilisateur : Combien font 12 plus 8 ?\nBOZER : "))
 
     def test_jsonl_loader_adds_boundaries_to_each_dialogue(self):
         with tempfile.TemporaryDirectory() as tmp:
