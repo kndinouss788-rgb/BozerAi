@@ -46,6 +46,20 @@ def estimate_loss(model, source, config, batches=8, batch_size=16,
     return sum(losses) / len(losses)
 
 
+def estimate_category_losses(model, category_source, config, batches=2, batch_size=8,
+                            device="cpu", seed=2026):
+    """Measure validation loss independently for each category."""
+    if not isinstance(category_source, dict):
+        return {}
+    return {
+        category: estimate_loss(
+            model, {category: values}, config, batches=batches,
+            batch_size=batch_size, device=device, seed=seed + index
+        )
+        for index, (category, values) in enumerate(sorted(category_source.items()))
+    }
+
+
 def scheduled_learning_rate(step, total_steps, base_lr, warmup_steps=20,
                             min_lr_ratio=0.1):
     """Linear warmup followed by cosine decay to a non-zero LR floor."""
@@ -275,6 +289,10 @@ def train(data_path, output_path, steps=600, batch_size=8,
             model, validation_source, config, eval_batches, batch_size,
             target_device, seed=seed + 100000
         )
+        category_val_eval = estimate_category_losses(
+            model, validation_category_data, config, batches=min(2, eval_batches),
+            batch_size=batch_size, device=target_device, seed=seed + 200000
+        )
         improved = val_eval < best_validation_loss
         if improved:
             best_validation_loss = val_eval
@@ -298,6 +316,7 @@ def train(data_path, output_path, steps=600, batch_size=8,
             "first_train_loss": first_train_loss, "last_train_loss": last_train_loss,
             "best_validation_loss": best_validation_loss,
             "current_validation_loss": val_eval,
+            "category_validation_loss": category_val_eval,
             "train_tokens": int(train_tokens.numel()),
             "validation_tokens": int(validation_tokens.numel()),
             "split_mode": split_mode,
