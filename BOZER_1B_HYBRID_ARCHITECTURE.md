@@ -121,7 +121,7 @@ Le premier bloc logiciel du modèle cible est maintenant présent sur la branche
 
 - `bozer_neural/config_1b.py` : configuration GQA/RoPE/RMSNorm/SwiGLU et calcul du nombre de paramètres.
 - `bozer_neural/model_1b.py` : Transformer causal 1B à poids aléatoires, attention groupée, RoPE, RMSNorm, SwiGLU, embeddings de sortie liés, masquage des identifiants BPE réservés.
-- `bozer_neural/train_1b.py` : entraînement supervisé, pertes sur les réponses de BOZER, échantillonnage équilibré, accumulation de gradients, autocast, clipping, reprise de checkpoint et garde mémoire.
+- `bozer_neural/train_1b.py` : entraînement supervisé, pertes sur les réponses de BOZER, échantillonnage équilibré, accumulation de gradients, checkpointing des activations, autocast, clipping, reprise de checkpoint, sauvegarde de référence et garde mémoire.
 - `bozer_neural/evaluate_1b.py` : évaluation tenue à l'écart, contrôle des fuites entre partitions et rapport par catégorie.
 - `data/bozer_neural_v0_5/` : 263 exemples d'entraînement, 60 de validation et 60 de test après déduplication. Les 83 nouveaux exemples sont synthétiques et répartis entre les six catégories.
 - `tests/test_bozer_neural_1b.py` et `tests/test_bozer_neural_1b_training.py` : tests de formes, comptage, causalité, tokenizer, génération et petit entraînement de test.
