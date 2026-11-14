@@ -19,13 +19,20 @@ class CausalSelfAttention(nn.Module):
         def split_heads(t):
             return t.view(batch, length, self.heads, self.head_dim).transpose(1, 2)
         q, k, v = map(split_heads, (q, k, v))
-        scores = (q @ k.transpose(-2, -1)) * (self.head_dim ** -0.5)
-        causal = torch.triu(
-            torch.ones(length, length, device=x.device, dtype=torch.bool), diagonal=1
-        )
-        scores = scores.masked_fill(causal, torch.finfo(scores.dtype).min)
-        weights = self.dropout(torch.softmax(scores, dim=-1))
-        attended = weights @ v
+        if hasattr(nn.functional, "scaled_dot_product_attention"):
+            attended = nn.functional.scaled_dot_product_attention(
+                q, k, v, attn_mask=None,
+                dropout_p=self.dropout.p if self.training else 0.0,
+                is_causal=True,
+            )
+        else:
+            scores = (q @ k.transpose(-2, -1)) * (self.head_dim ** -0.5)
+            causal = torch.triu(
+                torch.ones(length, length, device=x.device, dtype=torch.bool), diagonal=1
+            )
+            scores = scores.masked_fill(causal, torch.finfo(scores.dtype).min)
+            weights = self.dropout(torch.softmax(scores, dim=-1))
+            attended = weights @ v
         attended = attended.transpose(1, 2).contiguous().view(batch, length, width)
         return self.proj(attended)
 
@@ -90,17 +97,38 @@ class BozerTransformer(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def generate(self, input_ids, max_new_tokens=80, temperature=0.8, top_k=40):
+    def generate(self, input_ids, max_new_tokens=80, temperature=0.8,
+                 top_k=40, eos_token_id=2, min_new_tokens=0):
+        if input_ids.ndim != 2 or input_ids.shape[1] < 1:
+            raise ValueError("input_ids must have shape [batch, non-empty sequence]")
+        if max_new_tokens < 0 or min_new_tokens < 0 or min_new_tokens > max_new_tokens:
+            raise ValueError("generation token limits are invalid")
         if temperature <= 0:
             raise ValueError("temperature must be positive")
+        if top_k is not None and top_k < 1:
+            raise ValueError("top_k must be positive or None")
+        if eos_token_id is not None and not 0 <= eos_token_id < self.config.vocab_size:
+            raise ValueError("eos_token_id is outside the model vocabulary")
         self.eval()
-        for _ in range(max_new_tokens):
+        finished = torch.zeros(input_ids.shape[0], dtype=torch.bool, device=input_ids.device)
+        for step in range(max_new_tokens):
             context = input_ids[:, -self.config.context_length:]
             logits, _ = self(context)
             logits = logits[:, -1, :] / temperature
-            if top_k and top_k < logits.size(-1):
+            if eos_token_id is not None and step < min_new_tokens:
+                logits[:, eos_token_id] = float("-inf")
+            if top_k is not None and top_k < logits.size(-1):
                 threshold = torch.topk(logits, top_k).values[:, -1, None]
                 logits = logits.masked_fill(logits < threshold, float("-inf"))
             next_token = torch.multinomial(torch.softmax(logits, dim=-1), num_samples=1)
+            if eos_token_id is not None:
+                next_token = torch.where(
+                    finished[:, None],
+                    torch.full_like(next_token, eos_token_id),
+                    next_token,
+                )
+                finished = finished | next_token[:, 0].eq(eos_token_id)
             input_ids = torch.cat((input_ids, next_token), dim=1)
+            if eos_token_id is not None and bool(finished.all()):
+                break
         return input_ids
