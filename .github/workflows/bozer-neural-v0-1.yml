@@ -36,7 +36,7 @@ jobs:
       - name: Run a short real training smoke test
         run: python -m bozer_neural.train --steps 10 --batch-size 2 --grad-accum-steps 1 --eval-interval 5 --eval-batches 1 --warmup-steps 2 --early-stopping-patience 0 --output artifacts/bozer-neural-ci.pt
       - name: Evaluate the best smoke checkpoint on the untouched test split
-        run: python -m bozer_neural.evaluate --checkpoint artifacts/bozer-neural-ci.best.pt --data data/bozer_neural_v0_4/test_fr.jsonl --batches 2 --samples 12 --max-new-tokens 48
+        run: python -m bozer_neural.evaluate --checkpoint artifacts/bozer-neural-ci.best.pt --data data/bozer_neural_v0_4/test_fr.jsonl --batches 2 --samples 12 --max-new-tokens 48 --report artifacts/bozer-neural-ci-evaluation.json
       - name: Upload reproducible smoke checkpoints
         uses: actions/upload-artifact@v4
         with:
@@ -45,4 +45,5 @@ jobs:
             artifacts/bozer-neural-ci.pt
             artifacts/bozer-neural-ci.json
             artifacts/bozer-neural-ci.best.pt
+            artifacts/bozer-neural-ci-evaluation.json
           if-no-files-found: error
