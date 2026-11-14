@@ -28,5 +28,7 @@ jobs:
         run: python -m bozer_neural.validate_corpus
       - name: Run BOZER NEURAL tests
         run: python -m unittest discover -s tests -p "test_bozer_neural.py" -v
+      - name: Verify feedback-learning command
+        run: python -m bozer_neural.learning --help
       - name: Verify baseline architecture
         run: python -c "from bozer_neural import BozerTransformer; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print(f'Baseline parameters: {n}'); assert n == 124864"
