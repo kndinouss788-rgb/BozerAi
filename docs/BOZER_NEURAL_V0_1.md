@@ -13,7 +13,7 @@ Construire un petit modèle de langage propriétaire dont les poids partent d'un
 
 ## Démarrer
 Installer PyTorch : `python -m pip install -r requirements-neural.txt`
-Lancer les tests : `python -m unittest tests.test_bozer_neural -v`
+Lancer les tests : `python -m unittest discover -s tests -p "test_bozer_neural.py" -v`
 Entraîner depuis une initialisation aléatoire : `python -m bozer_neural.train --steps 300`
 
 Le corpus fourni est un minuscule corpus de démonstration original, pas un corpus suffisant pour créer un assistant généraliste. Il sert à valider le pipeline et à apprendre des motifs simples. Pour un modèle utile, il faudra constituer un corpus français de qualité, autorisé, diversifié, dédupliqué et filtré, avec des exemples de dialogue, raisonnement étape par étape, usage d'outils, sécurité et connaissances vérifiables.

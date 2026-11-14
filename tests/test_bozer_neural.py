@@ -1,10 +1,13 @@
+import tempfile
 import unittest
+from pathlib import Path
+
 import torch
 
-from bozer_neural.config import BozerConfig
 from bozer_neural.data import get_batch
 from bozer_neural.model import BozerTransformer
 from bozer_neural.tokenizer import BozerByteTokenizer
+from bozer_neural.train import train
 
 
 class TokenizerTests(unittest.TestCase):
@@ -43,6 +46,24 @@ class ModelTests(unittest.TestCase):
         x, y = get_batch(tokens, 4, 32)
         self.assertEqual(tuple(x.shape), (4, 32))
         self.assertTrue(torch.equal(x[:, 1:], y[:, :-1]))
+
+    def test_training_smoke_and_checkpoint(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            corpus = Path(tmp) / "seed.txt"
+            output = Path(tmp) / "model.pt"
+            corpus.write_text(
+                ("BOZER aide avec honnêteté.\nUtilisateur : Bonjour. "
+                 "BOZER : Oui, je suis là.\n") * 20,
+                encoding="utf-8",
+            )
+            first_loss, last_loss = train(
+                str(corpus), str(output), steps=2, batch_size=2, seed=19
+            )
+            self.assertTrue(output.is_file())
+            checkpoint = torch.load(output, map_location="cpu", weights_only=False)
+            self.assertEqual(checkpoint["format"], "bozer-neural-v0.1")
+            self.assertTrue(torch.isfinite(torch.tensor(first_loss)).item())
+            self.assertTrue(torch.isfinite(torch.tensor(last_loss)).item())
 
 
 if __name__ == "__main__":
