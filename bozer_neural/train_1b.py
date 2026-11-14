@@ -165,7 +165,9 @@ def train_1b(
         tokenizer = BozerByteBPETokenizer.from_dict(previous["tokenizer"])
     else:
         tokenizer = BozerByteBPETokenizer.train(
-            read_corpus_text(data_path), vocab_size=tokenizer_vocab_size
+            read_corpus_text(data_path),
+            vocab_size=tokenizer_vocab_size,
+            pad_to_vocab_size=tokenizer_vocab_size,
         )
 
     requested_config = config or Bozer1BConfig(vocab_size=tokenizer.vocab_size)
