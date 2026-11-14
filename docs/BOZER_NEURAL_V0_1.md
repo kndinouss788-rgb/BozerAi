@@ -1,25 +1,25 @@
-# BOZER NEURAL V0.1 — état de la base entraînable
-
-## Objectif
-Construire un petit modèle de langage propriétaire dont les poids partent d'une initialisation aléatoire. Aucun poids pré-entraîné, modèle téléchargé ou API distante n'est utilisé par ce noyau.
+# BOZER NEURAL V0.1 — base entraînable et évaluation
 
 ## Architecture
-- Transformer causal décodeur, 2 blocs, 4 têtes d'attention.
-- Dimension cachée : 64 ; MLP : 256 ; contexte : 128 octets.
-- Tokenizer UTF-8 octet par octet : 259 identifiants (PAD/BOS/EOS + 256 octets).
-- Embeddings de tokens et de positions appris ; embeddings de sortie liés aux embeddings d'entrée.
-- Nombre exact : **124 864 paramètres entraînables**.
-- Optimiseur initial : AdamW ; objectif : prédiction du prochain token ; gradient clipping.
+- Transformer causal décodeur, 2 blocs, 4 têtes.
+- Dimension cachée 64 ; MLP 256 ; contexte 128 octets.
+- Tokenizer UTF-8 octet par octet : 259 identifiants.
+- Initialisation aléatoire, sans poids pré-entraînés.
+- **124 864 paramètres entraînables**.
 
-## Démarrer
-Installer PyTorch : `python -m pip install -r requirements-neural.txt`
-Lancer les tests : `python -m unittest discover -s tests -p "test_bozer_neural.py" -v`
-Entraîner depuis une initialisation aléatoire : `python -m bozer_neural.train --steps 300`
+## Corpus et validation
+Le texte est séparé en deux segments contigus : 90 % pour l'entraînement et 10 % pour la validation par défaut. Le segment de validation n'est jamais utilisé pour mettre à jour les poids. Il faut au moins contexte + 2 tokens dans chaque segment. La séparation contiguë réduit les fuites entre fenêtres voisines.
 
-Le corpus fourni est un minuscule corpus de démonstration original, pas un corpus suffisant pour créer un assistant généraliste. Il sert à valider le pipeline et à apprendre des motifs simples. Pour un modèle utile, il faudra constituer un corpus français de qualité, autorisé, diversifié, dédupliqué et filtré, avec des exemples de dialogue, raisonnement étape par étape, usage d'outils, sécurité et connaissances vérifiables.
+Le corpus fourni est uniquement un corpus français de démonstration, trop petit pour créer un assistant généraliste. Il faut construire un corpus autorisé, diversifié, nettoyé et dédupliqué avant tout entraînement sérieux.
 
-## Format de sauvegarde
-Le fichier .pt contient le nom de format, la configuration, le state_dict et les métadonnées d'entraînement. Il est généré localement ou comme artefact CI et n'est pas commité dans Git.
+## Commandes
+Installer : `python -m pip install -r requirements-neural.txt`
+Tests : `python -m unittest discover -s tests -p "test_bozer_neural.py" -v`
+Entraînement expérimental : `python -m bozer_neural.train --steps 300`
 
-## Limites honnêtes
-Cette version n'est pas encore reliée à l'application Android. Elle ne possède pas encore de capacités démontrées de raisonnement général, de planification fiable ni de compréhension avancée. Un entraînement sur le corpus de démonstration ne ferait qu'apprendre un petit ensemble de motifs. Le temps d'inférence sur téléphone et la qualité doivent être mesurés plus tard sur l'appareil cible.
+À intervalles réguliers, le programme mesure la perte d'entraînement et de validation sans gradient. La perte mesure la prédiction statistique des prochains octets ; elle ne prouve pas à elle seule la compréhension ou le raisonnement.
+
+Le checkpoint .pt et son JSON compagnon contiennent les poids, la configuration, les tailles des segments et l'historique des pertes. Les poids générés ne sont pas ajoutés au dépôt.
+
+## Limites
+Ce noyau n'est pas encore relié à Android et ne démontre pas de raisonnement général. Les performances sur téléphone restent à mesurer.
