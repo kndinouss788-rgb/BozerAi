@@ -176,6 +176,16 @@ class NeuralTests(unittest.TestCase):
             report = approve_feedback(pending, training, feedback_id)
             self.assertEqual(report, {"approved": 1, "duplicates_skipped": 0, "pending": 0})
             self.assertEqual(len(training.read_text(encoding="utf-8").splitlines()), 81)
+            evaluation_dir = root / "evaluation"
+            evaluation_dir.mkdir()
+            extra_id = submit_feedback(
+                pending, "dialogue_naturel", "Bonjour pour le dossier secondaire",
+                "Bonjour, je peux aussi examiner ce dossier."
+            )
+            extra_report = approve_feedback(
+                pending, evaluation_dir / "train_extra.jsonl", extra_id
+            )
+            self.assertEqual(extra_report["approved"], 1)
 
             train(str(training), str(checkpoint), steps=2, batch_size=2,
                   eval_interval=1, eval_batches=1, validation_data_path=str(validation))
