@@ -95,6 +95,11 @@ def _atomic_save(payload, destination):
     temporary.replace(destination)
 
 
+def minimum_training_memory_bytes(config):
+    """Lower-bound memory for FP32 weights, gradients and AdamW moments."""
+    return config.parameter_count() * 16
+
+
 def _precision_dtype(precision, device):
     if precision == "fp32":
         return None
@@ -132,6 +137,7 @@ def train_1b(
     device=None,
     precision="auto",
     config=None,
+    allow_cpu_large_model=False,
 ):
     """Train BOZER 1B on train/validation JSONL files without test-set access."""
     if steps < 1 or batch_size < 1 or eval_interval < 1 or eval_batches < 1:
@@ -176,6 +182,23 @@ def train_1b(
             requested_config, vocab_size=tokenizer.vocab_size
         )
     model_config = requested_config
+    trainable_parameters = model_config.parameter_count()
+    minimum_memory = minimum_training_memory_bytes(model_config)
+    if target_device.type == "cpu" and trainable_parameters > 50_000_000:
+        if not allow_cpu_large_model:
+            raise RuntimeError(
+                "Refusing to allocate a large BOZER model on CPU by default. "
+                "Use a suitable GPU, or explicitly pass allow_cpu_large_model=True "
+                "only on a machine with enough system RAM."
+            )
+    if target_device.type == "cuda" and trainable_parameters > 50_000_000:
+        free_memory, _ = torch.cuda.mem_get_info(target_device)
+        if free_memory < minimum_memory:
+            raise RuntimeError(
+                "Not enough free CUDA memory for the minimum training state: "
+                f"need at least {minimum_memory} bytes for FP32 weights, gradients "
+                "and AdamW moments, before activations and temporary buffers."
+            )
     if previous and previous.get("config") != model_config.to_dict():
         raise ValueError("resume checkpoint architecture differs from requested config")
 
@@ -379,6 +402,10 @@ def main():
     parser.add_argument("--early-stopping-patience", type=int, default=8)
     parser.add_argument("--device", default=None)
     parser.add_argument(
+        "--allow-cpu-large-model", action="store_true",
+        help="override the default safety guard for large CPU training",
+    )
+    parser.add_argument(
         "--precision", choices=("auto", "fp32", "bf16", "fp16"), default="auto"
     )
     parser.add_argument(
@@ -410,6 +437,7 @@ def main():
         device=args.device,
         precision=args.precision,
         config=config,
+        allow_cpu_large_model=args.allow_cpu_large_model,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
