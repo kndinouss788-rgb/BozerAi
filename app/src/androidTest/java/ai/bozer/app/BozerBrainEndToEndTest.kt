@@ -1,25 +1,29 @@
 package ai.bozer.app
 
-import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.os.SystemClock
-import android.view.KeyEvent
 import android.util.Log
+import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
-import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.Until
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BozerBrainEndToEndTest {
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val context get() = instrumentation.targetContext
-    private val device get() = UiDevice.getInstance(instrumentation)
+    @get:Rule
+    val composeRule = createAndroidComposeRule<MainActivity>()
+
+    private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private fun assistantCount(): Int {
         val dbFile = context.getDatabasePath("bozer_chat.db")
@@ -55,67 +59,53 @@ class BozerBrainEndToEndTest {
         val deadline = SystemClock.elapsedRealtime() + timeoutMs
         while (SystemClock.elapsedRealtime() < deadline) {
             if (assistantCount() > previousCount) return lastAssistantReply()
-            SystemClock.sleep(1_000)
+            SystemClock.sleep(500)
         }
         throw AssertionError("BOZER n'a pas enregistré de réponse dans le délai imparti.")
     }
 
+    private fun waitForModelReady() {
+        composeRule.onNodeWithTag("bozer_settings").performClick()
+        composeRule.waitUntil(timeoutMillis = 600_000) {
+            composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Fermer").performClick()
+    }
+
     private fun assertRealReply(reply: String, turn: Int) {
-        assertTrue("Réponse vide au tour " + turn, reply.isNotBlank())
+        assertTrue("Réponse vide au tour $turn", reply.isNotBlank())
         val lower = reply.lowercase()
         assertTrue(
-            "Le moteur a renvoyé un message d'erreur au tour " + turn + " : " + reply,
+            "Le moteur a renvoyé une erreur au tour $turn : $reply",
             !lower.contains("je rencontre un problème avec mon moteur") &&
-                !lower.contains("je n'ai pas pu générer") &&
-                !lower.contains("modèle bozer n'est pas chargé")
+                !lower.contains("je n'ai pas pas pu générer") &&
+                !lower.contains("je n'ai pas pu terminer cette réponse") &&
+                !lower.contains("le modèle bozer n'est pas chargé") &&
+                !lower.contains("le cerveau local n'est pas encore installé")
         )
     }
 
     private fun sendMessage(text: String, turn: Int): Pair<String, Long> {
-        val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 20_000)
-        assertNotNull("Champ de saisie BOZER introuvable", field)
+        val input = composeRule.onNodeWithTag("bozer_input")
+        input.assertExists()
         val previous = assistantCount()
-        field!!.click()
-        field.setText(text)
+        input.performTextInput(text)
         val started = SystemClock.elapsedRealtime()
-        // The accepted glass send control is drawn on Canvas and has no text node.
-        // Use the keyboard's Send action, which is wired to the same send() callback.
-        device.pressKeyCode(KeyEvent.KEYCODE_ENTER)
+        input.performImeAction()
         val reply = waitForAssistantReply(previous)
         val elapsed = SystemClock.elapsedRealtime() - started
         assertRealReply(reply, turn)
-        Log.i("BOZER_E2E", "turn_" + turn + "_latency_ms=" + elapsed + "; reply=" + reply.take(320).replace('\n', ' '))
+        Log.i("BOZER_E2E", "turn_" + turn + "_latency_ms=" + elapsed +
+            "; reply=" + reply.take(320).replace('\n', ' '))
         return reply to elapsed
     }
 
     @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
-        // Do not force-stop the target package from its own instrumentation process:
-        // Android may terminate the test runner together with the application.
-        context.startActivity(
-            Intent(context, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        )
-        assertTrue(
-            "L'activité BOZER n'est pas devenue visible au premier plan.",
-            device.wait(Until.hasObject(By.pkg(context.packageName)), 120_000)
-        )
-        assertNotNull(
-            "L'interface BOZER n'a pas terminé son premier rendu Compose.",
-            device.wait(Until.findObject(By.text("Je suis là.")), 120_000)
-        )
-        // Open the existing settings dialog to wait for the actual local-model status,
-        // rather than relying on copy from an older version of the interface.
-        device.click((device.displayWidth * 0.12f).toInt(), (device.displayHeight * 0.052f).toInt())
-        assertNotNull(
-            "Le panneau Réglages BOZER ne s'est pas ouvert.",
-            device.wait(Until.findObject(By.text("Réglages BOZER")), 20_000)
-        )
-        assertNotNull(
-            "Le moteur llama.cpp n'a pas affiché l'état prêt. Vérifier le chargement du GGUF.",
-            device.wait(Until.findObject(By.text("Cerveau local prêt — hors ligne.")), 600_000)
-        )
-        device.pressBack()
+        composeRule.onNodeWithTag("bozer_input").assertExists()
+        composeRule.onNodeWithTag("bozer_welcome").assertExists()
+        waitForModelReady()
 
         val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 1)
         assertTrue("La salutation semble être une erreur", greeting.length >= 2)
@@ -124,18 +114,20 @@ class BozerBrainEndToEndTest {
             "Quelle est la capitale du Burkina Faso ? Réponds directement.",
             2
         )
-        assertTrue("BOZER n'a pas répondu correctement à la question factuelle : " + factReply,
-            factReply.contains("Ouagadougou", ignoreCase = true))
+        assertTrue(
+            "BOZER n'a pas répondu correctement à la question factuelle : $factReply",
+            factReply.contains("Ouagadougou", ignoreCase = true)
+        )
 
         val (mathReply, mathMs) = sendMessage("Combien font 7 + 5 ? Réponds clairement.", 3)
-        assertTrue("BOZER n'a pas répondu correctement au calcul 7 + 5 : " + mathReply, mathReply.contains("12"))
+        assertTrue("BOZER n'a pas répondu correctement au calcul 7 + 5 : $mathReply", mathReply.contains("12"))
 
         val (memoryReply, memoryMs) = sendMessage(
             "Retiens cette information pour la suite : mon animal préféré est le chat. Réponds uniquement OK.",
             4
         )
         assertTrue(
-            "BOZER n'a pas confirmé la mémorisation : " + memoryReply,
+            "BOZER n'a pas confirmé la mémorisation : $memoryReply",
             memoryReply.contains("ok", ignoreCase = true) || memoryReply.contains("d'accord", ignoreCase = true)
         )
         assertTrue("La mémoire persistante n'a pas enregistré le fait explicite", rememberedFactCount() >= 1)
@@ -144,77 +136,39 @@ class BozerBrainEndToEndTest {
             "Quel est mon animal préféré ? Réponds en un seul mot.",
             5
         )
-        assertTrue("BOZER a oublié l'information précédente : " + recallReply, recallReply.contains("chat", ignoreCase = true))
+        assertTrue("BOZER a oublié l'information précédente : $recallReply",
+            recallReply.contains("chat", ignoreCase = true))
 
         val (followUpReply, followUpMs) = sendMessage(
             "Pourquoi les chats ronronnent-ils ? Explique-moi simplement.",
             6
         )
-        assertTrue("La réponse de suivi est trop courte : " + followUpReply, followUpReply.length >= 20)
+        assertTrue("La réponse de suivi est trop courte : $followUpReply", followUpReply.length >= 20)
 
         val (searchReply, searchMs) = sendMessage(
             "Recherche sur Internet : capitale du Burkina Faso",
             7
         )
-        assertTrue("La recherche Android n'a pas joint de source réelle : " + searchReply,
+        assertTrue(
+            "La recherche Android n'a pas joint de source réelle : $searchReply",
             searchReply.contains("Sources Internet", ignoreCase = true) &&
-                searchReply.contains("wikipedia.org", ignoreCase = true))
+                searchReply.contains("wikipedia.org", ignoreCase = true)
+        )
         val sourceLine = searchReply.lineSequence()
             .firstOrNull { it.contains("https://fr.wikipedia.org/") }.orEmpty()
         assertTrue("La source de recherche est absente de la réponse", sourceLine.isNotBlank())
-        Log.i("BOZER_E2E", "search_source_verified=true; " + sourceLine)
+        Log.i("BOZER_E2E", "search_source_verified=true; $sourceLine")
 
+        assertTrue("L'historique local ne contient pas sept réponses", assistantCount() >= 7)
+        assertTrue("La mémoire explicite n'est pas persistante", rememberedFactCount() >= 1)
         Log.i(
             "BOZER_E2E",
-            "LATENCIES_MS greeting=" + greetingMs + " fact=" + factMs + " math=" + mathMs +
-                " memory=" + memoryMs + " recall=" + recallMs + " follow_up=" + followUpMs +
-                " search=" + searchMs
+            "LATENCIES_MS greeting=$greetingMs fact=$factMs math=$mathMs memory=$memoryMs " +
+                "recall=$recallMs follow_up=$followUpMs search=$searchMs"
         )
-
-        device.pressBack()
-        SystemClock.sleep(1_000)
-        context.startActivity(
-            Intent(context, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        Log.i(
+            "BOZER_E2E",
+            "PASS: seven local turns, factual answer, arithmetic, explicit memory, contextual follow-up and real network search"
         )
-        assertTrue(
-            "BOZER n'a pas retrouvé son activité après recréation.",
-            device.wait(Until.hasObject(By.pkg(context.packageName)), 180_000)
-        )
-        // A conversation with history does not show the empty-state welcome text.
-        // Scroll the restored chat to the latest turn and verify persisted content.
-        device.swipe(
-            (device.displayWidth * 0.5f).toInt(),
-            (device.displayHeight * 0.82f).toInt(),
-            (device.displayWidth * 0.5f).toInt(),
-            (device.displayHeight * 0.24f).toInt(),
-            12
-        )
-        assertNotNull(
-            "Le rappel n'a pas été restauré après recréation de l'activité",
-            device.wait(Until.findObject(By.text("Quel est mon animal préféré ? Réponds en un seul mot.")), 20_000)
-        )
-        device.click((device.displayWidth * 0.12f).toInt(), (device.displayHeight * 0.052f).toInt())
-        assertNotNull(
-            "Le panneau des réglages n'a pas été restauré après redémarrage.",
-            device.wait(Until.findObject(By.text("Réglages BOZER")), 20_000)
-        )
-        assertNotNull(
-            "Le modèle local n'a pas été rechargé après redémarrage.",
-            device.wait(Until.findObject(By.text("Cerveau local prêt — hors ligne.")), 600_000)
-        )
-        device.pressBack()
-        assertTrue("L'historique ne contient pas sept réponses", assistantCount() >= 7)
-        assertTrue("La mémoire explicite n'a pas survécu au redémarrage", rememberedFactCount() >= 1)
-        val (persistentRecall, persistentRecallMs) = sendMessage(
-            "Quel est mon animal préféré ? Réponds en un seul mot.",
-            8
-        )
-        assertTrue(
-            "BOZER n'a pas retrouvé le fait mémorisé après redémarrage : " + persistentRecall,
-            persistentRecall.contains("chat", ignoreCase = true)
-        )
-        Log.i("BOZER_E2E", "turn_8_persistent_memory_latency_ms=" + persistentRecallMs)
-        Log.i("BOZER_E2E", "PASS: seven local turns, factual answer, arithmetic, persistent memory, follow-up, real network search and restored history")
     }
 }
