@@ -145,11 +145,10 @@ def train(data_path, output_path, steps=600, batch_size=8,
                 raise ValueError("training and validation category sets do not match")
     else:
         split_at = int(train_tokens.numel() * (1.0 - validation_fraction))
+        all_loss_mask = train_loss_mask
         train_tokens, validation_tokens = train_tokens[:split_at], train_tokens[split_at:]
-        train_loss_mask = train_loss_mask[:split_at]
-        validation_loss_mask = train_loss_mask.new_tensor(
-            load_supervised_corpus(data_path, tokenizer)[1][split_at:].tolist()
-        )
+        train_loss_mask = all_loss_mask[:split_at]
+        validation_loss_mask = all_loss_mask[split_at:]
         train_category_data = None
         validation_category_data = None
         split_mode = "contiguous_holdout"
