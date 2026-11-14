@@ -70,7 +70,12 @@ def approve_feedback(pending_path, training_path, record_id=None):
     """Explicitly promote reviewed examples into the training split only."""
     training_path = Path(training_path)
     target_name = training_path.name.casefold()
-    if any(marker in target_name for marker in ("test", "validation", "val")):
+    path_parts = [part.casefold() for part in training_path.parts]
+    if any(
+        marker in part
+        for part in path_parts
+        for marker in ("test", "validation", "val")
+    ):
         raise ValueError("feedback can only be approved into a training file")
     if "train" not in target_name:
         raise ValueError("target filename must clearly identify the training split")
