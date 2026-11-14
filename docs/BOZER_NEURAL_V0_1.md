@@ -9,8 +9,8 @@ Le vocabulaire commence avec 259 identifiants (trois marqueurs et 256 octets UTF
 Le but est de représenter les morceaux fréquents du français avec moins de tokens qu'un encodage octet par octet. Le tokenizer demeure réversible sur du texte UTF-8.
 
 ## Corpus français V0.2
-Dossier : `data/bozer_neural_v0_2/`.
-- Entraînement : 72 exemples, 12 par catégorie.
+Dossier : `data/bozer_neural_v0_3/`.
+- Entraînement : 108 exemples, 18 par catégorie.
 - Validation : 12 exemples, 2 par catégorie.
 - Test final : 12 exemples, 2 par catégorie.
 
@@ -26,9 +26,9 @@ Les six catégories couvrent le dialogue naturel, la compréhension, le raisonne
 La perte d'entraînement et celle de validation sont mesurées séparément. Le vocabulaire BPE est appris uniquement sur le fichier d'entraînement. Le test final n'est jamais utilisé pendant l'entraînement.
 
 ## Évaluer après l'entraînement
-`python -m bozer_neural.evaluate --checkpoint artifacts/bozer-neural-v0.2.pt`
+`python -m bozer_neural.evaluate --checkpoint artifacts/bozer-neural-v0.3.pt`
 
 L'évaluation affiche la perte sur le fichier test et quelques productions du modèle à comparer aux réponses de référence. Le checkpoint contient les poids, la configuration et le tokenizer correspondant.
 
 ## Limites
-Le corpus n'a que 72 exemples d'entraînement et le modèle reste minuscule. Un entraînement de démonstration validera la chaîne technique, pas une compétence conversationnelle fiable. Une revue humaine et des tests ciblés sont indispensables. Le modèle n'est pas encore intégré à Android.
+Le corpus V0.3 n'a que 108 exemples d'entraînement et le modèle reste minuscule. Un entraînement de démonstration validera la chaîne technique, pas une compétence conversationnelle fiable. Une revue humaine et des tests ciblés sont indispensables. Le modèle n'est pas encore intégré à Android.
