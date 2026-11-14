@@ -293,18 +293,18 @@ def main():
     parser.add_argument("--data", default="data/bozer_neural_v0_4/train_fr.jsonl")
     parser.add_argument("--validation-data", default="data/bozer_neural_v0_4/validation_fr.jsonl")
     parser.add_argument("--output", default="artifacts/bozer-neural-v0.4.pt")
-    parser.add_argument("--steps", type=int, default=1000,
+    parser.add_argument("--steps", type=int, default=600,
                         help="number of additional optimizer steps")
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--eval-interval", type=int, default=50)
     parser.add_argument("--eval-batches", type=int, default=8)
     parser.add_argument("--tokenizer-vocab-size", type=int, default=512)
-    parser.add_argument("--grad-accum-steps", type=int, default=1)
+    parser.add_argument("--grad-accum-steps", type=int, default=2)
     parser.add_argument("--warmup-steps", type=int, default=20)
     parser.add_argument("--min-lr-ratio", type=float, default=0.1)
-    parser.add_argument("--early-stopping-patience", type=int, default=0)
+    parser.add_argument("--early-stopping-patience", type=int, default=5)
     parser.add_argument("--device", default=None)
     parser.add_argument("--resume", default=None,
                         help="fine-tune from a saved BOZER checkpoint, preserving optimizer state")
