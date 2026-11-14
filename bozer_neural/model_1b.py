@@ -3,11 +3,10 @@
 This module defines the target architecture; it does not contain trained weights.
 The default model is very large. Use a small Bozer1BConfig for shape/unit tests.
 """
-import math
-
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.utils.checkpoint import checkpoint
 
 from .config_1b import Bozer1BConfig
 
@@ -164,9 +163,10 @@ class Bozer1BBlock(nn.Module):
 class BozerNeural1B(nn.Module):
     """Random-init BOZER NEURAL 1B model; not a pretrained or trained checkpoint."""
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, gradient_checkpointing=False):
         super().__init__()
         self.config = config or Bozer1BConfig()
+        self.gradient_checkpointing = bool(gradient_checkpointing)
         self.token_embedding = nn.Embedding(
             self.config.vocab_size, self.config.d_model
         )
@@ -211,7 +211,10 @@ class BozerNeural1B(nn.Module):
 
         x = self.embedding_dropout(self.token_embedding(input_ids))
         for block in self.blocks:
-            x = block(x)
+            if self.gradient_checkpointing and self.training and torch.is_grad_enabled():
+                x = checkpoint(block, x, use_reentrant=False)
+            else:
+                x = block(x)
         hidden = self.final_norm(x)
         # The output projection is tied to the input token embeddings.
         logits = F.linear(hidden, self.token_embedding.weight)
