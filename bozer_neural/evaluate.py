@@ -68,7 +68,8 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
         })
     return {
         "test_loss": sum(losses) / len(losses),
-        "test_tokens": int(tokens.numel()),\n        "evaluated_categories": sorted({item["category"] for item in outputs}),
+        "test_tokens": int(tokens.numel()),
+        "evaluated_categories": sorted({item["category"] for item in outputs}),
         "tokenizer_vocab_size": tokenizer.vocab_size,
         "examples": outputs,
     }
