@@ -248,6 +248,7 @@ class BozerNeural1B(nn.Module):
         top_k=40,
         eos_token_id=2,
         min_new_tokens=0,
+        sampling_vocab_size=None,
     ):
         if input_ids.ndim != 2 or input_ids.shape[1] < 1:
             raise ValueError("input_ids must have shape [batch, non-empty sequence]")
@@ -259,6 +260,11 @@ class BozerNeural1B(nn.Module):
             raise ValueError("top_k must be positive or None")
         if eos_token_id is not None and not 0 <= eos_token_id < self.config.vocab_size:
             raise ValueError("eos_token_id is outside the model vocabulary")
+        if sampling_vocab_size is not None:
+            if not 1 <= sampling_vocab_size <= self.config.vocab_size:
+                raise ValueError("sampling_vocab_size is outside the model vocabulary")
+            if eos_token_id is not None and eos_token_id >= sampling_vocab_size:
+                raise ValueError("eos_token_id must be inside the active sampling vocabulary")
 
         self.eval()
         generated = input_ids
@@ -269,6 +275,8 @@ class BozerNeural1B(nn.Module):
             context = generated[:, -self.config.context_length:]
             logits, _ = self(context)
             next_logits = logits[:, -1, :] / temperature
+            if sampling_vocab_size is not None and sampling_vocab_size < self.config.vocab_size:
+                next_logits[:, sampling_vocab_size:] = float("-inf")
             if eos_token_id is not None and step < min_new_tokens:
                 next_logits[:, eos_token_id] = float("-inf")
             if top_k is not None and top_k < next_logits.size(-1):
