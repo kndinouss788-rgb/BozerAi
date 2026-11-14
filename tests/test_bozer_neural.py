@@ -3,7 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 import torch
-from bozer_neural.data import get_batch, load_corpus, read_records, split_corpus
+from bozer_neural.data import (get_balanced_batch, get_batch, load_corpus,
+                               load_corpus_by_category, read_records, split_corpus)
 from bozer_neural.evaluate import evaluate
 from bozer_neural.config import BozerConfig
 from bozer_neural.model import BozerTransformer
@@ -176,10 +177,13 @@ class NeuralTests(unittest.TestCase):
                 encoding="utf-8")
             records = read_records(path)
             tokens = load_corpus(path, BozerByteTokenizer()).tolist()
+            category_tokens = load_corpus_by_category(path, BozerByteTokenizer())
             self.assertEqual(len(records), 2)
             self.assertEqual(tokens[0], BOS)
             self.assertEqual(tokens.count(BOS), 2)
             self.assertEqual(tokens.count(EOS), 2)
+            self.assertEqual(set(category_tokens), {"dialogue_naturel"})
+            self.assertGreater(category_tokens["dialogue_naturel"].numel(), 128)
 
     def test_batch_sampler_includes_last_legal_window(self):
         tokens = torch.arange(30)
@@ -203,6 +207,18 @@ class NeuralTests(unittest.TestCase):
             scheduled_learning_rate(100, 100, 1e-3, warmup_steps=10),
             1e-4, places=8
         )
+
+    def test_balanced_sampler_gives_each_category_one_row(self):
+        sources = {
+            f"category_{index}": torch.full((300,), index, dtype=torch.long)
+            for index in range(6)
+        }
+        x, y = get_balanced_batch(
+            sources, batch_size=6, context_length=16,
+            generator=torch.Generator().manual_seed(11)
+        )
+        self.assertEqual(sorted(x[:, 0].tolist()), [0, 1, 2, 3, 4, 5])
+        self.assertTrue(torch.equal(x[:, 1:], y[:, :-1]))
 
 
 if __name__ == "__main__":
