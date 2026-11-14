@@ -19,10 +19,10 @@ def _format_jsonl(path):
         fields = [item.get(k) for k in ("category", "user", "assistant")]
         if not all(isinstance(x, str) and x.strip() for x in fields):
             raise ValueError(f"record at {path}:{number} needs category, user and assistant")
-        lines.append(f"Utilisateur : {fields[1].strip()}\\nBOZER : {fields[2].strip()}\\n")
+        lines.append(f"Utilisateur : {fields[1].strip()}\nBOZER : {fields[2].strip()}\n")
     if not lines:
         raise ValueError(f"corpus is empty: {path}")
-    return "\\n".join(lines)
+    return "\n".join(lines)
 
 
 def load_corpus(path):

@@ -12,6 +12,8 @@ from .tokenizer import BozerByteTokenizer
 @torch.no_grad()
 def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
              max_new_tokens=96, seed=29):
+    if batches < 1 or batch_size < 1 or samples < 0:
+        raise ValueError("batches and batch_size must be positive; samples cannot be negative")
     torch.manual_seed(seed)
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     if checkpoint.get("format") != "bozer-neural-v0.1":
@@ -30,17 +32,20 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
     tokenizer = BozerByteTokenizer()
     outputs = []
     for item in records[:samples]:
-        prompt = f"Utilisateur : {item['user'].strip()}\\nBOZER : "
-        prefix = torch.tensor([tokenizer.encode(prompt)], dtype=torch.long)
+        prompt = f"Utilisateur : {item['user'].strip()}\nBOZER : "
+        prefix_ids = tokenizer.encode(prompt)[:-1]  # retain BOS, omit EOS on an unfinished prompt
+        prefix = torch.tensor([prefix_ids], dtype=torch.long)
         prefix = prefix[:, -config.context_length:]
         prefix_len = prefix.shape[1]
-        generated = model.generate(prefix, max_new_tokens=max_new_tokens, temperature=0.8, top_k=40)[0].tolist()
+        generated = model.generate(prefix, max_new_tokens=max_new_tokens,
+                                   temperature=0.8, top_k=40)[0].tolist()
         completion = generated[prefix_len:]
         if 2 in completion:
             completion = completion[:completion.index(2)]
         outputs.append({"category": item["category"], "prompt": item["user"],
                         "reference": item["assistant"], "generated": tokenizer.decode(completion)})
-    return {"test_loss": sum(losses) / len(losses), "test_tokens": int(tokens.numel()), "examples": outputs}
+    return {"test_loss": sum(losses) / len(losses), "test_tokens": int(tokens.numel()),
+            "examples": outputs}
 
 
 def main():
@@ -55,8 +60,8 @@ def main():
                       samples=args.samples, max_new_tokens=args.max_new_tokens)
     print(f"test_loss={result['test_loss']:.4f} test_tokens={result['test_tokens']}")
     for i, item in enumerate(result["examples"], 1):
-        print(f"\\n[{i}] {item['category']}\\nUtilisateur : {item['prompt']}"
-              f"\\nRéférence : {item['reference']}\\nBOZER généré : {item['generated']}")
+        print(f"\n[{i}] {item['category']}\nUtilisateur : {item['prompt']}"
+              f"\nRéférence : {item['reference']}\nBOZER généré : {item['generated']}")
 
 
 if __name__ == "__main__":

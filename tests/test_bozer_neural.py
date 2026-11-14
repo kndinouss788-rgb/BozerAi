@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,6 +8,13 @@ from bozer_neural.model import BozerTransformer
 from bozer_neural.tokenizer import BozerByteTokenizer
 from bozer_neural.train import train
 from bozer_neural.validate_corpus import validate_splits
+
+
+CATEGORIES = [
+    "dialogue_naturel", "comprehension_demande", "raisonnement_resolution",
+    "planification_missions", "utilisation_outils_verification",
+    "securite_confidentialite_honnetete",
+]
 
 
 class NeuralTests(unittest.TestCase):
@@ -38,12 +46,20 @@ class NeuralTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             train_file, val_file, output = root/"train.jsonl", root/"val.jsonl", root/"model.pt"
-            rows = trainRowsLocal = [
-                {"category":"dialogue_naturel","user":"Bonjour, comment vas-tu ?","assistant":"Je vais bien, merci."},
-                {"category":"raisonnement_resolution","user":"Combien font 8 fois 9 ?","assistant":"8 × 9 = 72."}
+            train_rows = [
+                {"category": "dialogue_naturel", "user": f"Bonjour, comment vas-tu numéro {i} ?",
+                 "assistant": "Je vais bien, merci."}
+                for i in range(30)
             ]
-            train_file.write_text("\\n".join(__import__("json").dumps(x, ensure_ascii=False) for x in rows)+"\\n", encoding="utf-8")
-            val_file.write_text(("Utilisateur : bonjour\\nBOZER : oui\\n")*100, encoding="utf-8")
+            val_rows = [
+                {"category": "dialogue_naturel", "user": f"Question de validation numéro {i}",
+                 "assistant": "Voici une réponse de validation suffisamment longue."}
+                for i in range(20)
+            ]
+            train_file.write_text("\n".join(json.dumps(x, ensure_ascii=False) for x in train_rows) + "\n",
+                                  encoding="utf-8")
+            val_file.write_text("\n".join(json.dumps(x, ensure_ascii=False) for x in val_rows) + "\n",
+                                encoding="utf-8")
             tokens = load_corpus(train_file)
             self.assertGreater(tokens.numel(), 128)
             first, last, best = train(str(train_file), str(output), steps=2, batch_size=2,
@@ -52,24 +68,21 @@ class NeuralTests(unittest.TestCase):
             self.assertTrue(output.is_file())
             saved = torch.load(output, map_location="cpu", weights_only=False)
             self.assertEqual(saved["training"]["split_mode"], "separate_file")
-            self.assertTrue(all(torch.isfinite(torch.tensor(x)).item() for x in (first,last,best)))
+            self.assertTrue(all(torch.isfinite(torch.tensor(x)).item() for x in (first, last, best)))
 
     def test_corpus_validation_rejects_leakage(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            cats = ["dialogue_naturel","comprehension_demande","raisonnement_resolution",
-                    "planification_missions","utilisation_outils_verification",
-                    "securite_confidentialite_honnetete"]
-            files = [root/"a.jsonl",root/"b.jsonl",root/"c.jsonl"]
+            files = [Path(tmp)/"a.jsonl", Path(tmp)/"b.jsonl", Path(tmp)/"c.jsonl"]
             for index, path in enumerate(files):
                 rows = [{"category": cat, "user": f"question {index} {cat}",
-                         "assistant": "réponse"} for cat in cats]
-                path.write_text("\\n".join(__import__("json").dumps(x) for x in rows)+"\\n",encoding="utf-8")
-            report = validate_splits(*map(str,files))
-            self.assertEqual(len(report),3)
-            files[1].write_text(files[0].read_text(encoding="utf-8"),encoding="utf-8")
+                         "assistant": "réponse"} for cat in CATEGORIES]
+                path.write_text("\n".join(json.dumps(x, ensure_ascii=False) for x in rows) + "\n",
+                                encoding="utf-8")
+            report = validate_splits(*map(str, files))
+            self.assertEqual(len(report), 3)
+            files[1].write_text(files[0].read_text(encoding="utf-8"), encoding="utf-8")
             with self.assertRaises(ValueError):
-                validate_splits(*map(str,files))
+                validate_splits(*map(str, files))
 
 
 if __name__ == "__main__":
