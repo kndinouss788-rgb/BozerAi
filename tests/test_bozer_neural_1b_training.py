@@ -75,3 +75,6 @@ def test_one_step_training_creates_a_versioned_checkpoint(tmp_path):
         saved["config"]
     ).parameter_count()
     assert saved["training"]["split_audit"]["overlap"] == 0
+    assert saved["tokenizer"]["vocab_size"] == 270
+    assert saved["tokenizer"]["active_vocab_size"] <= 270
+    assert saved["config"]["vocab_size"] == 270
