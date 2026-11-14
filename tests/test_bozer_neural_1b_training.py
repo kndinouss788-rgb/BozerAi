@@ -71,7 +71,7 @@ def test_one_step_training_creates_a_versioned_checkpoint(tmp_path):
     saved = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     assert saved["format"] == "bozer-neural-1b-v0.1"
     assert result["global_step"] == 1
-    assert result["parameter_count"] == saved["model_state_dict"]["token_embedding.weight"].numel() + (
-        result["parameter_count"] - saved["model_state_dict"]["token_embedding.weight"].numel()
-    )
+    assert result["parameter_count"] == Bozer1BConfig.from_dict(
+        saved["config"]
+    ).parameter_count()
     assert saved["training"]["split_audit"]["overlap"] == 0
