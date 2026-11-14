@@ -5,7 +5,8 @@ import math
 from pathlib import Path
 import torch
 from .config import BozerConfig
-from .data import get_batch, load_corpus, read_corpus_text, split_corpus
+from .data import (get_batch, get_balanced_batch, load_corpus, load_corpus_by_category,
+                  read_corpus_text, split_corpus)
 from .model import BozerTransformer
 from .tokenizer import BozerByteBPETokenizer
 
@@ -21,8 +22,16 @@ def estimate_loss(model, tokens, config, batches=8, batch_size=16,
     losses = []
     try:
         for _ in range(batches):
-            x, y = get_batch(tokens, batch_size, config.context_length,
-                             device=device, generator=generator)
+            if isinstance(tokens, dict):
+                x, y = get_balanced_batch(
+                    tokens, batch_size, config.context_length,
+                    device=device, generator=generator
+                )
+            else:
+                x, y = get_batch(
+                    tokens, batch_size, config.context_length,
+                    device=device, generator=generator
+                )
             _, loss = model(x, y)
             losses.append(float(loss))
     finally:
@@ -113,14 +122,30 @@ def train(data_path, output_path, steps=1000, batch_size=16,
         raise ValueError("resume checkpoint architecture differs from current configuration")
 
     train_tokens = load_corpus(data_path, tokenizer)
+    train_category_tokens = load_corpus_by_category(data_path, tokenizer)
     if validation_data_path:
         validation_tokens = load_corpus(validation_data_path, tokenizer)
+        validation_category_tokens = load_corpus_by_category(validation_data_path, tokenizer)
         split_mode = "separate_file"
+        if train_category_tokens and validation_category_tokens:
+            if set(train_category_tokens) != set(validation_category_tokens):
+                raise ValueError("training and validation category sets do not match")
+            for category, stream in train_category_tokens.items():
+                if stream.numel() <= config.context_length:
+                    raise ValueError(f"training category {category!r} has too few tokens")
+            for category, stream in validation_category_tokens.items():
+                if stream.numel() <= config.context_length:
+                    raise ValueError(f"validation category {category!r} has too few tokens")
     else:
         train_tokens, validation_tokens = split_corpus(
             train_tokens, validation_fraction, config.context_length
         )
+        train_category_tokens = None
+        validation_category_tokens = None
         split_mode = "contiguous_holdout"
+
+    train_batch_source = train_category_tokens or train_tokens
+    validation_batch_source = validation_category_tokens or validation_tokens
 
     minimum_tokens = config.context_length + 2
     if train_tokens.numel() < minimum_tokens or validation_tokens.numel() < minimum_tokens:
@@ -152,7 +177,7 @@ def train(data_path, output_path, steps=1000, batch_size=16,
         train_generator.manual_seed(seed + global_step)
 
     initial_val = estimate_loss(
-        model, validation_tokens, config, eval_batches, batch_size,
+        model, validation_batch_source, config, eval_batches, batch_size,
         target_device, seed=seed + 100000
     )
     best_validation_loss = initial_val
@@ -191,7 +216,10 @@ def train(data_path, output_path, steps=1000, batch_size=16,
         micro_losses = []
         for _ in range(grad_accum_steps):
             x, y = get_batch(
-                train_tokens, batch_size, config.context_length,
+                train_batch_source, batch_size, config.context_length,
+                device=target_device, generator=train_generator
+            ) if not isinstance(train_batch_source, dict) else get_balanced_batch(
+                train_batch_source, batch_size, config.context_length,
                 device=target_device, generator=train_generator
             )
             _, loss = model(x, y)
@@ -213,11 +241,11 @@ def train(data_path, output_path, steps=1000, batch_size=16,
             continue
 
         train_eval = estimate_loss(
-            model, train_tokens, config, eval_batches, batch_size,
+            model, train_batch_source, config, eval_batches, batch_size,
             target_device, seed=seed + current_step
         )
         val_eval = estimate_loss(
-            model, validation_tokens, config, eval_batches, batch_size,
+            model, validation_batch_source, config, eval_batches, batch_size,
             target_device, seed=seed + 100000
         )
         improved = val_eval < best_validation_loss
