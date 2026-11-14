@@ -173,7 +173,7 @@ class NeuralTests(unittest.TestCase):
                 {"category": "dialogue_naturel", "user": "Tu es là ?", "assistant": "Oui"},
             ]
             path.write_text(
-                "\\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\\n",
+                "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n",
                 encoding="utf-8")
             records = read_records(path)
             tokens = load_corpus(path, BozerByteTokenizer()).tolist()
