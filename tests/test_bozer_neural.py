@@ -236,12 +236,12 @@ class NeuralTests(unittest.TestCase):
             }
             path.write_text(json.dumps(row, ensure_ascii=False) + chr(10), encoding="utf-8")
             tokenizer = BozerByteBPETokenizer.train(
-                "Utilisateur : Bonjour, tu es disponible ?\\nBOZER : Oui, je suis disponible.",
+                "Utilisateur : Bonjour, tu es disponible ?\nBOZER : Oui, je suis disponible.",
                 vocab_size=320
             )
             tokens, mask = load_supervised_corpus(path, tokenizer)
             prompt_ids = tokenizer.encode(
-                "Utilisateur : Bonjour, tu es disponible ?\\nBOZER : ",
+                "Utilisateur : Bonjour, tu es disponible ?\nBOZER : ",
                 add_special_tokens=False
             )
             answer_ids = tokenizer.encode(
@@ -276,10 +276,10 @@ class NeuralTests(unittest.TestCase):
                 for i in range(8)
             ]
             path.write_text(
-                "\\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\\n",
+                "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n",
                 encoding="utf-8")
             tokenizer = BozerByteBPETokenizer.train(
-                "\\n".join(f"Utilisateur : Bonjour {i}\\nBOZER : Je suis disponible pour t'aider avec cette demande." for i in range(8)),
+                "\n".join(f"Utilisateur : Bonjour {i}\nBOZER : Je suis disponible pour t'aider avec cette demande." for i in range(8)),
                 vocab_size=320
             )
             grouped = load_supervised_corpus_by_category(path, tokenizer)
