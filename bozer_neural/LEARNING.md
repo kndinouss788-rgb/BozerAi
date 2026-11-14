@@ -32,11 +32,11 @@ Après approbation, lancer un nouvel entraînement en reprenant le checkpoint pr
 
 ```bash
 python -m bozer_neural.train \
-  --data data/bozer_neural_v0_3/train_fr.jsonl \
-  --validation-data data/bozer_neural_v0_3/validation_fr.jsonl \
+  --data data/bozer_neural_v0_4/train_fr.jsonl \
+  --validation-data data/bozer_neural_v0_4/validation_fr.jsonl \
   --resume artifacts/bozer-neural-v0.4.pt \
-  --output artifacts/bozer-neural-v0.4.pt \
-  --steps 600
+  --output artifacts/bozer-neural-v0.4-next.pt \
+  --steps 300
 ``
 
 Le tokenizer du checkpoint est réutilisé pour garder les identifiants de tokens compatibles avec les poids déjà appris. Le modèle est affiné à partir de ces poids, au lieu de repartir de zéro.
