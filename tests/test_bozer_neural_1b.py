@@ -4,6 +4,7 @@ import torch
 
 from bozer_neural.config_1b import Bozer1BConfig
 from bozer_neural.model_1b import BozerNeural1B, apply_rope
+from bozer_neural.tokenizer import BozerByteBPETokenizer
 
 
 def tiny_config():
@@ -83,11 +84,29 @@ def test_rope_preserves_tensor_shape_and_dtype():
     assert torch.isfinite(result).all()
 
 
+def test_padded_bpe_vocabulary_round_trips_without_changing_active_tokens():
+    tokenizer = BozerByteBPETokenizer.train(
+        "Bonjour BOZER. Bonjour, comment vas-tu ?",
+        vocab_size=270,
+        pad_to_vocab_size=270,
+    )
+    restored = BozerByteBPETokenizer.from_dict(tokenizer.to_dict())
+    assert tokenizer.vocab_size == 270
+    assert tokenizer.active_vocab_size <= tokenizer.vocab_size
+    assert restored.vocab_size == tokenizer.vocab_size
+    assert restored.active_vocab_size == tokenizer.active_vocab_size
+    encoded = tokenizer.encode("Bonjour BOZER !")
+    assert restored.decode(encoded) == "Bonjour BOZER !"
+    assert restored.decode([restored.active_vocab_size]) == ""
+
+
 def test_generation_respects_requested_length():
     torch.manual_seed(13)
     model = BozerNeural1B(tiny_config())
     prompt = torch.tensor([[1, 8, 9]], dtype=torch.long)
     generated = model.generate(
-        prompt, max_new_tokens=3, min_new_tokens=3, top_k=10, eos_token_id=None
+        prompt, max_new_tokens=3, min_new_tokens=3, top_k=10, eos_token_id=None,
+        sampling_vocab_size=12,
     )
     assert generated.shape == (1, 6)
+    assert int(generated.max()) < 12
