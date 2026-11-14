@@ -1,6 +1,6 @@
 name: BOZER NEURAL corpus, tokenizer and model checks
 
-on:
+"on":
   push:
     branches: [bozer-neural-v0.1]
   pull_request:
