@@ -22,11 +22,23 @@ def read_records(path):
         for key in ("category", "user", "assistant"):
             if not isinstance(item.get(key), str) or not item[key].strip():
                 raise ValueError(f"record at {path}:{number} needs non-empty {key}")
+        history = item.get("history", [])
+        if not isinstance(history, list):
+            raise ValueError(f"record at {path}:{number} history must be a list")
+        clean_history = []
+        for turn_index, turn in enumerate(history, 1):
+            if not isinstance(turn, dict):
+                raise ValueError(f"record at {path}:{number} history turn {turn_index} must be an object")
+            for key in ("user", "assistant"):
+                if not isinstance(turn.get(key), str) or not turn[key].strip():
+                    raise ValueError(f"record at {path}:{number} history turn {turn_index} needs non-empty {key}")
+            clean_history.append({"user": turn["user"].strip(), "assistant": turn["assistant"].strip()})
         records.append({
             **item,
             "category": item["category"].strip(),
             "user": item["user"].strip(),
             "assistant": item["assistant"].strip(),
+            "history": clean_history,
         })
     if not records:
         raise ValueError(f"corpus is empty: {path}")
@@ -52,7 +64,11 @@ def ensure_disjoint_prompts(training_path, validation_path):
             "validation_prompts": len(validation_prompts), "overlap": 0}
 
 def format_prompt(item):
-    return f"Utilisateur : {item['user']}\nBOZER : "
+    turns = []
+    for turn in item.get("history", []):
+        turns.append(f"Utilisateur : {turn['user']}\nBOZER : {turn['assistant']}")
+    turns.append(f"Utilisateur : {item['user']}\nBOZER : ")
+    return "\n".join(turns)
 
 
 def format_record(item):
