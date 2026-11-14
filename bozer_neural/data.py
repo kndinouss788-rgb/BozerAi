@@ -179,6 +179,36 @@ def get_balanced_supervised_batch(category_data, batch_size, context_length,
                  for position in range(3))
 
 
+def get_balanced_batch(category_tokens, batch_size, context_length,
+                      device="cpu", generator=None):
+    """Compatibility sampler: distribute rows evenly across category token streams."""
+    if not isinstance(category_tokens, dict) or not category_tokens:
+        raise ValueError("category_tokens must be a non-empty category-to-tensor mapping")
+    if batch_size < 1 or context_length < 1:
+        raise ValueError("batch_size and context_length must be positive")
+    categories = sorted(category_tokens)
+    for category in categories:
+        tokens = category_tokens[category]
+        if tokens.ndim != 1 or tokens.numel() <= context_length:
+            raise ValueError(f"category {category!r} needs at least context_length + 1 tokens")
+    offset = int(torch.randint(len(categories), (1,), generator=generator))
+    indexes = (torch.arange(batch_size) + offset) % len(categories)
+    indexes = indexes[torch.randperm(batch_size, generator=generator)]
+    rows = []
+    for index in indexes.tolist():
+        tokens = category_tokens[categories[index]]
+        start = int(torch.randint(
+            0, tokens.numel() - context_length, (1,), generator=generator
+        ))
+        rows.append((
+            tokens[start:start + context_length],
+            tokens[start + 1:start + context_length + 1],
+        ))
+    x = torch.stack([row[0] for row in rows]).to(device)
+    y = torch.stack([row[1] for row in rows]).to(device)
+    return x, y
+
+
 def split_corpus(tokens, validation_fraction=0.1, context_length=128):
     if not 0.0 < validation_fraction < 0.5:
         raise ValueError("validation_fraction must be between 0 and 0.5")
