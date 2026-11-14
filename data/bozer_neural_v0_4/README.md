@@ -3,9 +3,9 @@
 Corpus français synthétique, créé exclusivement pour entraîner le modèle BOZER depuis des poids aléatoires.
 
 - Entraînement : 180 exemples, 30 par catégorie.
-- Validation : 12 exemples, 2 par catégorie.
-- Test final : 12 exemples, 2 par catégorie.
-- Total : 204 exemples.
+- Validation : 36 exemples, 6 par catégorie.
+- Test final : 36 exemples, 6 par catégorie.
+- Total : 252 exemples.
 - Les 72 nouveaux exemples sont identifiés par `origin=original_synthetic_v0_4` et possèdent un identifiant de scénario.
 
 Les six catégories sont équilibrées : dialogue naturel, compréhension, raisonnement, planification, utilisation/vérification des outils, sécurité/confidentialité/honnêteté.
