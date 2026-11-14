@@ -6,7 +6,8 @@ import torch
 from bozer_neural.data import (
     get_balanced_batch, get_batch, get_supervised_batch,
     load_corpus, load_corpus_by_category, load_supervised_corpus,
-    load_supervised_corpus_by_category, read_records, split_corpus
+    load_supervised_corpus_by_category, read_records, split_corpus,
+    ensure_disjoint_prompts
 )
 from bozer_neural.evaluate import evaluate
 from bozer_neural.config import BozerConfig
@@ -107,6 +108,22 @@ class NeuralTests(unittest.TestCase):
             self.assertIn("dialogue_naturel", result["category_test_loss"])
             self.assertGreater(result["tokenizer_vocab_size"], 259)
             self.assertIn("generated", result["examples"][0])
+
+    def test_runtime_split_guard_rejects_duplicate_prompts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            training = root / "train_fr.jsonl"
+            validation = root / "validation_fr.jsonl"
+            base = {"category": "dialogue_naturel", "user": "  Bonjour   BOZER ",
+                    "assistant": "Bonjour !"}
+            duplicate = {"category": "dialogue_naturel", "user": "bonjour bozer",
+                         "assistant": "Salut !"}
+            training.write_text(json.dumps(base, ensure_ascii=False) + chr(10), encoding="utf-8")
+            validation.write_text(json.dumps(duplicate, ensure_ascii=False) + chr(10), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "leakage"):
+                ensure_disjoint_prompts(training, validation)
+            with self.assertRaisesRegex(ValueError, "different files"):
+                ensure_disjoint_prompts(training, training)
 
     def test_corpus_validation_rejects_leakage(self):
         with tempfile.TemporaryDirectory() as tmp:
