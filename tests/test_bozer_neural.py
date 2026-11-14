@@ -8,6 +8,7 @@ from bozer_neural.evaluate import evaluate
 from bozer_neural.model import BozerTransformer
 from bozer_neural.tokenizer import BozerByteTokenizer, BozerByteBPETokenizer
 from bozer_neural.train import train
+from bozer_neural.learning import submit_feedback, approve_feedback
 from bozer_neural.validate_corpus import validate_splits
 
 
@@ -85,7 +86,7 @@ class NeuralTests(unittest.TestCase):
             )
             self.assertTrue(output.is_file())
             saved = torch.load(output, map_location="cpu", weights_only=False)
-            self.assertEqual(saved["format"], "bozer-neural-v0.2")
+            self.assertEqual(saved["format"], "bozer-neural-v0.3")
             self.assertEqual(saved["training"]["split_mode"], "separate_file")
             self.assertEqual(saved["config"]["vocab_size"], saved["tokenizer"]["vocab_size"])
             self.assertTrue(all(torch.isfinite(torch.tensor(value)).item() for value in (first, last, best)))
@@ -109,6 +110,53 @@ class NeuralTests(unittest.TestCase):
             files[1].write_text(files[0].read_text(encoding="utf-8"), encoding="utf-8")
             with self.assertRaises(ValueError):
                 validate_splits(*map(str, files))
+
+    def test_controlled_feedback_learning_and_resume(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pending = root / "pending.jsonl"
+            training = root / "train.jsonl"
+            validation = root / "validation.jsonl"
+            checkpoint = root / "first.pt"
+            next_checkpoint = root / "second.pt"
+            rows = [
+                {"category": "dialogue_naturel", "user": f"Bonjour numéro {i}",
+                 "assistant": "Bonjour ! Comment puis-je t'aider aujourd'hui ?"}
+                for i in range(80)
+            ]
+            val_rows = [
+                {"category": "dialogue_naturel", "user": f"Validation inédite {i}",
+                 "assistant": "Je peux t'aider avec une réponse claire et utile."}
+                for i in range(20)
+            ]
+            training.write_text(
+                "".join(json.dumps(x, ensure_ascii=False) + chr(10) for x in rows),
+                encoding="utf-8")
+            validation.write_text(
+                "".join(json.dumps(x, ensure_ascii=False) + chr(10) for x in val_rows),
+                encoding="utf-8")
+
+            feedback_id = submit_feedback(
+                pending, "dialogue_naturel", "Salut BOZER",
+                "Salut ! Je suis là pour t'aider."
+            )
+            self.assertTrue(feedback_id)
+            report = approve_feedback(pending, training, feedback_id)
+            self.assertEqual(report, {"approved": 1, "duplicates_skipped": 0, "pending": 0})
+            self.assertEqual(len(training.read_text(encoding="utf-8").splitlines()), 81)
+            with self.assertRaises(ValueError):
+                approve_feedback(pending, root / "test.jsonl")
+
+            train(str(training), str(checkpoint), steps=2, batch_size=2,
+                  eval_interval=1, eval_batches=1, validation_data_path=str(validation))
+            first = torch.load(checkpoint, map_location="cpu", weights_only=False)
+            self.assertEqual(first["format"], "bozer-neural-v0.3")
+            train(str(training), str(next_checkpoint), steps=2, batch_size=2,
+                  eval_interval=1, eval_batches=1, validation_data_path=str(validation),
+                  resume_checkpoint=str(checkpoint))
+            second = torch.load(next_checkpoint, map_location="cpu", weights_only=False)
+            self.assertEqual(second["training"]["resumed_from"], str(checkpoint))
+            self.assertEqual(second["tokenizer"], first["tokenizer"])
 
 
 if __name__ == "__main__":
