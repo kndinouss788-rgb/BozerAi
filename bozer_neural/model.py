@@ -78,12 +78,19 @@ class BozerTransformer(nn.Module):
         elif isinstance(module, nn.Embedding):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, input_ids, targets=None):
+    def forward(self, input_ids, targets=None, loss_mask=None):
         if input_ids.ndim != 2:
             raise ValueError("input_ids must have shape [batch, sequence]")
         _, length = input_ids.shape
         if length > self.config.context_length:
             raise ValueError("sequence exceeds configured context_length")
+        if targets is not None and targets.shape != input_ids.shape:
+            raise ValueError("targets must have the same shape as input_ids")
+        if loss_mask is not None:
+            if targets is None:
+                raise ValueError("loss_mask requires targets")
+            if loss_mask.shape != targets.shape:
+                raise ValueError("loss_mask must have the same shape as targets")
         positions = torch.arange(length, device=input_ids.device)
         x = self.drop(self.token_embedding(input_ids) + self.position_embedding(positions))
         for block in self.blocks:
@@ -91,9 +98,20 @@ class BozerTransformer(nn.Module):
         logits = self.lm_head(self.final_norm(x))
         loss = None
         if targets is not None:
-            loss = nn.functional.cross_entropy(
-                logits.reshape(-1, logits.size(-1)), targets.reshape(-1)
-            )
+            if loss_mask is None:
+                loss = nn.functional.cross_entropy(
+                    logits.reshape(-1, logits.size(-1)), targets.reshape(-1)
+                )
+            else:
+                token_losses = nn.functional.cross_entropy(
+                    logits.reshape(-1, logits.size(-1)), targets.reshape(-1),
+                    reduction="none",
+                ).view_as(targets)
+                weights = loss_mask.to(device=token_losses.device, dtype=token_losses.dtype)
+                denominator = weights.sum()
+                if denominator.item() <= 0:
+                    raise ValueError("loss_mask must include at least one assistant target")
+                loss = (token_losses * weights).sum() / denominator
         return logits, loss
 
     @torch.no_grad()
