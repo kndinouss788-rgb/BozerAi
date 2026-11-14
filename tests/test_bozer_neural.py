@@ -141,11 +141,11 @@ class NeuralTests(unittest.TestCase):
                 "Salut ! Je suis là pour t'aider."
             )
             self.assertTrue(feedback_id)
+            with self.assertRaises(ValueError):
+                approve_feedback(pending, root / "test_fr.jsonl", feedback_id)
             report = approve_feedback(pending, training, feedback_id)
             self.assertEqual(report, {"approved": 1, "duplicates_skipped": 0, "pending": 0})
             self.assertEqual(len(training.read_text(encoding="utf-8").splitlines()), 81)
-            with self.assertRaises(ValueError):
-                approve_feedback(pending, root / "test.jsonl")
 
             train(str(training), str(checkpoint), steps=2, batch_size=2,
                   eval_interval=1, eval_batches=1, validation_data_path=str(validation))
