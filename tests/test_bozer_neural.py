@@ -98,6 +98,8 @@ class NeuralTests(unittest.TestCase):
             self.assertIn("optimizer_state_dict", saved)
             self.assertEqual(saved["training"]["global_step"], 2)
             self.assertEqual(saved["training"]["training_objective"], "assistant_answer_tokens_and_eos_only")
+            self.assertIn("dialogue_naturel", saved["training"]["category_validation_loss"])
+            self.assertEqual(saved["training"]["split_audit"]["overlap"], 0)
             self.assertTrue(output.with_name("model.best.pt").is_file())
             self.assertTrue(all(torch.isfinite(torch.tensor(value)).item() for value in (first, last, best)))
 
