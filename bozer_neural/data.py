@@ -1,5 +1,6 @@
 """Dialogue loading, assistant-only targets and balanced language-model batches."""
 import json
+import unicodedata
 from pathlib import Path
 import torch
 from .tokenizer import BOS, EOS, BozerByteTokenizer
@@ -31,6 +32,24 @@ def read_records(path):
         raise ValueError(f"corpus is empty: {path}")
     return records
 
+
+def ensure_disjoint_prompts(training_path, validation_path):
+    """Refuse accidental prompt overlap between training and validation files."""
+    if Path(training_path).resolve() == Path(validation_path).resolve():
+        raise ValueError("training and validation paths must be different files")
+
+    def normalize(value):
+        return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+    training_prompts = {normalize(row["user"]) for row in read_records(training_path)}
+    validation_prompts = {normalize(row["user"]) for row in read_records(validation_path)}
+    overlap = training_prompts & validation_prompts
+    if overlap:
+        raise ValueError(
+            f"training/validation leakage: {len(overlap)} normalized prompt(s) overlap"
+        )
+    return {"training_prompts": len(training_prompts),
+            "validation_prompts": len(validation_prompts), "overlap": 0}
 
 def format_prompt(item):
     return f"Utilisateur : {item['user']}\nBOZER : "
