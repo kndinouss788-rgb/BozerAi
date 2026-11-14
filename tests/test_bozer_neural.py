@@ -2,10 +2,11 @@ import tempfile
 import unittest
 from pathlib import Path
 import torch
-from bozer_neural.data import get_batch, split_corpus
+from bozer_neural.data import get_batch, load_corpus, split_corpus
 from bozer_neural.model import BozerTransformer
 from bozer_neural.tokenizer import BozerByteTokenizer
 from bozer_neural.train import train
+from bozer_neural.validate_corpus import validate_splits
 
 
 class NeuralTests(unittest.TestCase):
@@ -33,23 +34,42 @@ class NeuralTests(unittest.TestCase):
         x, y = get_batch(train_part, 4, 32)
         self.assertTrue(torch.equal(x[:, 1:], y[:, :-1]))
 
-    def test_training_saves_validation_metrics(self):
+    def test_jsonl_loader_and_training(self):
         with tempfile.TemporaryDirectory() as tmp:
-            corpus, output = Path(tmp) / "seed.txt", Path(tmp) / "model.pt"
-            corpus.write_text(
-                ("BOZER aide avec honnêteté. Utilisateur : Bonjour. "
-                 "BOZER : Oui, je suis là.\n") * 80, encoding="utf-8"
-            )
-            first, last, best_val = train(
-                str(corpus), str(output), steps=2, batch_size=2,
-                eval_interval=1, eval_batches=1,
-            )
+            root = Path(tmp)
+            train_file, val_file, output = root/"train.jsonl", root/"val.jsonl", root/"model.pt"
+            rows = trainRowsLocal = [
+                {"category":"dialogue_naturel","user":"Bonjour, comment vas-tu ?","assistant":"Je vais bien, merci."},
+                {"category":"raisonnement_resolution","user":"Combien font 8 fois 9 ?","assistant":"8 × 9 = 72."}
+            ]
+            train_file.write_text("\\n".join(__import__("json").dumps(x, ensure_ascii=False) for x in rows)+"\\n", encoding="utf-8")
+            val_file.write_text(("Utilisateur : bonjour\\nBOZER : oui\\n")*100, encoding="utf-8")
+            tokens = load_corpus(train_file)
+            self.assertGreater(tokens.numel(), 128)
+            first, last, best = train(str(train_file), str(output), steps=2, batch_size=2,
+                                      eval_interval=1, eval_batches=1,
+                                      validation_data_path=str(val_file))
             self.assertTrue(output.is_file())
             saved = torch.load(output, map_location="cpu", weights_only=False)
-            self.assertEqual(saved["format"], "bozer-neural-v0.1")
-            self.assertEqual(len(saved["training"]["eval_history"]), 2)
-            self.assertTrue(all(torch.isfinite(torch.tensor(v)).item()
-                                for v in (first, last, best_val)))
+            self.assertEqual(saved["training"]["split_mode"], "separate_file")
+            self.assertTrue(all(torch.isfinite(torch.tensor(x)).item() for x in (first,last,best)))
+
+    def test_corpus_validation_rejects_leakage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cats = ["dialogue_naturel","comprehension_demande","raisonnement_resolution",
+                    "planification_missions","utilisation_outils_verification",
+                    "securite_confidentialite_honnetete"]
+            files = [root/"a.jsonl",root/"b.jsonl",root/"c.jsonl"]
+            for index, path in enumerate(files):
+                rows = [{"category": cat, "user": f"question {index} {cat}",
+                         "assistant": "réponse"} for cat in cats]
+                path.write_text("\\n".join(__import__("json").dumps(x) for x in rows)+"\\n",encoding="utf-8")
+            report = validate_splits(*map(str,files))
+            self.assertEqual(len(report),3)
+            files[1].write_text(files[0].read_text(encoding="utf-8"),encoding="utf-8")
+            with self.assertRaises(ValueError):
+                validate_splits(*map(str,files))
 
 
 if __name__ == "__main__":

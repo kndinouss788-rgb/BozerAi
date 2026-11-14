@@ -1,11 +1,33 @@
-"""Corpus loader with a contiguous holdout set and next-byte batches."""
+"""JSONL dialogue loader and next-byte batches."""
+import json
 from pathlib import Path
 import torch
 from .tokenizer import BozerByteTokenizer
 
 
+def _format_jsonl(path):
+    lines = []
+    for number, raw in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
+        if not raw.strip():
+            continue
+        try:
+            item = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"invalid JSONL at {path}:{number}: {exc}") from exc
+        if not isinstance(item, dict):
+            raise ValueError(f"record at {path}:{number} must be an object")
+        fields = [item.get(k) for k in ("category", "user", "assistant")]
+        if not all(isinstance(x, str) and x.strip() for x in fields):
+            raise ValueError(f"record at {path}:{number} needs category, user and assistant")
+        lines.append(f"Utilisateur : {fields[1].strip()}\\nBOZER : {fields[2].strip()}\\n")
+    if not lines:
+        raise ValueError(f"corpus is empty: {path}")
+    return "\\n".join(lines)
+
+
 def load_corpus(path):
-    text = Path(path).read_text(encoding="utf-8")
+    path = Path(path)
+    text = _format_jsonl(path) if path.suffix.lower() == ".jsonl" else path.read_text(encoding="utf-8")
     if not text.strip():
         raise ValueError("training corpus is empty")
     ids = BozerByteTokenizer().encode(text)
@@ -21,9 +43,7 @@ def split_corpus(tokens, validation_fraction=0.1, context_length=128):
     train_tokens, validation_tokens = tokens[:split_at], tokens[split_at:]
     minimum = context_length + 2
     if min(train_tokens.numel(), validation_tokens.numel()) < minimum:
-        raise ValueError(
-            f"corpus too small: each split needs at least {minimum} tokens"
-        )
+        raise ValueError(f"corpus too small: each split needs at least {minimum} tokens")
     return train_tokens, validation_tokens
 
 

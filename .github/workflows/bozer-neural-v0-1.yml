@@ -1,4 +1,4 @@
-name: BOZER NEURAL V0.1 checks
+name: BOZER NEURAL V0.2 corpus and model checks
 
 on:
   push:
@@ -18,7 +18,9 @@ jobs:
           cache: pip
       - name: Install PyTorch
         run: python -m pip install -r requirements-neural.txt
+      - name: Validate categorized corpus and split leakage
+        run: python -m bozer_neural.validate_corpus
       - name: Run BOZER NEURAL tests
         run: python -m unittest discover -s tests -p "test_bozer_neural.py" -v
-      - name: Verify parameter count and architecture
+      - name: Verify parameter count
         run: python -c "from bozer_neural import BozerTransformer; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print(f'BOZER NEURAL parameters: {n}'); assert n == 124864"
