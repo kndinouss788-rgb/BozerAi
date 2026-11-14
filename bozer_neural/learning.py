@@ -71,11 +71,15 @@ def approve_feedback(pending_path, training_path, record_id=None):
     training_path = Path(training_path)
     target_name = training_path.name.casefold()
     path_parts = [part.casefold() for part in training_path.parts]
+    forbidden_parts = {"test", "tests", "testing", "validation", "valid", "val"}
     if any(
-        marker in part
+        part in forbidden_parts
+        or part.startswith(("test_", "validation_", "val_"))
+        or part.endswith(("_test", "_validation", "_val"))
         for part in path_parts
-        for marker in ("test", "validation", "val")
     ):
+        raise ValueError("feedback can only be approved into a training file")
+    if any(marker in target_name for marker in ("test", "validation")):
         raise ValueError("feedback can only be approved into a training file")
     if "train" not in target_name:
         raise ValueError("target filename must clearly identify the training split")
