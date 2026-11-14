@@ -61,7 +61,7 @@ class NeuralTests(unittest.TestCase):
             train_rows = [
                 {"category": "dialogue_naturel", "user": f"Bonjour, comment vas-tu numéro {i} ?",
                  "assistant": "Je vais bien, merci. Je peux t'aider."}
-                for i in range(30)
+                for i in range(80)
             ]
             val_rows = [
                 {"category": "dialogue_naturel", "user": f"Question de validation inédite numéro {i}",
