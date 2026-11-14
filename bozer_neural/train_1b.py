@@ -138,6 +138,7 @@ def train_1b(
     precision="auto",
     config=None,
     allow_cpu_large_model=False,
+    gradient_checkpointing=True,
 ):
     """Train BOZER 1B on train/validation JSONL files without test-set access."""
     if steps < 1 or batch_size < 1 or eval_interval < 1 or eval_batches < 1:
@@ -148,6 +149,12 @@ def train_1b(
         raise ValueError("early_stopping_patience cannot be negative")
     if validation_data_path is None:
         raise ValueError("a separate validation_data_path is required for 1B training")
+    if learning_rate <= 0:
+        raise ValueError("learning_rate must be positive")
+    if warmup_steps < 0:
+        raise ValueError("warmup_steps cannot be negative")
+    if not 0.0 <= min_lr_ratio <= 1.0:
+        raise ValueError("min_lr_ratio must be between 0 and 1")
 
     target_device = torch.device(
         device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -237,7 +244,9 @@ def train_1b(
         torch.Generator(device="cpu").manual_seed(seed + 1),
     )
 
-    model = BozerNeural1B(model_config).to(target_device)
+    model = BozerNeural1B(
+        model_config, gradient_checkpointing=gradient_checkpointing
+    ).to(target_device)
     if previous:
         model.load_state_dict(previous["model_state_dict"])
 
@@ -274,6 +283,30 @@ def train_1b(
     best_path = Path(output_path).with_name(
         Path(output_path).stem + ".best" + Path(output_path).suffix
     )
+    if not best_path.exists():
+        baseline_payload = {
+            "format": CHECKPOINT_FORMAT,
+            "config": model_config.to_dict(),
+            "tokenizer": tokenizer.to_dict(),
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "training": {
+                "global_step": global_step,
+                "seed": seed,
+                "best_validation_loss": best_validation_loss,
+                "latest_validation_loss": initial_validation_loss,
+                "history": [],
+                "split_audit": split_audit,
+                "train_tokens": int(train_tokens.numel()),
+                "validation_tokens": int(validation_tokens.numel()),
+                "training_objective": "assistant_answer_tokens_and_eos_only",
+                "precision": precision,
+                "gradient_checkpointing": gradient_checkpointing,
+                "batch_generator_state": batch_generator.get_state(),
+                "checkpoint_role": "initial_validation_baseline",
+            },
+        }
+        _atomic_save(baseline_payload, best_path)
 
     for local_step in range(steps):
         step = global_step + local_step
@@ -358,6 +391,7 @@ def train_1b(
                 "validation_tokens": int(validation_tokens.numel()),
                 "training_objective": "assistant_answer_tokens_and_eos_only",
                 "precision": precision,
+                "gradient_checkpointing": gradient_checkpointing,
                 "batch_generator_state": batch_generator.get_state(),
             },
         }
@@ -409,6 +443,10 @@ def main():
         "--precision", choices=("auto", "fp32", "bf16", "fp16"), default="auto"
     )
     parser.add_argument(
+        "--no-gradient-checkpointing", action="store_true",
+        help="disable activation checkpointing (uses more memory)",
+    )
+    parser.add_argument(
         "--config-json", default=None,
         help="optional JSON config; omit to use the full 1.116B target",
     )
@@ -438,6 +476,7 @@ def main():
         precision=args.precision,
         config=config,
         allow_cpu_large_model=args.allow_cpu_large_model,
+        gradient_checkpointing=not args.no_gradient_checkpointing,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
