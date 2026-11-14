@@ -57,7 +57,7 @@ class ProcessRestartPersistenceTest {
 
         composeRule.onNodeWithTag("bozer_settings").performClick()
         composeRule.waitUntil(timeoutMillis = 180_000) {
-            val ready = composeRule.onAllNodesWithText("Cerveau local prêt — hors ligne.")
+            val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
                 .fetchSemanticsNodes().isNotEmpty()
             val failed = listOf("Chargement impossible", "Installation impossible").any { label ->
                 composeRule.onAllNodesWithText(label, substring = true)
@@ -65,7 +65,7 @@ class ProcessRestartPersistenceTest {
             }
             ready || failed
         }
-        val ready = composeRule.onAllNodesWithText("Cerveau local prêt — hors ligne.")
+        val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
             .fetchSemanticsNodes().isNotEmpty()
         assertTrue("Le modèle local n'a pas été rechargé après redémarrage.", ready)
         composeRule.onNodeWithText("Fermer").performClick()
