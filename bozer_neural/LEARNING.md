@@ -97,7 +97,7 @@ python -m bozer_neural.train_1b \
   --steps 1000 --batch-size 1 --grad-accum-steps 16
 ```
 
-Pour poursuivre un entraînement, ajouter `--resume artifacts/bozer-neural-1b.pt`. Le tokenizer et l'architecture du checkpoint doivent correspondre exactement. Le vocabulaire du tokenizer est réservé à 16 384 identifiants, même si le nombre de fusions apprises est encore inférieur ; les identifiants non appris sont masqués à la génération.
+Pour poursuivre un entraînement, ajouter `--resume artifacts/bozer-neural-1b.pt`. Le tokenizer et l'architecture du checkpoint doivent correspondre exactement. Le vocabulaire du tokenizer est réservé à 16 384 identifiants, même si le nombre de fusions apprises est encore inférieur ; les identifiants non appris sont masqués à la génération. Le checkpointing des gradients est activé par défaut pour réduire les activations conservées en mémoire.
 
 ### Évaluer sans contaminer le test
 
