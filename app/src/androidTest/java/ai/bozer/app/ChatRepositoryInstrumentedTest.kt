@@ -69,6 +69,26 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
+    fun memoryContextPrefersFactsRelevantToTheCurrentQuestion() = runBlocking {
+        database.rememberFact("Mon animal préféré est le chat")
+        database.rememberFact("Mon projet professionnel est BOZER")
+
+        repository.reply(
+            listOf(ChatMessage(role = "user", content = "Quel est mon animal préféré ?"))
+        )
+
+        val prompt = model.prompts.single()
+        assertTrue(
+            "Le souvenir correspondant à la question doit être récupéré.",
+            prompt.contains("Mon animal préféré est le chat")
+        )
+        assertFalse(
+            "Un souvenir sans rapport ne doit pas encombrer le contexte.",
+            prompt.contains("Mon projet professionnel est BOZER")
+        )
+    }
+
+    @Test
     fun explicitSearchUsesInjectedNetworkClientAndMarksResultsUntrusted() = runBlocking {
         repository.internetAvailable = { true }
         val answer = repository.reply(

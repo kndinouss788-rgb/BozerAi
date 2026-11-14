@@ -1,5 +1,6 @@
 package ai.bozer.app
 
+import java.text.Normalizer
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -74,9 +75,13 @@ class ChatRepository(
             return@withLock "La recherche Internet a bien été appelée, mais aucune source exploitable n'a été retournée. Je préfère ne pas inventer de résultats."
         }
 
-        val prompt = buildChatMlPrompt(history, database.rememberedFacts().asReversed(), searchResults)
+        val relevantFacts = selectRelevantFacts(
+            latestUserText,
+            database.rememberedFacts().asReversed()
+        )
+        val prompt = buildChatMlPrompt(history, relevantFacts, searchResults)
         val extraContext = buildString {
-            val facts = database.rememberedFacts().takeLast(20)
+            val facts = relevantFacts
             if (facts.isNotEmpty()) {
                 append("Mémoire explicitement autorisée : ")
                     .append(facts.joinToString("; ") { escapeUntrustedChatMl(it) })
@@ -123,6 +128,40 @@ class ChatRepository(
         } catch (error: Exception) {
             "Je rencontre un problème avec mon moteur local : " + (error.message ?: "erreur inconnue") + ". Réessaie dans un instant."
         }
+    }
+
+    /**
+     * Keep explicit memories useful without flooding the small local model's
+     * context window. Rank by meaningful word overlap; newest facts win ties.
+     * When the question has no useful overlap, retain only the three newest
+     * facts so short follow-ups still have a little continuity.
+     */
+    private fun selectRelevantFacts(query: String, facts: List<String>): List<String> {
+        if (facts.isEmpty()) return emptyList()
+        val queryTerms = memoryTerms(query)
+        if (queryTerms.isEmpty()) return facts.takeLast(3)
+
+        val ranked = facts.mapIndexed { index, fact ->
+            val overlap = queryTerms.intersect(memoryTerms(fact)).size
+            Triple(index, overlap, fact)
+        }.filter { it.second > 0 }
+            .sortedWith(
+                compareByDescending<Triple<Int, Int, String>> { it.second }
+                    .thenByDescending { it.first }
+            )
+            .take(MAX_RELEVANT_MEMORIES)
+            .map { it.third }
+
+        return ranked.ifEmpty { facts.takeLast(2) }
+    }
+
+    private fun memoryTerms(value: String): Set<String> {
+        val normalized = Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "")
+        return Regex("[\\p{L}\\p{N}]{3,}").findAll(normalized)
+            .map { it.value }
+            .filterNot(MEMORY_STOP_WORDS::contains)
+            .toSet()
     }
 
     private fun buildChatMlPrompt(
@@ -210,6 +249,17 @@ class ChatRepository(
     }
 
     private companion object {
+        const val MAX_RELEVANT_MEMORIES = 5
+        val MEMORY_STOP_WORDS = setOf(
+            "alors", "avec", "avoir", "cela", "ceci", "cette", "chose", "combien",
+            "comme", "dans", "des", "deux", "elle", "elles", "est", "etre", "fait",
+            "faire", "il", "ils", "je", "la", "le", "les", "leur", "leurs", "ma",
+            "mais", "me", "mes", "moins", "mon", "moi", "ne", "nos", "notre", "nous",
+            "par", "pas", "peut", "peux", "plus", "pour", "pourquoi", "que", "quel",
+            "quelle", "quelles", "quels", "qui", "quoi", "sa", "se", "ses", "son",
+            "sont", "sur", "ta", "te", "tes", "toi", "ton", "tu", "un", "une", "votre",
+            "vos", "vous"
+        )
         const val BOZER_PERSONALITY_PROMPT = """
 Tu es BOZER, un assistant IA francophone avec une identité conversationnelle stable.
 PERSONNALITÉ :
