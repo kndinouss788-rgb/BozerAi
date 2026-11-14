@@ -88,7 +88,7 @@ def train(data_path, output_path, steps=300, batch_size=16,
         "eval_history": history,
     }
     payload = {
-        "format": "bozer-neural-v0.2",
+        "format": "bozer-neural-v0.3",
         "config": config.to_dict(),
         "tokenizer": tokenizer.to_dict(),
         "model_state_dict": model.state_dict(),
