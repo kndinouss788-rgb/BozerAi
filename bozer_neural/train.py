@@ -77,7 +77,7 @@ def _make_payload(model, config, tokenizer, optimizer, metrics, include_optimize
     return payload
 
 
-def train(data_path, output_path, steps=1000, batch_size=16,
+def train(data_path, output_path, steps=600, batch_size=8,
           learning_rate=3e-4, seed=19, validation_fraction=0.1,
           eval_interval=50, eval_batches=8, validation_data_path=None,
           tokenizer_vocab_size=512, resume_checkpoint=None,
