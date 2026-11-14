@@ -1,4 +1,4 @@
-name: BOZER NEURAL V0.2 corpus and model checks
+name: BOZER NEURAL corpus, tokenizer and model checks
 
 on:
   push:
@@ -7,12 +7,18 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   neural-tests:
+    name: Validate corpus and neural pipeline
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
@@ -22,5 +28,5 @@ jobs:
         run: python -m bozer_neural.validate_corpus
       - name: Run BOZER NEURAL tests
         run: python -m unittest discover -s tests -p "test_bozer_neural.py" -v
-      - name: Verify parameter count
-        run: python -c "from bozer_neural import BozerTransformer; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print(f'BOZER NEURAL parameters: {n}'); assert n == 124864"
+      - name: Verify baseline architecture
+        run: python -c "from bozer_neural import BozerTransformer; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print(f'Baseline parameters: {n}'); assert n == 124864"

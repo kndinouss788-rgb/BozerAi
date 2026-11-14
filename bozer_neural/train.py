@@ -1,11 +1,12 @@
-"""Train BOZER NEURAL V0.1 from random initialization; no pretrained weights."""
+"""Train BOZER NEURAL from random initialization; tokenizer is learned from train data only."""
 import argparse
 import json
 from pathlib import Path
 import torch
 from .config import BozerConfig
-from .data import get_batch, load_corpus, split_corpus
+from .data import get_batch, load_corpus, read_corpus_text, split_corpus
 from .model import BozerTransformer
+from .tokenizer import BozerByteBPETokenizer
 
 
 @torch.no_grad()
@@ -22,20 +23,27 @@ def estimate_loss(model, tokens, config, batches=8, batch_size=16):
 
 def train(data_path, output_path, steps=300, batch_size=16,
           learning_rate=3e-4, seed=19, validation_fraction=0.1,
-          eval_interval=50, eval_batches=8, validation_data_path=None):
+          eval_interval=50, eval_batches=8, validation_data_path=None,
+          tokenizer_vocab_size=512):
     if steps < 1 or eval_interval < 1 or eval_batches < 1:
         raise ValueError("steps, eval_interval and eval_batches must be >= 1")
     torch.manual_seed(seed)
-    config = BozerConfig()
-    train_tokens = load_corpus(data_path)
+
+    # The tokenizer is learned from training text only; validation/test never alter its vocabulary.
+    tokenizer = BozerByteBPETokenizer.train(
+        read_corpus_text(data_path), vocab_size=tokenizer_vocab_size
+    )
+    config = BozerConfig(vocab_size=tokenizer.vocab_size)
+    train_tokens = load_corpus(data_path, tokenizer)
     if validation_data_path:
-        validation_tokens = load_corpus(validation_data_path)
+        validation_tokens = load_corpus(validation_data_path, tokenizer)
         split_mode = "separate_file"
     else:
         train_tokens, validation_tokens = split_corpus(
             train_tokens, validation_fraction, config.context_length
         )
         split_mode = "contiguous_holdout"
+
     model = BozerTransformer(config)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     model.train()
@@ -58,6 +66,7 @@ def train(data_path, output_path, steps=300, batch_size=16,
             best_validation_loss = val_eval if best_validation_loss is None else min(best_validation_loss, val_eval)
             history.append({"step": step + 1, "train_loss": train_eval, "validation_loss": val_eval})
             print(f"step={step + 1}/{steps} train_loss={train_eval:.4f} validation_loss={val_eval:.4f}")
+
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     metrics = {
@@ -65,14 +74,21 @@ def train(data_path, output_path, steps=300, batch_size=16,
         "last_train_loss": last_train_loss, "best_validation_loss": best_validation_loss,
         "train_tokens": int(train_tokens.numel()), "validation_tokens": int(validation_tokens.numel()),
         "split_mode": split_mode,
+        "tokenizer_vocab_size": tokenizer.vocab_size,
+        "tokenizer_merges": len(tokenizer.merges),
         "validation_fraction": validation_fraction if split_mode == "contiguous_holdout" else None,
         "eval_history": history,
     }
-    payload = {"format": "bozer-neural-v0.1", "config": config.to_dict(),
-               "model_state_dict": model.state_dict(), "training": metrics}
+    payload = {
+        "format": "bozer-neural-v0.2",
+        "config": config.to_dict(),
+        "tokenizer": tokenizer.to_dict(),
+        "model_state_dict": model.state_dict(),
+        "training": metrics,
+    }
     torch.save(payload, destination)
     destination.with_suffix(".json").write_text(
-        json.dumps({k:v for k,v in payload.items() if k != "model_state_dict"},
+        json.dumps({key: value for key, value in payload.items() if key != "model_state_dict"},
                    ensure_ascii=False, indent=2), encoding="utf-8")
     return first_train_loss, last_train_loss, best_validation_loss
 
@@ -86,10 +102,11 @@ def main():
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--eval-interval", type=int, default=50)
+    parser.add_argument("--tokenizer-vocab-size", type=int, default=512)
     args = parser.parse_args()
     train(args.data, args.output, args.steps, args.batch_size,
           validation_fraction=args.validation_fraction, eval_interval=args.eval_interval,
-          validation_data_path=args.validation_data)
+          validation_data_path=args.validation_data, tokenizer_vocab_size=args.tokenizer_vocab_size)
 
 
 if __name__ == "__main__":

@@ -1,13 +1,17 @@
-"""JSONL dialogue loader and next-byte batches."""
+"""JSONL dialogue loader and next-token batches."""
 import json
 from pathlib import Path
 import torch
 from .tokenizer import BozerByteTokenizer
 
 
-def _format_jsonl(path):
+def read_corpus_text(path):
+    path = Path(path)
+    if path.suffix.lower() != ".jsonl":
+        return path.read_text(encoding="utf-8")
+
     lines = []
-    for number, raw in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
+    for number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if not raw.strip():
             continue
         try:
@@ -16,21 +20,21 @@ def _format_jsonl(path):
             raise ValueError(f"invalid JSONL at {path}:{number}: {exc}") from exc
         if not isinstance(item, dict):
             raise ValueError(f"record at {path}:{number} must be an object")
-        fields = [item.get(k) for k in ("category", "user", "assistant")]
-        if not all(isinstance(x, str) and x.strip() for x in fields):
+        fields = [item.get(key) for key in ("category", "user", "assistant")]
+        if not all(isinstance(value, str) and value.strip() for value in fields):
             raise ValueError(f"record at {path}:{number} needs category, user and assistant")
-        lines.append(f"Utilisateur : {fields[1].strip()}\nBOZER : {fields[2].strip()}\n")
+        lines.extend((f"Utilisateur : {fields[1].strip()}", f"BOZER : {fields[2].strip()}"))
     if not lines:
         raise ValueError(f"corpus is empty: {path}")
     return "\n".join(lines)
 
 
-def load_corpus(path):
-    path = Path(path)
-    text = _format_jsonl(path) if path.suffix.lower() == ".jsonl" else path.read_text(encoding="utf-8")
+def load_corpus(path, tokenizer=None):
+    text = read_corpus_text(path)
     if not text.strip():
         raise ValueError("training corpus is empty")
-    ids = BozerByteTokenizer().encode(text)
+    tokenizer = tokenizer or BozerByteTokenizer()
+    ids = tokenizer.encode(text)
     if len(ids) < 4:
         raise ValueError("training corpus is too short")
     return torch.tensor(ids, dtype=torch.long)
