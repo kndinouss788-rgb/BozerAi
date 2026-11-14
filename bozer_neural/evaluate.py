@@ -118,11 +118,20 @@ def main():
     parser.add_argument("--batches", type=int, default=12)
     parser.add_argument("--samples", type=int, default=36)
     parser.add_argument("--max-new-tokens", type=int, default=96)
+    parser.add_argument("--report", default=None,
+                        help="optional path for a machine-readable JSON evaluation report")
     args = parser.parse_args()
     result = evaluate(
         args.checkpoint, args.data, batches=args.batches,
         samples=args.samples, max_new_tokens=args.max_new_tokens
     )
+    if args.report:
+        report_path = Path(args.report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        print(f"evaluation_report={report_path}")
     print(
         f"test_loss={result['test_loss']:.4f} test_tokens={result['test_tokens']} "
         f"tokenizer_vocab_size={result['tokenizer_vocab_size']} "
