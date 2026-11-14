@@ -65,6 +65,7 @@ def validate_splits(train_path, validation_path, test_path):
         "test": read_records(test_path),
     }
     prompt_owner = {}
+    all_turn_prompt_owner = {}
     scenario_owner = {}
     report = {}
     for name, records in splits.items():
@@ -81,6 +82,21 @@ def validate_splits(train_path, validation_path, test_path):
                     f"{item['user']}"
                 )
             prompt_owner[key] = name
+            # History is context too: the same dialogue turn must not leak
+            # from training into validation or the untouched test partition.
+            dialogue_prompts = [
+                *(turn["user"] for turn in item.get("history", [])),
+                item["user"],
+            ]
+            for dialogue_prompt in dialogue_prompts:
+                dialogue_key = normalize_prompt(dialogue_prompt)
+                previous_split = all_turn_prompt_owner.get(dialogue_key)
+                if previous_split is not None and previous_split != name:
+                    raise ValueError(
+                        f"dialogue-history leakage between {previous_split} and {name}: "
+                        f"{dialogue_prompt}"
+                    )
+                all_turn_prompt_owner.setdefault(dialogue_key, name)
             scenario_id = item.get("scenario_id")
             if scenario_id:
                 if scenario_id in scenario_owner:
