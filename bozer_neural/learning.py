@@ -114,7 +114,7 @@ def main():
     add.add_argument("--pending", default="data/bozer_learning/pending_feedback.jsonl")
     approve = sub.add_parser("approve", help="promote reviewed examples into training data")
     approve.add_argument("--pending", default="data/bozer_learning/pending_feedback.jsonl")
-    approve.add_argument("--training", default="data/bozer_neural_v0_3/train_fr.jsonl")
+    approve.add_argument("--training", default="data/bozer_neural_v0_4/train_fr.jsonl")
     approve.add_argument("--id", dest="record_id")
     args = parser.parse_args()
     if args.command == "submit":
