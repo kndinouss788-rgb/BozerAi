@@ -77,6 +77,51 @@ def split_corpus(tokens, validation_fraction=0.1, context_length=128):
     return train_tokens, validation_tokens
 
 
+
+def load_corpus_by_category(path, tokenizer=None):
+    """Build independent token streams so training can sample categories evenly."""
+    path = Path(path)
+    if path.suffix.lower() != ".jsonl":
+        return None
+    tokenizer = tokenizer or BozerByteTokenizer()
+    buckets = {}
+    for item in read_records(path):
+        tokens = tokenizer.encode(format_record(item))
+        buckets.setdefault(item["category"], []).extend(tokens)
+    return {
+        category: torch.tensor(tokens, dtype=torch.long)
+        for category, tokens in sorted(buckets.items())
+    }
+
+
+def get_balanced_batch(category_tokens, batch_size, context_length,
+                       device="cpu", generator=None):
+    """Choose categories evenly across each batch, then sample a legal window."""
+    if not isinstance(category_tokens, dict) or not category_tokens:
+        raise ValueError("category_tokens must be a non-empty category-to-tensor mapping")
+    if batch_size < 1 or context_length < 1:
+        raise ValueError("batch_size and context_length must be positive")
+    categories = sorted(category_tokens)
+    for category in categories:
+        stream = category_tokens[category]
+        if stream.ndim != 1 or stream.numel() <= context_length:
+            raise ValueError(
+                f"category {category!r} needs at least {context_length + 1} tokens"
+            )
+    offset = int(torch.randint(len(categories), (1,), generator=generator))
+    category_indexes = (torch.arange(batch_size) + offset) % len(categories)
+    category_indexes = category_indexes[torch.randperm(batch_size, generator=generator)]
+    inputs, targets = [], []
+    for index in category_indexes.tolist():
+        stream = category_tokens[categories[index]]
+        start = int(torch.randint(
+            0, stream.numel() - context_length, (1,), generator=generator
+        ))
+        inputs.append(stream[start:start + context_length])
+        targets.append(stream[start + 1:start + context_length + 1])
+    return torch.stack(inputs).to(device), torch.stack(targets).to(device)
+
+
 def get_batch(tokens, batch_size, context_length, device="cpu", generator=None):
     if tokens.ndim != 1:
         raise ValueError("tokens must be a one-dimensional tensor")
