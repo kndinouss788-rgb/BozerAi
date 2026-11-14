@@ -11,6 +11,7 @@ from .data import (
     load_supervised_corpus,
     load_supervised_corpus_by_category,
     read_corpus_text,
+    ensure_disjoint_prompts,
 )
 from .model import BozerTransformer
 from .tokenizer import BozerByteBPETokenizer
@@ -132,7 +133,9 @@ def train(data_path, output_path, steps=600, batch_size=8,
 
     train_tokens, train_loss_mask = load_supervised_corpus(data_path, tokenizer)
     train_category_data = load_supervised_corpus_by_category(data_path, tokenizer)
+    split_audit = None
     if validation_data_path:
+        split_audit = ensure_disjoint_prompts(data_path, validation_data_path)
         validation_tokens, validation_loss_mask = load_supervised_corpus(
             validation_data_path, tokenizer
         )
@@ -217,6 +220,7 @@ def train(data_path, output_path, steps=600, batch_size=8,
         "train_tokens": int(train_tokens.numel()),
         "validation_tokens": int(validation_tokens.numel()),
         "training_objective": "assistant_answer_tokens_and_eos_only",
+        "split_audit": split_audit,
         "eval_history": history,
     }
     _atomic_torch_save(
@@ -305,6 +309,7 @@ def train(data_path, output_path, steps=600, batch_size=8,
             "min_lr_ratio": min_lr_ratio, "device": str(target_device),
             "best_checkpoint": str(best_path),
             "training_objective": "assistant_answer_tokens_and_eos_only",
+            "split_audit": split_audit,
             "train_generator_state": train_generator.get_state(),
             "eval_history": history,
         }
