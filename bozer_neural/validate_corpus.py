@@ -57,9 +57,9 @@ def validate_splits(train_path, validation_path, test_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train", default="data/bozer_neural_v0_2/train_fr.jsonl")
-    parser.add_argument("--validation", default="data/bozer_neural_v0_2/validation_fr.jsonl")
-    parser.add_argument("--test", default="data/bozer_neural_v0_2/test_fr.jsonl")
+    parser.add_argument("--train", default="data/bozer_neural_v0_3/train_fr.jsonl")
+    parser.add_argument("--validation", default="data/bozer_neural_v0_3/validation_fr.jsonl")
+    parser.add_argument("--test", default="data/bozer_neural_v0_3/test_fr.jsonl")
     args = parser.parse_args()
     result = validate_splits(args.train, args.validation, args.test)
     for split, counts in result.items():
