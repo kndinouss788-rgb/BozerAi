@@ -22,6 +22,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: requirements-neural.txt
       - name: Install PyTorch
         run: python -m pip install -r requirements-neural.txt
       - name: Validate categorized corpus and split leakage
@@ -31,4 +32,17 @@ jobs:
       - name: Verify feedback-learning command
         run: python -m bozer_neural.learning --help
       - name: Verify baseline architecture
-        run: python -c "from bozer_neural import BozerTransformer; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print(f'Baseline parameters: {n}'); assert n == 124864"
+        run: python -c "from bozer_neural import BozerTransformer, BozerConfig; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print(f'Baseline parameters: {n}'); assert n == BozerConfig().parameter_count() == 124864"
+      - name: Run a short real training smoke test
+        run: python -m bozer_neural.train --steps 10 --batch-size 2 --grad-accum-steps 1 --eval-interval 5 --eval-batches 1 --warmup-steps 2 --early-stopping-patience 0 --output artifacts/bozer-neural-ci.pt
+      - name: Evaluate the best smoke checkpoint on the untouched test split
+        run: python -m bozer_neural.evaluate --checkpoint artifacts/bozer-neural-ci.best.pt --data data/bozer_neural_v0_4/test_fr.jsonl --batches 2 --samples 12 --max-new-tokens 48
+      - name: Upload reproducible smoke checkpoints
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozer-neural-v0-4-smoke
+          path: |
+            artifacts/bozer-neural-ci.pt
+            artifacts/bozer-neural-ci.json
+            artifacts/bozer-neural-ci.best.pt
+          if-no-files-found: error
