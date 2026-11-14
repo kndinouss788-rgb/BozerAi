@@ -34,6 +34,19 @@ def read_records(path):
                 raise ValueError(f"{path}:{line_number}: missing/invalid {key}")
         if item["category"] not in CATEGORIES:
             raise ValueError(f"{path}:{line_number}: unknown category {item['category']}")
+        history = item.get("history", [])
+        if not isinstance(history, list):
+            raise ValueError(f"{path}:{line_number}: history must be a list")
+        for turn_number, turn in enumerate(history, 1):
+            if not isinstance(turn, dict):
+                raise ValueError(
+                    f"{path}:{line_number}: history turn {turn_number} must be an object"
+                )
+            for key in ("user", "assistant"):
+                if not isinstance(turn.get(key), str) or not turn[key].strip():
+                    raise ValueError(
+                        f"{path}:{line_number}: history turn {turn_number} needs non-empty {key}"
+                    )
         scenario_id = item.get("scenario_id")
         if scenario_id is not None and (
             not isinstance(scenario_id, str) or not scenario_id.strip()
