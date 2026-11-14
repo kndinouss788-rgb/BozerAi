@@ -48,7 +48,7 @@ def test_small_model_parameter_count_matches_allocated_parameters():
 
 def test_forward_loss_and_backward_pass():
     torch.manual_seed(7)
-    model = BozerNeural1B(tiny_config())
+    model = BozerNeural1B(tiny_config(), gradient_checkpointing=True)
     input_ids = torch.randint(0, 300, (2, 8), dtype=torch.long)
     targets = torch.randint(0, 300, (2, 8), dtype=torch.long)
     loss_mask = torch.zeros((2, 8))
