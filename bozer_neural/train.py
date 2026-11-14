@@ -24,16 +24,28 @@ def estimate_loss(model, tokens, config, batches=8, batch_size=16):
 def train(data_path, output_path, steps=300, batch_size=16,
           learning_rate=3e-4, seed=19, validation_fraction=0.1,
           eval_interval=50, eval_batches=8, validation_data_path=None,
-          tokenizer_vocab_size=512):
+          tokenizer_vocab_size=512, resume_checkpoint=None):
     if steps < 1 or eval_interval < 1 or eval_batches < 1:
         raise ValueError("steps, eval_interval and eval_batches must be >= 1")
     torch.manual_seed(seed)
 
-    # The tokenizer is learned from training text only; validation/test never alter its vocabulary.
-    tokenizer = BozerByteBPETokenizer.train(
-        read_corpus_text(data_path), vocab_size=tokenizer_vocab_size
-    )
+    # First training learns a tokenizer from train data only. Fine-tuning reuses
+    # the checkpoint tokenizer so the vocabulary and existing weights stay aligned.
+    previous = None
+    if resume_checkpoint:
+        previous = torch.load(resume_checkpoint, map_location="cpu", weights_only=False)
+        if previous.get("format") not in ("bozer-neural-v0.1", "bozer-neural-v0.2", "bozer-neural-v0.3"):
+            raise ValueError("unsupported resume checkpoint format")
+        if not previous.get("tokenizer"):
+            raise ValueError("resume checkpoint has no learned tokenizer")
+        tokenizer = BozerByteBPETokenizer.from_dict(previous["tokenizer"])
+    else:
+        tokenizer = BozerByteBPETokenizer.train(
+            read_corpus_text(data_path), vocab_size=tokenizer_vocab_size
+        )
     config = BozerConfig(vocab_size=tokenizer.vocab_size)
+    if previous and previous.get("config") != config.to_dict():
+        raise ValueError("resume checkpoint architecture differs from current configuration")
     train_tokens = load_corpus(data_path, tokenizer)
     if validation_data_path:
         validation_tokens = load_corpus(validation_data_path, tokenizer)
@@ -53,6 +65,8 @@ def train(data_path, output_path, steps=300, batch_size=16,
         )
 
     model = BozerTransformer(config)
+    if previous:
+        model.load_state_dict(previous["model_state_dict"])
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     model.train()
     first_train_loss = last_train_loss = None
@@ -84,6 +98,7 @@ def train(data_path, output_path, steps=300, batch_size=16,
         "split_mode": split_mode,
         "tokenizer_vocab_size": tokenizer.vocab_size,
         "tokenizer_merges": len(tokenizer.merges),
+        "resumed_from": str(resume_checkpoint) if resume_checkpoint else None,
         "validation_fraction": validation_fraction if split_mode == "contiguous_holdout" else None,
         "eval_history": history,
     }
@@ -111,10 +126,12 @@ def main():
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--eval-interval", type=int, default=50)
     parser.add_argument("--tokenizer-vocab-size", type=int, default=512)
+    parser.add_argument("--resume", default=None, help="fine-tune from a saved BOZER checkpoint")
     args = parser.parse_args()
     train(args.data, args.output, args.steps, args.batch_size,
           validation_fraction=args.validation_fraction, eval_interval=args.eval_interval,
-          validation_data_path=args.validation_data, tokenizer_vocab_size=args.tokenizer_vocab_size)
+          validation_data_path=args.validation_data, tokenizer_vocab_size=args.tokenizer_vocab_size,
+          resume_checkpoint=args.resume)
 
 
 if __name__ == "__main__":
