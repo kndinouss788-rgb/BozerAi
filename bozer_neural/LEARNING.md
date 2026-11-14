@@ -41,6 +41,25 @@ python -m bozer_neural.train \
 
 Le tokenizer du checkpoint est réutilisé pour garder les identifiants de tokens compatibles avec les poids déjà appris. Le modèle est affiné à partir de ces poids, au lieu de repartir de zéro.
 
+## Apprentissage conversationnel
+
+Les nouveaux exemples peuvent inclure un champ `history`, une liste ordonnée d'échanges précédents :
+
+```json
+{
+  "category": "dialogue_naturel",
+  "history": [
+    {"user": "Je préfère les réponses courtes.", "assistant": "Compris."}
+  ],
+  "user": "Explique ce calcul.",
+  "assistant": "Je vais donner les étapes simplement."
+}
+```
+
+L'historique sert de contexte. La fonction de perte ne cible que la réponse courante de BOZER et son marqueur de fin. L'évaluateur réutilise le même format de conversation pour éviter un décalage entre entraînement et génération.
+
+Pour lancer l'entraînement complet sur GitHub, utiliser le workflow manuel **BOZER NEURAL V0.4 full training** dans l'onglet Actions de la branche `bozer-neural-v0.1`. Il produit un checkpoint et un rapport de test si l'exécution arrive au bout.
+
 ## Limites et précautions
 
 - L'approbation du corpus et l'entraînement sont deux opérations séparées.
