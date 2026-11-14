@@ -3,8 +3,11 @@ import tempfile
 import unittest
 from pathlib import Path
 import torch
-from bozer_neural.data import (get_balanced_batch, get_batch, load_corpus,
-                               load_corpus_by_category, read_records, split_corpus)
+from bozer_neural.data import (
+    get_balanced_batch, get_batch, get_supervised_batch,
+    load_corpus, load_corpus_by_category, load_supervised_corpus,
+    load_supervised_corpus_by_category, read_records, split_corpus
+)
 from bozer_neural.evaluate import evaluate
 from bozer_neural.config import BozerConfig
 from bozer_neural.model import BozerTransformer
@@ -93,12 +96,15 @@ class NeuralTests(unittest.TestCase):
             self.assertEqual(saved["config"]["vocab_size"], saved["tokenizer"]["vocab_size"])
             self.assertIn("optimizer_state_dict", saved)
             self.assertEqual(saved["training"]["global_step"], 2)
+            self.assertEqual(saved["training"]["training_objective"], "assistant_answer_tokens_and_eos_only")
             self.assertTrue(output.with_name("model.best.pt").is_file())
             self.assertTrue(all(torch.isfinite(torch.tensor(value)).item() for value in (first, last, best)))
 
             result = evaluate(str(output), str(test_file), batches=1, batch_size=2,
                               samples=1, max_new_tokens=8)
             self.assertEqual(len(result["examples"]), 1)
+            self.assertEqual(result["training_objective"], "assistant_answer_tokens_and_eos_only")
+            self.assertIn("dialogue_naturel", result["category_test_loss"])
             self.assertGreater(result["tokenizer_vocab_size"], 259)
             self.assertIn("generated", result["examples"][0])
 
@@ -219,6 +225,72 @@ class NeuralTests(unittest.TestCase):
         )
         self.assertEqual(sorted(x[:, 0].tolist()), [0, 1, 2, 3, 4, 5])
         self.assertTrue(torch.equal(x[:, 1:], y[:, :-1]))
+
+    def test_supervised_mask_only_trains_assistant_answer_and_eos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "supervised.jsonl"
+            row = {
+                "category": "dialogue_naturel",
+                "user": "Bonjour, tu es disponible ?",
+                "assistant": "Oui, je suis disponible."
+            }
+            path.write_text(json.dumps(row, ensure_ascii=False) + chr(10), encoding="utf-8")
+            tokenizer = BozerByteBPETokenizer.train(
+                "Utilisateur : Bonjour, tu es disponible ?\\nBOZER : Oui, je suis disponible.",
+                vocab_size=320
+            )
+            tokens, mask = load_supervised_corpus(path, tokenizer)
+            prompt_ids = tokenizer.encode(
+                "Utilisateur : Bonjour, tu es disponible ?\\nBOZER : ",
+                add_special_tokens=False
+            )
+            answer_ids = tokenizer.encode(
+                "Oui, je suis disponible.", add_special_tokens=False
+            )
+            self.assertEqual(int(mask.sum()), len(answer_ids) + 1)
+            self.assertTrue(torch.equal(mask[:1 + len(prompt_ids)],
+                                        torch.zeros(1 + len(prompt_ids))))
+            self.assertTrue(torch.equal(mask[1 + len(prompt_ids):],
+                                        torch.ones(len(answer_ids) + 1)))
+            x, y, selected_mask = get_supervised_batch(
+                tokens, mask, batch_size=4, context_length=32,
+                generator=torch.Generator().manual_seed(5)
+            )
+            self.assertTrue(torch.all(selected_mask.sum(dim=1) > 0))
+            model = BozerTransformer(BozerConfig(vocab_size=tokenizer.vocab_size))
+            _, loss = model(x, y, loss_mask=selected_mask)
+            self.assertTrue(torch.isfinite(loss).item())
+
+    def test_masked_model_loss_rejects_empty_mask(self):
+        model = BozerTransformer()
+        ids = torch.randint(0, 259, (2, 8))
+        with self.assertRaises(ValueError):
+            model(ids, ids, loss_mask=torch.zeros_like(ids, dtype=torch.float32))
+
+    def test_category_supervised_streams_preserve_masks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "category.jsonl"
+            rows = [
+                {"category": "dialogue_naturel", "user": f"Bonjour {i}",
+                 "assistant": "Je suis disponible pour t'aider avec cette demande."}
+                for i in range(8)
+            ]
+            path.write_text(
+                "\\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\\n",
+                encoding="utf-8")
+            tokenizer = BozerByteBPETokenizer.train(
+                "\\n".join(f"Utilisateur : Bonjour {i}\\nBOZER : Je suis disponible pour t'aider avec cette demande." for i in range(8)),
+                vocab_size=320
+            )
+            grouped = load_supervised_corpus_by_category(path, tokenizer)
+            self.assertEqual(set(grouped), {"dialogue_naturel"})
+            values = grouped["dialogue_naturel"]
+            self.assertEqual(values["tokens"].numel(), values["loss_mask"].numel())
+            x, y, mask = get_supervised_batch(
+                values["tokens"], values["loss_mask"], 4, 24,
+                generator=torch.Generator().manual_seed(17)
+            )
+            self.assertTrue(torch.all(mask.sum(dim=1) > 0))
 
 
 if __name__ == "__main__":
