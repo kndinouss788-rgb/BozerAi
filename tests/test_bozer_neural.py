@@ -127,6 +127,47 @@ class NeuralTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "different files"):
                 ensure_disjoint_prompts(training, training)
 
+    def test_runtime_split_guard_rejects_history_leakage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            training = root / "train_fr.jsonl"
+            validation = root / "validation_fr.jsonl"
+            train_row = {
+                "category": "dialogue_naturel", "user": "Question actuelle",
+                "assistant": "Réponse actuelle",
+                "history": [{"user": "Question déjà vue", "assistant": "Réponse passée"}],
+            }
+            validation_row = {
+                "category": "dialogue_naturel", "user": "Question déjà vue",
+                "assistant": "Une autre réponse",
+            }
+            training.write_text(json.dumps(train_row, ensure_ascii=False) + chr(10), encoding="utf-8")
+            validation.write_text(json.dumps(validation_row, ensure_ascii=False) + chr(10), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "history turns"):
+                ensure_disjoint_prompts(training, validation)
+
+    def test_corpus_validation_rejects_history_leakage_between_splits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = [Path(tmp) / name for name in ("train.jsonl", "validation.jsonl", "test.jsonl")]
+            for index, path in enumerate(paths):
+                rows = [
+                    {"category": category, "user": f"question {index} {category}",
+                     "assistant": "réponse"}
+                    for category in CATEGORIES
+                ]
+                if index == 0:
+                    rows[0]["history"] = [
+                        {"user": "une ancienne demande", "assistant": "ancienne réponse"}
+                    ]
+                if index == 1:
+                    rows[0]["user"] = "une ancienne demande"
+                path.write_text(
+                    "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n",
+                    encoding="utf-8",
+                )
+            with self.assertRaisesRegex(ValueError, "dialogue-history leakage"):
+                validate_splits(*map(str, paths))
+
     def test_corpus_validation_rejects_leakage(self):
         with tempfile.TemporaryDirectory() as tmp:
             files = [Path(tmp)/"a.jsonl", Path(tmp)/"b.jsonl", Path(tmp)/"c.jsonl"]
