@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import torch
 from .config import BozerConfig
-from .data import get_batch, load_corpus
+from .data import get_batch, get_balanced_batch, load_corpus, load_corpus_by_category
 from .model import BozerTransformer
 from .tokenizer import BozerByteBPETokenizer, BozerByteTokenizer, EOS
 
@@ -30,11 +30,29 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
         raise ValueError("checkpoint tokenizer and model vocabulary do not match")
 
     tokens = load_corpus(data_path, tokenizer)
+    category_tokens = load_corpus_by_category(data_path, tokenizer)
     losses = []
-    for _ in range(batches):
-        x, y = get_batch(tokens, batch_size, config.context_length)
-        _, loss = model(x, y)
-        losses.append(float(loss))
+    category_test_loss = {}
+    if category_tokens:
+        for category, stream in category_tokens.items():
+            category_generator = torch.Generator(device="cpu").manual_seed(seed)
+            category_losses = []
+            for _ in range(batches):
+                x, y = get_batch(
+                    stream, batch_size, config.context_length,
+                    generator=category_generator
+                )
+                _, loss = model(x, y)
+                category_losses.append(float(loss))
+            category_test_loss[category] = sum(category_losses) / len(category_losses)
+        # Macro-average so long answers in one category cannot dominate the score.
+        test_loss = sum(category_test_loss.values()) / len(category_test_loss)
+    else:
+        for _ in range(batches):
+            x, y = get_batch(tokens, batch_size, config.context_length)
+            _, loss = model(x, y)
+            losses.append(float(loss))
+        test_loss = sum(losses) / len(losses)
 
     records = [json.loads(line) for line in Path(data_path).read_text(encoding="utf-8").splitlines()
                if line.strip()]
@@ -67,7 +85,8 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
             "reference": item["assistant"], "generated": tokenizer.decode(completion),
         })
     return {
-        "test_loss": sum(losses) / len(losses),
+        "test_loss": test_loss,
+        "category_test_loss": category_test_loss,
         "test_tokens": int(tokens.numel()),
         "evaluated_categories": sorted({item["category"] for item in outputs}),
         "tokenizer_vocab_size": tokenizer.vocab_size,
