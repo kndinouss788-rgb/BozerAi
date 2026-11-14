@@ -7,7 +7,7 @@ from bozer_neural.data import (
     get_balanced_batch, get_batch, get_supervised_batch,
     load_corpus, load_corpus_by_category, load_supervised_corpus,
     load_supervised_corpus_by_category, read_records, split_corpus,
-    ensure_disjoint_prompts
+    ensure_disjoint_prompts, format_prompt
 )
 from bozer_neural.evaluate import evaluate
 from bozer_neural.config import BozerConfig
@@ -189,6 +189,21 @@ class NeuralTests(unittest.TestCase):
             self.assertEqual(second["training"]["global_step"], 4)
             self.assertEqual(second["tokenizer"], first["tokenizer"])
             self.assertIn("optimizer_state_dict", second)
+
+    def test_multiturn_history_is_included_in_prompt_context(self):
+        item = {
+            "category": "dialogue_naturel",
+            "history": [
+                {"user": "Je préfère les réponses courtes.", "assistant": "Compris."},
+                {"user": "Explique aussi les calculs.", "assistant": "Je montrerai les étapes."},
+            ],
+            "user": "Combien font 12 plus 8 ?",
+            "assistant": "12 + 8 = 20.",
+        }
+        prompt = format_prompt(item)
+        self.assertIn("Je préfère les réponses courtes.", prompt)
+        self.assertIn("Je montrerai les étapes.", prompt)
+        self.assertTrue(prompt.endswith("Utilisateur : Combien font 12 plus 8 ?\\nBOZER : "))
 
     def test_jsonl_loader_adds_boundaries_to_each_dialogue(self):
         with tempfile.TemporaryDirectory() as tmp:
