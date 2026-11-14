@@ -209,6 +209,35 @@ def get_balanced_batch(category_tokens, batch_size, context_length,
     return x, y
 
 
+
+def get_balanced_batch(category_tokens, batch_size, context_length,
+                       device="cpu", generator=None):
+    """Compatibility sampler for unmasked token streams."""
+    if not isinstance(category_tokens, dict) or not category_tokens:
+        raise ValueError("category_tokens must be a non-empty category-to-tensor mapping")
+    if batch_size < 1 or context_length < 1:
+        raise ValueError("batch_size and context_length must be positive")
+    categories = sorted(category_tokens)
+    for category in categories:
+        stream = category_tokens[category]
+        if stream.ndim != 1 or stream.numel() <= context_length:
+            raise ValueError(
+                f"category {category!r} needs at least {context_length + 1} tokens"
+            )
+    offset = int(torch.randint(len(categories), (1,), generator=generator))
+    category_indexes = (torch.arange(batch_size) + offset) % len(categories)
+    category_indexes = category_indexes[torch.randperm(batch_size, generator=generator)]
+    batches = [
+        get_batch(
+            category_tokens[categories[index]], 1, context_length,
+            device=device, generator=generator
+        )
+        for index in category_indexes.tolist()
+    ]
+    return tuple(torch.cat([batch[position] for batch in batches], dim=0)
+                 for position in range(2))
+
+
 def split_corpus(tokens, validation_fraction=0.1, context_length=128):
     if not 0.0 < validation_fraction < 0.5:
         raise ValueError("validation_fraction must be between 0 and 0.5")
