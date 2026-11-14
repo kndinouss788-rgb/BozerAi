@@ -303,12 +303,15 @@ def train(data_path, output_path, steps=600, batch_size=8,
         history.append({
             "global_step": current_step, "learning_rate": lr,
             "train_loss": train_eval, "validation_loss": val_eval,
+            "category_validation_loss": category_val_eval,
             "improved": improved,
         })
         print(
             f"step={current_step}/{total_target_step} lr={lr:.7g} "
             f"train_loss={train_eval:.4f} validation_loss={val_eval:.4f}"
         )
+        for category, category_loss in sorted(category_val_eval.items()):
+            print(f"  validation[{category}]={category_loss:.4f}")
 
         metrics = {
             "steps": current_step - global_step,
