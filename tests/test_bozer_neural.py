@@ -200,6 +200,19 @@ class NeuralTests(unittest.TestCase):
             self.assertEqual(second["tokenizer"], first["tokenizer"])
             self.assertIn("optimizer_state_dict", second)
 
+    def test_read_records_rejects_malformed_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad_history.jsonl"
+            row = {
+                "category": "dialogue_naturel",
+                "user": "Bonjour",
+                "assistant": "Salut",
+                "history": [{"user": "Question précédente", "assistant": ""}],
+            }
+            path.write_text(json.dumps(row, ensure_ascii=False) + chr(10), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "history turn 1"):
+                read_records(path)
+
     def test_multiturn_history_is_included_in_prompt_context(self):
         item = {
             "category": "dialogue_naturel",
