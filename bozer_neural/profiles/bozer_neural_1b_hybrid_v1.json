@@ -1,0 +1,87 @@
+{
+  "profile_id": "bozer-neural-1b-hybrid-v1",
+  "status": "architecture_specification_not_trained",
+  "deployment": {
+    "mode": "local_first_hybrid",
+    "local_core": [
+      "dialogue_generation",
+      "conversation_context",
+      "memory_retrieval",
+      "intent_understanding",
+      "bounded_planning",
+      "offline_android_actions"
+    ],
+    "connected_integrations": [
+      "web_search",
+      "optional_sync",
+      "model_and_tokenizer_updates",
+      "approved_external_services"
+    ],
+    "network_policy": "Local dialogue and local Android actions must not require network. Connected tools are invoked only when needed and authorized.",
+    "remote_model_fallback": false
+  },
+  "model": {
+    "family": "decoder_only_transformer",
+    "parameter_target": 1115785216,
+    "parameter_target_label": "approximately_1.116B",
+    "initialization": "random",
+    "pretrained_weights": false,
+    "layers": 24,
+    "hidden_size": 2048,
+    "query_attention_heads": 16,
+    "key_value_heads": 4,
+    "head_dimension": 128,
+    "key_value_dimension": 512,
+    "feed_forward_size": 5632,
+    "feed_forward": "SwiGLU",
+    "normalization": "RMSNorm",
+    "position_encoding": "RoPE",
+    "attention": "causal_grouped_query_attention",
+    "vocabulary_size": 16384,
+    "tokenizer": "BOZER-owned French-first multilingual BPE",
+    "context_length_tokens": 2048,
+    "embedding_output_weights": "tied"
+  },
+  "estimated_storage": {
+    "fp16_weights_bytes": 2231570432,
+    "int4_packed_weights_raw_bytes": 557892608,
+    "int4_packed_weights_raw_mib": 532.05,
+    "int4_real_file_estimate_mib": "approximately 560-700 MiB depending on quantization metadata and tensor layout",
+    "note": "These are estimates for model weights only. Runtime libraries, tokenizer, app resources, KV cache and other data are additional."
+  },
+  "android_delivery": {
+    "apk_contains_full_model": false,
+    "model_delivery": "downloadable_versioned_GGUF_or_equivalent_after_user_consent",
+    "target_total_installed_storage_bytes": 1073741824,
+    "target_total_installed_storage_label": "approximately 1 GiB",
+    "must_measure": [
+      "base_apk_size",
+      "installed_app_size",
+      "model_file_size",
+      "peak_ram",
+      "cold_start_time",
+      "tokens_per_second",
+      "battery_and_thermal_behavior"
+    ],
+    "device_compatibility_gate": "Do not claim support until measured on the target Android device; 1B int4 may exceed practical memory or speed limits on low-memory phones."
+  },
+  "training": {
+    "from_scratch": true,
+    "current_300_example_corpus_sufficient": false,
+    "requires": [
+      "large_clean_multilingual_corpus",
+      "deduplication_and_contamination_audits",
+      "GPU_training_budget",
+      "checkpointing",
+      "held_out_evaluation",
+      "safety_and_tool_use_evaluations"
+    ],
+    "github_actions_cpu_training_for_final_1b_model": false
+  },
+  "integration_contract": {
+    "native_runtime": "llama.cpp already has a native Android build bridge in the repository; verify the exact runtime version, GGUF support, JNI integration and device performance before selecting the final export.",
+    "local_brain": "The model proposes language and plans; deterministic Android services enforce permissions, approvals and action verification.",
+    "connected_tools": "Search and external integrations return untrusted evidence; the local planner must treat it as data, not instructions.",
+    "privacy": "Conversation history remains local by default. Only explicitly selected query/context is sent to a connected service."
+  }
+}
