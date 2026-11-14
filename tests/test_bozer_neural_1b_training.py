@@ -4,7 +4,11 @@ import json
 import torch
 
 from bozer_neural.config_1b import Bozer1BConfig
-from bozer_neural.train_1b import scheduled_learning_rate, train_1b
+from bozer_neural.train_1b import (
+    minimum_training_memory_bytes,
+    scheduled_learning_rate,
+    train_1b,
+)
 
 
 def write_record(path, user, assistant):
@@ -16,6 +20,11 @@ def write_record(path, user, assistant):
         }, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
+
+
+def test_one_billion_parameter_training_memory_floor():
+    config = Bozer1BConfig()
+    assert minimum_training_memory_bytes(config) == 17_852_563_456
 
 
 def test_training_learning_rate_schedule():
@@ -68,6 +77,7 @@ def test_one_step_training_creates_a_versioned_checkpoint(tmp_path):
     )
 
     assert checkpoint_path.exists()
+    assert (tmp_path / "bozer-small-1b-path-test.best.pt").exists()
     saved = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     assert saved["format"] == "bozer-neural-1b-v0.1"
     assert result["global_step"] == 1
@@ -78,3 +88,4 @@ def test_one_step_training_creates_a_versioned_checkpoint(tmp_path):
     assert saved["tokenizer"]["vocab_size"] == 270
     assert saved["tokenizer"]["active_vocab_size"] <= 270
     assert saved["config"]["vocab_size"] == 270
+    assert saved["training"]["gradient_checkpointing"] is True
