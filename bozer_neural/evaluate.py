@@ -6,6 +6,7 @@ import torch
 from .config import BozerConfig
 from .data import (
     get_supervised_batch,
+    format_prompt,
     load_supervised_corpus,
     load_supervised_corpus_by_category,
     read_records,
@@ -82,7 +83,7 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
 
     outputs = []
     for item in selected:
-        prompt = f"Utilisateur : {item['user'].strip()}\nBOZER : "
+        prompt = format_prompt(item)
         prefix_ids = tokenizer.encode(prompt)[:-1]
         prefix = torch.tensor([prefix_ids], dtype=torch.long)
         prefix = prefix[:, -config.context_length:]
