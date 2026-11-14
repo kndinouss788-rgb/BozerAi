@@ -215,13 +215,16 @@ def train(data_path, output_path, steps=600, batch_size=8,
         optimizer.zero_grad(set_to_none=True)
         micro_losses = []
         for _ in range(grad_accum_steps):
-            x, y = get_batch(
-                train_batch_source, batch_size, config.context_length,
-                device=target_device, generator=train_generator
-            ) if not isinstance(train_batch_source, dict) else get_balanced_batch(
-                train_batch_source, batch_size, config.context_length,
-                device=target_device, generator=train_generator
-            )
+            if isinstance(train_batch_source, dict):
+                x, y = get_balanced_batch(
+                    train_batch_source, batch_size, config.context_length,
+                    device=target_device, generator=train_generator
+                )
+            else:
+                x, y = get_batch(
+                    train_batch_source, batch_size, config.context_length,
+                    device=target_device, generator=train_generator
+                )
             _, loss = model(x, y)
             micro_losses.append(float(loss.detach()))
             (loss / grad_accum_steps).backward()
