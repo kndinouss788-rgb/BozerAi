@@ -16,7 +16,7 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
         raise ValueError("batches and batch_size must be positive; samples cannot be negative")
     torch.manual_seed(seed)
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    if checkpoint.get("format") not in ("bozer-neural-v0.1", "bozer-neural-v0.2"):
+    if checkpoint.get("format") not in ("bozer-neural-v0.1", "bozer-neural-v0.2", "bozer-neural-v0.3"):
         raise ValueError("unsupported checkpoint format")
     config = BozerConfig(**checkpoint["config"])
     model = BozerTransformer(config)
@@ -38,8 +38,20 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
 
     records = [json.loads(line) for line in Path(data_path).read_text(encoding="utf-8").splitlines()
                if line.strip()]
+    # Select test prompts across categories instead of evaluating only the first category.
+    selected = []
+    seen_categories = set()
+    for item in records:
+        if item["category"] not in seen_categories:
+            selected.append(item)
+            seen_categories.add(item["category"])
+    for item in records:
+        if item not in selected and len(selected) < samples:
+            selected.append(item)
+    selected = selected[:samples]
+
     outputs = []
-    for item in records[:samples]:
+    for item in selected:
         prompt = f"Utilisateur : {item['user'].strip()}\nBOZER : "
         prefix_ids = tokenizer.encode(prompt)[:-1]
         prefix = torch.tensor([prefix_ids], dtype=torch.long)
@@ -56,7 +68,7 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
         })
     return {
         "test_loss": sum(losses) / len(losses),
-        "test_tokens": int(tokens.numel()),
+        "test_tokens": int(tokens.numel()),\n        "evaluated_categories": sorted({item["category"] for item in outputs}),
         "tokenizer_vocab_size": tokenizer.vocab_size,
         "examples": outputs,
     }
