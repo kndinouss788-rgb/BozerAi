@@ -1,6 +1,6 @@
 name: BOZER NEURAL V0.4 full training
 
-on:
+"on":
   workflow_dispatch:
 
 permissions:
