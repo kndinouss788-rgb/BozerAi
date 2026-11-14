@@ -8,9 +8,16 @@ MODEL_DIR="/data/user/0/ai.bozer.app/files/models"
 DEVICE_MODEL="$MODEL_DIR/$MODEL_NAME"
 
 collect_diagnostics() {
-  adb logcat -d -v threadtime > bozer-emulator-test.log 2>&1 || true
+  local app_pid
+  app_pid="$(adb shell pidof "$APP_ID" | tr -d '\\r' | awk '{print $1}')"
+  if [ -n "$app_pid" ]; then
+    adb logcat -d -v threadtime --pid="$app_pid" > bozer-emulator-test.log 2>&1 || true
+  else
+    adb logcat -d -v threadtime -s BOZER_E2E:I BOZER_PERF:I BOZER_SEARCH:I BOZER_MODEL:I AndroidRuntime:E > bozer-emulator-test.log 2>&1 || true
+  fi
   adb exec-out screencap -p > bozer-smoke.png 2>/dev/null || true
   adb shell dumpsys meminfo "$APP_ID" > bozer-memory.txt 2>&1 || true
+  adb shell dumpsys cpuinfo | grep -F "$APP_ID" > bozer-cpu.txt 2>&1 || true
 }
 trap collect_diagnostics EXIT
 
@@ -39,13 +46,18 @@ adb shell appops get "$APP_ID" SYSTEM_ALERT_WINDOW
 adb logcat -c
 gradle :app:connectedDebugAndroidTest --no-daemon
 
+# Kill the real app process, then launch a fresh instrumentation process. The
+# second test proves that SQLite history, explicit memory and GGUF loading
+# survive an actual process stop rather than only an Activity recreation.
 adb shell am force-stop "$APP_ID"
-adb shell am start -n "$APP_ID/.MainActivity"
-sleep 8
+sleep 2
+gradle :app:connectedDebugAndroidTest --no-daemon \
+  -Pandroid.testInstrumentationRunnerArguments.class=ai.bozer.app.ProcessRestartPersistenceTest
+
 adb shell pidof "$APP_ID" | grep -Eq '[0-9]'
 collect_diagnostics
 
-if grep -Eq 'FATAL EXCEPTION|E/AndroidRuntime|Process: ai[.]bozer[.]app' bozer-emulator-test.log; then
+if grep -Eq 'FATAL EXCEPTION|Process: ai[.]bozer[.]app|Fatal signal' bozer-emulator-test.log; then
   cat bozer-emulator-test.log
   echo "AndroidRuntime reported a fatal application error."
   exit 1
@@ -53,4 +65,6 @@ fi
 
 test -s bozer-smoke.png
 grep -q 'PASS: seven local turns' bozer-emulator-test.log
-echo "PASS: install, pinned GGUF checksum, instrumented tests, live local inference, network search and restart diagnostics"
+grep -q 'PASS: process restart restored history, memory and model' bozer-emulator-test.log
+test -s bozer-memory.txt
+echo "PASS: install, pinned GGUF checksum, real multi-turn inference, real Android network search, process-restart memory and history"
