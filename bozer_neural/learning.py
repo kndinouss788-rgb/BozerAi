@@ -69,9 +69,11 @@ def submit_feedback(pending_path, category, user, assistant):
 def approve_feedback(pending_path, training_path, record_id=None):
     """Explicitly promote reviewed examples into the training split only."""
     training_path = Path(training_path)
-    forbidden = {"test", "validation", "val"}
-    if any(part.casefold() in forbidden for part in training_path.parts):
+    target_name = training_path.name.casefold()
+    if any(marker in target_name for marker in ("test", "validation", "val")):
         raise ValueError("feedback can only be approved into a training file")
+    if "train" not in target_name:
+        raise ValueError("target filename must clearly identify the training split")
     pending = _read_jsonl(pending_path)
     if not pending:
         raise ValueError("there is no pending feedback to approve")
