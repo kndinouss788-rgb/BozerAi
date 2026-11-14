@@ -103,9 +103,9 @@ def train(data_path, output_path, steps=300, batch_size=16,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default="data/bozer_neural_v0_2/train_fr.jsonl")
-    parser.add_argument("--validation-data", default="data/bozer_neural_v0_2/validation_fr.jsonl")
-    parser.add_argument("--output", default="artifacts/bozer-neural-v0.2.pt")
+    parser.add_argument("--data", default="data/bozer_neural_v0_3/train_fr.jsonl")
+    parser.add_argument("--validation-data", default="data/bozer_neural_v0_3/validation_fr.jsonl")
+    parser.add_argument("--output", default="artifacts/bozer-neural-v0.3.pt")
     parser.add_argument("--steps", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--validation-fraction", type=float, default=0.1)
