@@ -30,5 +30,11 @@ jobs:
           python -m pip install torch pytest
       - name: Compile BOZER NEURAL modules
         run: python -m compileall -q bozer_neural tests
+      - name: Validate French training, validation and test partitions
+        run: |
+          python -m bozer_neural.validate_corpus \
+            --train data/bozer_neural_v0_5/train_fr.jsonl \
+            --validation data/bozer_neural_v0_5/validation_fr.jsonl \
+            --test data/bozer_neural_v0_5/test_fr.jsonl
       - name: Run 1B architecture and tiny training tests
         run: python -m pytest -q tests/test_bozer_neural_1b.py tests/test_bozer_neural_1b_training.py
