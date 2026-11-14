@@ -1,0 +1,62 @@
+name: BOZER NEURAL V0.4 full training
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  train-from-scratch:
+    name: Train, validate and evaluate BOZER NEURAL V0.4
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout isolated neural branch
+        uses: actions/checkout@v4
+        with:
+          ref: bozer-neural-v0.1
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-neural.txt
+      - name: Install PyTorch
+        run: python -m pip install -r requirements-neural.txt
+      - name: Validate corpus partitions
+        run: python -m bozer_neural.validate_corpus
+      - name: Run all neural unit tests
+        run: python -m unittest discover -s tests -p "test_bozer_neural.py" -v
+      - name: Train from random initialization
+        run: |
+          python -m bozer_neural.train \
+            --data data/bozer_neural_v0_4/train_fr.jsonl \
+            --validation-data data/bozer_neural_v0_4/validation_fr.jsonl \
+            --steps 600 \
+            --batch-size 8 \
+            --grad-accum-steps 2 \
+            --eval-interval 25 \
+            --eval-batches 4 \
+            --warmup-steps 20 \
+            --early-stopping-patience 5 \
+            --output artifacts/bozer-neural-v0.4.pt
+      - name: Evaluate the best checkpoint on the untouched test partition
+        run: |
+          python -m bozer_neural.evaluate \
+            --checkpoint artifacts/bozer-neural-v0.4.best.pt \
+            --data data/bozer_neural_v0_4/test_fr.jsonl \
+            --batches 12 \
+            --samples 48 \
+            --max-new-tokens 96 \
+            --report artifacts/bozer-neural-v0.4-test-report.json
+      - name: Upload model and evaluation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozer-neural-v0.4-trained-checkpoint
+          path: |
+            artifacts/bozer-neural-v0.4.pt
+            artifacts/bozer-neural-v0.4.json
+            artifacts/bozer-neural-v0.4.best.pt
+            artifacts/bozer-neural-v0.4-test-report.json
+          if-no-files-found: error
