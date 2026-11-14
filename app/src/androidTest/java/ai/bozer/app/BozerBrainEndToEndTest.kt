@@ -66,10 +66,18 @@ class BozerBrainEndToEndTest {
 
     private fun waitForModelReady() {
         composeRule.onNodeWithTag("bozer_settings").performClick()
-        composeRule.waitUntil(timeoutMillis = 600_000) {
-            composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
+        composeRule.waitUntil(timeoutMillis = 180_000) {
+            val ready = composeRule.onAllNodesWithText("Cerveau local prêt — hors ligne.")
                 .fetchSemanticsNodes().isNotEmpty()
+            val failed = listOf("Chargement impossible", "Installation impossible").any { label ->
+                composeRule.onAllNodesWithText(label, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+            ready || failed
         }
+        val ready = composeRule.onAllNodesWithText("Cerveau local prêt — hors ligne.")
+            .fetchSemanticsNodes().isNotEmpty()
+        assertTrue("Le chargement du modèle local a échoué ou dépassé 180 secondes.", ready)
         composeRule.onNodeWithText("Fermer").performClick()
     }
 

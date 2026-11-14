@@ -8,13 +8,9 @@ MODEL_DIR="/data/user/0/ai.bozer.app/files/models"
 DEVICE_MODEL="$MODEL_DIR/$MODEL_NAME"
 
 collect_diagnostics() {
-  local app_pid
-  app_pid="$(adb shell pidof "$APP_ID" | tr -d '\\r' | awk '{print $1}')"
-  if [ -n "$app_pid" ]; then
-    adb logcat -d -v threadtime --pid="$app_pid" > bozer-emulator-test.log 2>&1 || true
-  else
-    adb logcat -d -v threadtime -s BOZER_E2E:I BOZER_PERF:I BOZER_SEARCH:I BOZER_MODEL:I AndroidRuntime:E > bozer-emulator-test.log 2>&1 || true
-  fi
+  # Instrumentation and target-app logs may use different PIDs. Capture the
+  # required BOZER tags globally so E2E assertions are not hidden by --pid.
+  adb logcat -d -v threadtime -s BOZER_E2E:I BOZER_PERF:I BOZER_SEARCH:I BOZER_MODEL:I AndroidRuntime:E > bozer-emulator-test.log 2>&1 || true
   adb exec-out screencap -p > bozer-smoke.png 2>/dev/null || true
   adb shell dumpsys meminfo "$APP_ID" > bozer-memory.txt 2>&1 || true
   adb shell dumpsys cpuinfo | grep -F "$APP_ID" > bozer-cpu.txt 2>&1 || true
