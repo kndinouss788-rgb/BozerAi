@@ -68,11 +68,11 @@ jobs:
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 33
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 900
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -cores 2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -cores 4
           script: bash .github/scripts/android-emulator-e2e.sh
       - name: Upload emulator screenshot and brain test logs
         if: always()
@@ -83,6 +83,7 @@ jobs:
             bozer-smoke.png
             bozer-emulator-test.log
             bozer-memory.txt
+            bozer-cpu.txt
             app/build/outputs/androidTest-results/connected/
             app/build/reports/androidTests/connected/
           if-no-files-found: ignore
