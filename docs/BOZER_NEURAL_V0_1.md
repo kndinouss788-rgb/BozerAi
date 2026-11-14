@@ -58,6 +58,12 @@ python -m bozer_neural.evaluate --checkpoint artifacts/bozer-neural-v0.4.best.pt
 
 Ne jamais choisir une version uniquement parce que la perte d'entraînement baisse. Comparer la perte de validation, les générations par catégorie, les erreurs de sécurité et les régressions face à la version précédente.
 
+## Lancer l'entraînement complet sur GitHub
+
+Un workflow manuel est disponible dans `.github/workflows/bozer-neural-train.yml`. Dans GitHub, ouvrir l'onglet **Actions**, sélectionner **BOZER NEURAL V0.4 full training**, puis lancer **Run workflow** sur la branche `bozer-neural-v0.1`. Il valide les données, lance les tests, entraîne depuis l'initialisation aléatoire pendant un maximum de 600 étapes, évalue le meilleur checkpoint sur le jeu de test et publie un artefact contenant les poids et le rapport JSON.
+
+Le workflow manuel a été ajouté, mais il n'a pas encore été exécuté avec succès. Les exécutions automatiques observées jusqu'ici se terminent en échec avec zéro job listé ; aucun poids entraîné ne doit donc être considéré comme disponible tant qu'un artefact valide n'a pas été produit.
+
 ## Boucle d'apprentissage contrôlée
 
 Voir `bozer_neural/LEARNING.md`. Les retours sont d'abord placés dans une file d'attente, puis validés par une personne avant d'être ajoutés au fichier d'entraînement. La validation et le test sont protégés. Après ajout, on lance une nouvelle session de fine-tuning en reprenant le checkpoint ; aucune conversation ne modifie automatiquement les poids.
