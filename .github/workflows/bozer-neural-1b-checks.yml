@@ -37,4 +37,4 @@ jobs:
             --validation data/bozer_neural_v0_5/validation_fr.jsonl \
             --test data/bozer_neural_v0_5/test_fr.jsonl
       - name: Run 1B architecture and tiny training tests
-        run: python -m pytest -q tests/test_bozer_neural_1b.py tests/test_bozer_neural_1b_training.py
+        run: python -m pytest -q tests/test_bozer_neural_1b.py tests/test_bozer_neural_1b_training.py tests/test_bozer_neural_1b_evaluation.py
