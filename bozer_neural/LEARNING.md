@@ -21,7 +21,7 @@ Les propositions sont conservées dans `data/bozer_learning/pending_feedback.jso
 
 ```bash
 python -m bozer_neural.learning approve \
-  --training data/bozer_neural_v0_3/train_fr.jsonl
+  --training data/bozer_neural_v0_4/train_fr.jsonl
 ``
 
 On peut approuver un seul élément avec `--id ID`. Le module refuse les chemins de test et de validation et ignore les doublons. Il ne touche jamais aux fichiers de validation/test.
@@ -34,9 +34,9 @@ Après approbation, lancer un nouvel entraînement en reprenant le checkpoint pr
 python -m bozer_neural.train \
   --data data/bozer_neural_v0_3/train_fr.jsonl \
   --validation-data data/bozer_neural_v0_3/validation_fr.jsonl \
-  --resume artifacts/bozer-neural-v0.3.pt \
+  --resume artifacts/bozer-neural-v0.4.pt \
   --output artifacts/bozer-neural-v0.4.pt \
-  --steps 300
+  --steps 600
 ``
 
 Le tokenizer du checkpoint est réutilisé pour garder les identifiants de tokens compatibles avec les poids déjà appris. Le modèle est affiné à partir de ces poids, au lieu de repartir de zéro.
