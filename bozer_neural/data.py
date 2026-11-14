@@ -53,12 +53,20 @@ def ensure_disjoint_prompts(training_path, validation_path):
     def normalize(value):
         return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
 
-    training_prompts = {normalize(row["user"]) for row in read_records(training_path)}
-    validation_prompts = {normalize(row["user"]) for row in read_records(validation_path)}
+    def collect_prompts(path):
+        prompts = set()
+        for row in read_records(path):
+            prompts.update(normalize(turn["user"]) for turn in row["history"])
+            prompts.add(normalize(row["user"]))
+        return prompts
+
+    training_prompts = collect_prompts(training_path)
+    validation_prompts = collect_prompts(validation_path)
     overlap = training_prompts & validation_prompts
     if overlap:
         raise ValueError(
-            f"training/validation leakage: {len(overlap)} normalized prompt(s) overlap"
+            f"training/validation leakage: {len(overlap)} normalized prompt(s) "
+            "overlap across current or history turns"
         )
     return {"training_prompts": len(training_prompts),
             "validation_prompts": len(validation_prompts), "overlap": 0}
