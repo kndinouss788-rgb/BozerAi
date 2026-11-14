@@ -44,6 +44,14 @@ def train(data_path, output_path, steps=300, batch_size=16,
         )
         split_mode = "contiguous_holdout"
 
+    minimum_tokens = config.context_length + 2
+    if train_tokens.numel() < minimum_tokens or validation_tokens.numel() < minimum_tokens:
+        raise ValueError(
+            "corpus too short after tokenizer: "
+            f"train={train_tokens.numel()} tokens, validation={validation_tokens.numel()} tokens; "
+            f"each split needs at least {minimum_tokens}. Add varied examples before training."
+        )
+
     model = BozerTransformer(config)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     model.train()
