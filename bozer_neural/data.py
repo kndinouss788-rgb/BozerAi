@@ -1,8 +1,8 @@
-"""Strict dialogue loading, per-example special tokens and language-model batches."""
+"""Dialogue loading, assistant-only targets and balanced language-model batches."""
 import json
 from pathlib import Path
 import torch
-from .tokenizer import BozerByteTokenizer
+from .tokenizer import BOS, EOS, BozerByteTokenizer
 
 
 def read_records(path):
@@ -32,9 +32,12 @@ def read_records(path):
     return records
 
 
+def format_prompt(item):
+    return f"Utilisateur : {item['user']}\nBOZER : "
+
+
 def format_record(item):
-    """Use the same prompt/answer framing at training and inference time."""
-    return f"Utilisateur : {item['user']}\nBOZER : {item['assistant']}"
+    return format_prompt(item) + item["assistant"]
 
 
 def read_corpus_text(path):
@@ -48,22 +51,132 @@ def read_corpus_text(path):
     return "\n".join(format_record(item) for item in read_records(path))
 
 
-def load_corpus(path, tokenizer=None):
-    """Encode every JSONL example independently as BOS ... EOS, then pack tokens."""
+def _encode_supervised_record(item, tokenizer):
+    # Tokenize prompt and answer separately: same prompt encoding is used at inference.
+    prompt_ids = tokenizer.encode(format_prompt(item), add_special_tokens=False)
+    answer_ids = tokenizer.encode(item["assistant"], add_special_tokens=False)
+    if not answer_ids:
+        raise ValueError("assistant answer produced no tokens")
+    tokens = [BOS] + prompt_ids + answer_ids + [EOS]
+    # Mask is aligned to token positions; only answer tokens and EOS contribute to loss.
+    loss_mask = [0] * (1 + len(prompt_ids)) + [1] * (len(answer_ids) + 1)
+    return tokens, loss_mask
+
+
+def load_supervised_corpus(path, tokenizer=None):
+    """Load packed tokens and a mask that trains only BOZER's answer (plus EOS)."""
     path = Path(path)
     tokenizer = tokenizer or BozerByteTokenizer()
-    if path.suffix.lower() != ".jsonl":
+    all_tokens, all_masks = [], []
+    if path.suffix.lower() == ".jsonl":
+        for item in read_records(path):
+            tokens, mask = _encode_supervised_record(item, tokenizer)
+            all_tokens.extend(tokens)
+            all_masks.extend(mask)
+    else:
         text = path.read_text(encoding="utf-8")
         if not text.strip():
             raise ValueError(f"corpus is empty: {path}")
-        ids = tokenizer.encode(text)
-    else:
-        ids = []
-        for item in read_records(path):
-            ids.extend(tokenizer.encode(format_record(item)))
-    if len(ids) < 4:
+        tokens = tokenizer.encode(text)
+        all_tokens.extend(tokens)
+        all_masks.extend([0] + [1] * (len(tokens) - 1))
+    if len(all_tokens) < 4:
         raise ValueError(f"training corpus is too short: {path}")
-    return torch.tensor(ids, dtype=torch.long)
+    return (
+        torch.tensor(all_tokens, dtype=torch.long),
+        torch.tensor(all_masks, dtype=torch.float32),
+    )
+
+
+def load_supervised_corpus_by_category(path, tokenizer=None):
+    """Build category-isolated streams with assistant-only target masks."""
+    path = Path(path)
+    if path.suffix.lower() != ".jsonl":
+        return None
+    tokenizer = tokenizer or BozerByteTokenizer()
+    buckets = {}
+    for item in read_records(path):
+        tokens, mask = _encode_supervised_record(item, tokenizer)
+        bucket = buckets.setdefault(item["category"], {"tokens": [], "loss_mask": []})
+        bucket["tokens"].extend(tokens)
+        bucket["loss_mask"].extend(mask)
+    return {
+        category: {
+            "tokens": torch.tensor(values["tokens"], dtype=torch.long),
+            "loss_mask": torch.tensor(values["loss_mask"], dtype=torch.float32),
+        }
+        for category, values in sorted(buckets.items())
+    }
+
+
+def load_corpus(path, tokenizer=None):
+    """Compatibility loader for unmasked text and tests."""
+    tokens, _ = load_supervised_corpus(path, tokenizer)
+    return tokens
+
+
+def load_corpus_by_category(path, tokenizer=None):
+    """Compatibility view returning only token streams by category."""
+    grouped = load_supervised_corpus_by_category(path, tokenizer)
+    if grouped is None:
+        return None
+    return {category: values["tokens"] for category, values in grouped.items()}
+
+
+def _eligible_starts(loss_mask, context_length):
+    if loss_mask.ndim != 1:
+        raise ValueError("loss_mask must be a one-dimensional tensor")
+    if loss_mask.numel() <= context_length:
+        raise ValueError("corpus must contain at least context_length + 1 tokens")
+    target_windows = loss_mask[1:].unfold(0, context_length, 1).sum(dim=1)
+    eligible = (target_windows > 0).nonzero(as_tuple=True)[0]
+    if eligible.numel() == 0:
+        raise ValueError("no training window contains an assistant target")
+    return eligible
+
+
+def get_supervised_batch(tokens, loss_mask, batch_size, context_length,
+                         device="cpu", generator=None):
+    """Sample windows that contain answer targets and return the aligned target mask."""
+    if tokens.ndim != 1 or loss_mask.ndim != 1 or tokens.numel() != loss_mask.numel():
+        raise ValueError("tokens and loss_mask must be aligned one-dimensional tensors")
+    if batch_size < 1 or context_length < 1:
+        raise ValueError("batch_size and context_length must be positive")
+    eligible = _eligible_starts(loss_mask, context_length)
+    picks = torch.randint(0, eligible.numel(), (batch_size,), generator=generator)
+    starts = eligible[picks]
+    x = torch.stack([tokens[i:i + context_length] for i in starts])
+    y = torch.stack([tokens[i + 1:i + context_length + 1] for i in starts])
+    mask = torch.stack([loss_mask[i + 1:i + context_length + 1] for i in starts])
+    return x.to(device), y.to(device), mask.to(device)
+
+
+def get_balanced_supervised_batch(category_data, batch_size, context_length,
+                                  device="cpu", generator=None):
+    """Sample categories evenly; within each category, sample an answer-bearing window."""
+    if not isinstance(category_data, dict) or not category_data:
+        raise ValueError("category_data must be a non-empty category-to-stream mapping")
+    if batch_size < 1 or context_length < 1:
+        raise ValueError("batch_size and context_length must be positive")
+    categories = sorted(category_data)
+    for category in categories:
+        values = category_data[category]
+        tokens, mask = values["tokens"], values["loss_mask"]
+        if tokens.ndim != 1 or mask.ndim != 1 or tokens.numel() != mask.numel():
+            raise ValueError(f"category {category!r} has invalid token/mask streams")
+        _eligible_starts(mask, context_length)
+    offset = int(torch.randint(len(categories), (1,), generator=generator))
+    category_indexes = (torch.arange(batch_size) + offset) % len(categories)
+    category_indexes = category_indexes[torch.randperm(batch_size, generator=generator)]
+    batches = []
+    for index in category_indexes.tolist():
+        values = category_data[categories[index]]
+        batches.append(get_supervised_batch(
+            values["tokens"], values["loss_mask"], 1, context_length,
+            device=device, generator=generator
+        ))
+    return tuple(torch.cat([batch[position] for batch in batches], dim=0)
+                 for position in range(3))
 
 
 def split_corpus(tokens, validation_fraction=0.1, context_length=128):
@@ -77,58 +190,12 @@ def split_corpus(tokens, validation_fraction=0.1, context_length=128):
     return train_tokens, validation_tokens
 
 
-
-def load_corpus_by_category(path, tokenizer=None):
-    """Build independent token streams so training can sample categories evenly."""
-    path = Path(path)
-    if path.suffix.lower() != ".jsonl":
-        return None
-    tokenizer = tokenizer or BozerByteTokenizer()
-    buckets = {}
-    for item in read_records(path):
-        tokens = tokenizer.encode(format_record(item))
-        buckets.setdefault(item["category"], []).extend(tokens)
-    return {
-        category: torch.tensor(tokens, dtype=torch.long)
-        for category, tokens in sorted(buckets.items())
-    }
-
-
-def get_balanced_batch(category_tokens, batch_size, context_length,
-                       device="cpu", generator=None):
-    """Choose categories evenly across each batch, then sample a legal window."""
-    if not isinstance(category_tokens, dict) or not category_tokens:
-        raise ValueError("category_tokens must be a non-empty category-to-tensor mapping")
-    if batch_size < 1 or context_length < 1:
-        raise ValueError("batch_size and context_length must be positive")
-    categories = sorted(category_tokens)
-    for category in categories:
-        stream = category_tokens[category]
-        if stream.ndim != 1 or stream.numel() <= context_length:
-            raise ValueError(
-                f"category {category!r} needs at least {context_length + 1} tokens"
-            )
-    offset = int(torch.randint(len(categories), (1,), generator=generator))
-    category_indexes = (torch.arange(batch_size) + offset) % len(categories)
-    category_indexes = category_indexes[torch.randperm(batch_size, generator=generator)]
-    inputs, targets = [], []
-    for index in category_indexes.tolist():
-        stream = category_tokens[categories[index]]
-        start = int(torch.randint(
-            0, stream.numel() - context_length, (1,), generator=generator
-        ))
-        inputs.append(stream[start:start + context_length])
-        targets.append(stream[start + 1:start + context_length + 1])
-    return torch.stack(inputs).to(device), torch.stack(targets).to(device)
-
-
 def get_batch(tokens, batch_size, context_length, device="cpu", generator=None):
+    """Unmasked compatibility sampler; includes the final legal window."""
     if tokens.ndim != 1:
         raise ValueError("tokens must be a one-dimensional tensor")
     if batch_size < 1 or context_length < 1:
         raise ValueError("batch_size and context_length must be positive")
-    # There are N-context_length legal starts. The previous upper bound
-    # accidentally excluded the final legal window.
     start_count = tokens.numel() - context_length
     if start_count < 1:
         raise ValueError("corpus must contain at least context_length + 1 tokens")
