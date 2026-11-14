@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -128,7 +129,7 @@ internal fun BozerChatExperience(
                     ?: throw IllegalStateException("Le fichier du modèle est introuvable.")
                 withContext(Dispatchers.IO) { engine.load(installed.absolutePath) }
                 modelReady = true
-                modelStatus = "Cerveau local prêt."
+                modelStatus = "Cerveau local prêt sur ce téléphone."
             } catch (error: Exception) {
                 modelStatus = "Chargement impossible : " + (error.message ?: "erreur inconnue")
             } finally {
@@ -368,7 +369,7 @@ internal fun BozerChatExperience(
                         )
                         Divider(color = BozerLine)
                         Text("Cerveau local", color = BozerInk, fontWeight = FontWeight.Medium)
-                        Text(modelStatus, color = BozerMuted, fontSize = 12.sp)
+                        Text(modelStatus, modifier = Modifier.testTag("bozer_model_status"), color = BozerMuted, fontSize = 12.sp)
                         if (modelBusy && downloadProgress > 0f) {
                             LinearProgressIndicator(
                                 progress = { downloadProgress },
@@ -624,7 +625,7 @@ private fun BozerTopBar(
         modifier = Modifier.fillMaxWidth().padding(top = 11.dp, bottom = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        BozerRoundButton(kind = "settings", onClick = onSettings)
+        BozerRoundButton(kind = "settings", onClick = onSettings, modifier = Modifier.testTag("bozer_settings"))
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             BozerOrb(size = 23.dp, active = false)
@@ -651,7 +652,7 @@ private fun BozerWelcome(
         Spacer(Modifier.height(19.dp))
         BozerOrb(size = 154.dp, active = false)
         Spacer(Modifier.height(5.dp))
-        Text("Je suis là.", color = BozerInk, fontSize = 30.sp, lineHeight = 37.sp, fontWeight = FontWeight.Medium)
+        Text("Je suis là.", modifier = Modifier.testTag("bozer_welcome"), color = BozerInk, fontSize = 30.sp, lineHeight = 37.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(5.dp))
         Text("Dis-moi ce que tu veux faire.", color = BozerMuted, fontSize = 14.sp)
         Spacer(Modifier.height(25.dp))
@@ -767,7 +768,7 @@ private fun BozerComposer(
         BasicTextField(
             value = draft,
             onValueChange = onDraftChange,
-            modifier = Modifier.weight(1f).padding(horizontal = 9.dp, vertical = 9.dp),
+            modifier = Modifier.weight(1f).padding(horizontal = 9.dp, vertical = 9.dp).testTag("bozer_input"),
             textStyle = TextStyle(color = BozerInk, fontSize = 15.sp, lineHeight = 20.sp),
             cursorBrush = androidx.compose.ui.graphics.SolidColor(BozerAccent),
             decorationBox = { inner ->
@@ -789,7 +790,8 @@ private fun BozerComposer(
                     CircleShape
                 )
                 .border(1.dp, Color.White.copy(alpha = 0.85f), CircleShape)
-                .clickable(enabled = draft.isNotBlank() && !sending, onClick = onSend),
+                .clickable(enabled = draft.isNotBlank() && !sending, onClick = onSend)
+                .testTag("bozer_send"),
             contentAlignment = Alignment.Center
         ) {
             QuickActionGlyph("send", if (draft.isNotBlank() && !sending) Color.White else Color(0xFF9BA8AD))
@@ -802,11 +804,12 @@ private fun BozerRoundButton(
     kind: String,
     active: Boolean = false,
     compact: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val buttonSize = if (compact) 39.dp else 43.dp
     Box(
-        modifier = Modifier.size(buttonSize)
+        modifier = modifier.size(buttonSize)
             .shadow(if (active) 3.dp else 2.dp, CircleShape)
             .background(Color.White.copy(alpha = 0.84f), CircleShape)
             .border(1.dp, Color(0xFFE1E8EA), CircleShape)
