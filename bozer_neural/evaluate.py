@@ -12,11 +12,11 @@ from .tokenizer import BozerByteBPETokenizer, BozerByteTokenizer, EOS
 @torch.no_grad()
 def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
              max_new_tokens=96, seed=29):
-    if batches < 1 or batch_size < 1 or samples < 0:
+    if batches < 1 or batch_size < 1 or samples < 0 or max_new_tokens < 0:
         raise ValueError("batches and batch_size must be positive; samples cannot be negative")
     torch.manual_seed(seed)
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    if checkpoint.get("format") not in ("bozer-neural-v0.1", "bozer-neural-v0.2", "bozer-neural-v0.3"):
+    if checkpoint.get("format") not in ("bozer-neural-v0.1", "bozer-neural-v0.2", "bozer-neural-v0.3", "bozer-neural-v0.4"):
         raise ValueError("unsupported checkpoint format")
     config = BozerConfig(**checkpoint["config"])
     model = BozerTransformer(config)
@@ -78,7 +78,7 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--data", default="data/bozer_neural_v0_3/test_fr.jsonl")
+    parser.add_argument("--data", default="data/bozer_neural_v0_4/test_fr.jsonl")
     parser.add_argument("--batches", type=int, default=12)
     parser.add_argument("--samples", type=int, default=6)
     parser.add_argument("--max-new-tokens", type=int, default=96)
