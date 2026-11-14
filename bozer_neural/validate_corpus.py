@@ -1,6 +1,8 @@
-"""Validate categorized JSONL corpus and disjoint prompt splits."""
+"""Validate categorized JSONL data, duplicates and optional scenario leakage."""
 import argparse
 import json
+import re
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
@@ -9,6 +11,11 @@ CATEGORIES = {
     "planification_missions", "utilisation_outils_verification",
     "securite_confidentialite_honnetete",
 }
+
+
+def normalize_prompt(value):
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return re.sub(r"\\s+", " ", normalized).strip()
 
 
 def read_records(path):
@@ -27,6 +34,11 @@ def read_records(path):
                 raise ValueError(f"{path}:{line_number}: missing/invalid {key}")
         if item["category"] not in CATEGORIES:
             raise ValueError(f"{path}:{line_number}: unknown category {item['category']}")
+        scenario_id = item.get("scenario_id")
+        if scenario_id is not None and (
+            not isinstance(scenario_id, str) or not scenario_id.strip()
+        ):
+            raise ValueError(f"{path}:{line_number}: scenario_id must be a non-empty string")
         records.append(item)
     if not records:
         raise ValueError(f"{path}: no records")
@@ -39,27 +51,39 @@ def validate_splits(train_path, validation_path, test_path):
         "validation": read_records(validation_path),
         "test": read_records(test_path),
     }
-    prompts = {}
+    prompt_owner = {}
+    scenario_owner = {}
     report = {}
     for name, records in splits.items():
-        counts = Counter(x["category"] for x in records)
+        counts = Counter(item["category"] for item in records)
         missing = CATEGORIES - set(counts)
         if missing:
             raise ValueError(f"{name} is missing categories: {sorted(missing)}")
         report[name] = dict(counts)
         for item in records:
-            key = item["user"].strip().casefold()
-            if key in prompts:
-                raise ValueError(f"duplicate prompt across splits: {item['user']}")
-            prompts[key] = name
+            key = normalize_prompt(item["user"])
+            if key in prompt_owner:
+                raise ValueError(
+                    f"duplicate normalized prompt in {prompt_owner[key]} and {name}: "
+                    f"{item['user']}"
+                )
+            prompt_owner[key] = name
+            scenario_id = item.get("scenario_id")
+            if scenario_id:
+                if scenario_id in scenario_owner:
+                    raise ValueError(
+                        f"scenario_id {scenario_id!r} leaks between "
+                        f"{scenario_owner[scenario_id]} and {name}"
+                    )
+                scenario_owner[scenario_id] = name
     return report
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train", default="data/bozer_neural_v0_3/train_fr.jsonl")
-    parser.add_argument("--validation", default="data/bozer_neural_v0_3/validation_fr.jsonl")
-    parser.add_argument("--test", default="data/bozer_neural_v0_3/test_fr.jsonl")
+    parser.add_argument("--train", default="data/bozer_neural_v0_4/train_fr.jsonl")
+    parser.add_argument("--validation", default="data/bozer_neural_v0_4/validation_fr.jsonl")
+    parser.add_argument("--test", default="data/bozer_neural_v0_4/test_fr.jsonl")
     args = parser.parse_args()
     result = validate_splits(args.train, args.validation, args.test)
     for split, counts in result.items():
