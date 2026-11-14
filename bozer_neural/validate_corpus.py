@@ -15,7 +15,7 @@ CATEGORIES = {
 
 def normalize_prompt(value):
     normalized = unicodedata.normalize("NFKC", value).casefold()
-    return re.sub(r"\\s+", " ", normalized).strip()
+    return re.sub(r"\s+", " ", normalized).strip()
 
 
 def read_records(path):
