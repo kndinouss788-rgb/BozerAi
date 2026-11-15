@@ -1,6 +1,7 @@
 """Evaluate a saved BOZER checkpoint on assistant-only targets in an isolated test split."""
 import argparse
 import json
+import unicodedata
 from pathlib import Path
 import torch
 from .config import BozerConfig
@@ -13,6 +14,51 @@ from .data import (
 )
 from .model import BozerTransformer
 from .tokenizer import BozerByteBPETokenizer, BozerByteTokenizer, EOS
+
+
+def normalize_answer(text):
+    """Normalize case, Unicode compatibility forms, punctuation and whitespace."""
+    if not isinstance(text, str):
+        raise TypeError("answer must be text")
+    text = unicodedata.normalize("NFKC", text).casefold()
+    normalized = []
+    for character in text:
+        category = unicodedata.category(character)
+        normalized.append(" " if character.isspace() or category.startswith("P") else character)
+    return " ".join("".join(normalized).split())
+
+
+def score_generations(examples):
+    """Report strict normalized exact-match and non-empty rates, globally and per category."""
+    totals = {"sample_count": 0, "exact_match_count": 0, "non_empty_count": 0}
+    categories = {}
+    for example in examples:
+        category = example["category"]
+        reference = normalize_answer(example["reference"])
+        generated = normalize_answer(example["generated"])
+        exact = bool(reference) and generated == reference
+        non_empty = bool(generated)
+        bucket = categories.setdefault(category, {
+            "sample_count": 0, "exact_match_count": 0, "non_empty_count": 0
+        })
+        for target in (totals, bucket):
+            target["sample_count"] += 1
+            target["exact_match_count"] += int(exact)
+            target["non_empty_count"] += int(non_empty)
+
+    def rates(values):
+        count = values["sample_count"]
+        return {
+            **values,
+            "exact_match_rate": values["exact_match_count"] / count if count else 0.0,
+            "non_empty_rate": values["non_empty_count"] / count if count else 0.0,
+        }
+
+    return {
+        **rates(totals),
+        "normalization": "NFKC + casefold + punctuation/whitespace normalization",
+        "categories": {name: rates(values) for name, values in sorted(categories.items())},
+    }
 
 
 @torch.no_grad()
@@ -98,8 +144,10 @@ def evaluate(checkpoint_path, data_path, batches=12, batch_size=4, samples=6,
             "category": item["category"], "prompt": item["user"],
             "reference": item["assistant"], "generated": tokenizer.decode(completion),
         })
+    generation_metrics = score_generations(outputs)
     return {
         "test_loss": test_loss,
+        "generation_metrics": generation_metrics,
         "category_test_loss": category_test_loss,
         "test_tokens": int(tokens.numel()),
         "evaluated_categories": sorted({item["category"] for item in outputs}),
@@ -137,8 +185,19 @@ def main():
         f"tokenizer_vocab_size={result['tokenizer_vocab_size']} "
         f"objective={result['training_objective']}"
     )
+    metrics = result["generation_metrics"]
+    print(
+        f"normalized_exact_match={metrics['exact_match_count']}/"
+        f"{metrics['sample_count']} ({metrics['exact_match_rate']:.1%}) "
+        f"non_empty={metrics['non_empty_count']}/{metrics['sample_count']}"
+    )
     for category, value in sorted(result["category_test_loss"].items()):
-        print(f"category={category} test_loss={value:.4f}")
+        score = metrics["categories"].get(category, {})
+        print(
+            f"category={category} test_loss={value:.4f} "
+            f"exact_match={score.get('exact_match_count', 0)}/"
+            f"{score.get('sample_count', 0)}"
+        )
     for index, item in enumerate(result["examples"], 1):
         print(
             f"\n[{index}] {item['category']}\nUtilisateur : {item['prompt']}"

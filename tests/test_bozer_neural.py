@@ -9,7 +9,7 @@ from bozer_neural.data import (
     load_supervised_corpus_by_category, read_records, split_corpus,
     ensure_disjoint_prompts, format_prompt
 )
-from bozer_neural.evaluate import evaluate
+from bozer_neural.evaluate import evaluate, normalize_answer, score_generations
 from bozer_neural.config import BozerConfig
 from bozer_neural.model import BozerTransformer
 from bozer_neural.tokenizer import BOS, EOS, BozerByteTokenizer, BozerByteBPETokenizer
@@ -390,6 +390,20 @@ class NeuralTests(unittest.TestCase):
             )
             self.assertTrue(torch.all(mask.sum(dim=1) > 0))
 
+
+    def test_generation_metrics_are_normalized_and_report_empty_outputs(self):
+        self.assertEqual(normalize_answer("  OUI,  ça va ! "), "oui ça va")
+        metrics = score_generations([
+            {"category": "dialogue_naturel", "reference": "Oui, je suis là !", "generated": "oui je suis là"},
+            {"category": "raisonnement_resolution", "reference": "56.", "generated": "56"},
+            {"category": "raisonnement_resolution", "reference": "4 000 F", "generated": ""},
+        ])
+        self.assertEqual(metrics["sample_count"], 3)
+        self.assertEqual(metrics["exact_match_count"], 2)
+        self.assertAlmostEqual(metrics["exact_match_rate"], 2 / 3)
+        self.assertEqual(metrics["non_empty_count"], 2)
+        self.assertEqual(metrics["categories"]["raisonnement_resolution"]["exact_match_count"], 1)
+        self.assertEqual(metrics["categories"]["raisonnement_resolution"]["sample_count"], 2)
 
 if __name__ == "__main__":
     unittest.main()
