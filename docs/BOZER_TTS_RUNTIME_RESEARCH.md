@@ -43,3 +43,10 @@ The existing `validate_voice_corpus.py` checks the manifest and WAV format; it c
 ## Release rule
 
 Do not label BOZER TTS "complete" until an original checkpoint exists, the dataset rights are documented, tests pass, and actual Android playback has been heard and measured. Until then the Android adapter must be labelled as a provisional system voice.
+
+## Automated coverage added
+
+- Kotlin unit tests cover long-answer segmentation, sentence-boundary behavior, empty text, and oversized tokens.
+- Python tests cover punctuation normalization, French/Mooré diacritic preservation, and bounded text segments.
+- The Android workflow runs both debug unit tests and APK assembly. A successful CI build still does not replace hearing the voice on a physical phone.
+
