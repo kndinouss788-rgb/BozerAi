@@ -37,6 +37,13 @@ class MooreFrenchTranslatorTests(unittest.TestCase):
         self.assertEqual(result.translated_text, "baaga¹")
         self.assertEqual(result.status, "candidate")
 
+    def test_french_gloss_with_multiple_moore_forms_returns_ambiguous(self):
+        translator = load_default_translator(allow_candidates=True)
+        result = translator.translate("femme", "fr", "mos")
+        self.assertFalse(result.found)
+        self.assertEqual(result.status, "ambiguous")
+        self.assertGreaterEqual(len(result.alternatives), 2)
+
     def test_reverse_lookup(self):
         translator = load_default_translator(allow_candidates=True)
         result = translator.translate("Ne y yibeoogo", "mos", "fr")
