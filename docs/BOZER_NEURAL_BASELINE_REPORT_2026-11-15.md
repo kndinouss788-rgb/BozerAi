@@ -4,9 +4,9 @@
 
 - Dépôt : `kndinouss788-rgb/BozerAi`
 - Branche : `bozer-neural-v0.1`
-- Commit testé : `4724a2228d95cf903f534546ecbac163c271f39b`
-- Workflow réussi : [BOZER NEURAL 1B architecture checks and baseline training — run 43701951456](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43701951456)
-- Artefact : `bozer-neural-baseline-corpus-v0.5` (checkpoint courant, meilleur checkpoint et rapport JSON)
+- Commit testé : `b6c4a7d479c8405390b9f39a6bacd1da7dcc8556`
+- Workflow réussi : [BOZER NEURAL 1B architecture checks and baseline training — run 43702567350](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43702567350)
+- Artefact : `bozer-neural-baseline-corpus-v0.5` (ID `14156948248`, checkpoint courant, meilleur checkpoint et rapport JSON)
 
 ## Ce qui est codé
 
@@ -64,7 +64,7 @@ Aucun score sémantique fiable ni taux de réussite de tâche n'a été calculé
 
 ## Tests et CI
 
-Le run `43701951456` a terminé avec succès :
+Le run `43702567350` a terminé avec succès :
 - compilation des modules Python ;
 - validation des partitions V0.5 ;
 - 20 tests `unittest` du pipeline de référence ;

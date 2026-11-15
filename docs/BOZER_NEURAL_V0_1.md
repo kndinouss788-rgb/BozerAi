@@ -75,7 +75,7 @@ python -m bozer_neural.evaluate \
 
 ## Résultats réellement mesurés — 15 novembre 2026
 
-Workflow réussi : [run 43701951456](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43701951456), commit `4724a2228d95cf903f534546ecbac163c271f39b`.
+Workflow réussi : [run 43702567350](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43702567350), commit `4724a2228d95cf903f534546ecbac163c271f39b`.
 
 | Mesure | Résultat |
 |---|---:|
