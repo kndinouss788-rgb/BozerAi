@@ -54,6 +54,12 @@ jobs:
             --test data/bozer_neural_v0_5/test_fr.jsonl
       - name: Validate BOZER Mooré-French lexicon
         run: python -m bozer_neural.language.validate_lexicon data/moore_french/lexicon.json
+      - name: Audit imported Mooré candidate corpus
+        run: |
+          python -m bozer_neural.language.audit_malm_candidates \
+            --input data/moore_french/malm_candidates.jsonl \
+            --report artifacts/moore-malm-quality-audit.json \
+            --review-queue artifacts/moore-malm-review-queue.jsonl
       - name: Run baseline data and training tests
         run: python -m unittest discover -s tests -p "test_bozer_neural.py" -v
       - name: Run 1B architecture, training, language and dictionary tests

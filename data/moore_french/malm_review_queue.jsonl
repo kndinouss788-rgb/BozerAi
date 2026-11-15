@@ -1,0 +1,709 @@
+{"id":"malm-LEX-00002","moore":"-a","french":"Part.","sources":["SRC-17"],"source_ids":["LEX-00002"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00003","moore":"-a/-ba","french":"humain","sources":["SRC-17"],"source_ids":["LEX-00003"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00004","moore":"-ame","french":"Part.","sources":["SRC-17"],"source_ids":["LEX-00004"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00005","moore":"-ame/-ime/-ome/-ʋme/-ɩme","french":"déclaratif","sources":["SRC-17"],"source_ids":["LEX-00005"],"flags":["morpheme_or_symbolic_form","technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00006","moore":"-amé","french":"accompli assertif","sources":["SRC-17"],"source_ids":["LEX-00006"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00007","moore":"-a¹","french":"déclaratif","sources":["SRC-17"],"source_ids":["LEX-00007"],"flags":["morpheme_or_symbolic_form","technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00008","moore":"-ba","french":"pluriel humain général — `pagba` (femmes) · `neba` (gens)","sources":["SRC-11"],"source_ids":["LEX-00008"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00009","moore":"-be","french":"zagɩ-be","sources":["SRC-11"],"source_ids":["LEX-00009"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00010","moore":"-biis","french":"petit, SRC-09 diminutif","sources":["SRC-17"],"source_ids":["LEX-00010"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00011","moore":"-bila","french":"petit de","sources":["SRC-17"],"source_ids":["LEX-00011"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00012","moore":"-billa","french":"diminutif","sources":["SRC-17"],"source_ids":["LEX-00012"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00013","moore":"-bo","french":"factif","sources":["SRC-17"],"source_ids":["LEX-00013"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00014","moore":"-bo -go -re","french":"distribution complémentaire","sources":["SRC-17"],"source_ids":["LEX-00014"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00015","moore":"-bre","french":"nominalisateur","sources":["SRC-17"],"source_ids":["LEX-00015"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00016","moore":"-bè","french":"fulfuldé","sources":["SRC-17"],"source_ids":["LEX-00016"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00017","moore":"-d","french":"marque inaccompli collée au verbe","sources":["SRC-17"],"source_ids":["LEX-00017"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00018","moore":"-d-~-t-","french":"Discret","sources":["SRC-13"],"source_ids":["LEX-00018"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00019","moore":"-d/-t","french":"aspect","sources":["SRC-17"],"source_ids":["LEX-00019"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00020","moore":"-de","french":"rɩgle","sources":["SRC-11"],"source_ids":["LEX-00020"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00021","moore":"-do","french":"Pron.","sources":["SRC-17"],"source_ids":["LEX-00021"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00022","moore":"-dre","french":"nominalisateur agentif","sources":["SRC-17"],"source_ids":["LEX-00022"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00023","moore":"-dẽ","french":"duratif/progressif","sources":["SRC-17"],"source_ids":["LEX-00023"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00024","moore":"-e","french":"voyelle de soutien","sources":["SRC-17"],"source_ids":["LEX-00024"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00025","moore":"-fo","french":"-ba","sources":["SRC-11"],"source_ids":["LEX-00025"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00026","moore":"-g-","french":"morphème liaison nominale","sources":["SRC-17"],"source_ids":["LEX-00026"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00027","moore":"-ga","french":"-re","sources":["SRC-11"],"source_ids":["LEX-00027"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00028","moore":"-ga/-se","french":"classe 1","sources":["SRC-17"],"source_ids":["LEX-00028"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00029","moore":"-ge","french":"barse","sources":["SRC-11"],"source_ids":["LEX-00029"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00030","moore":"-gi","french":"intérieur/destination","sources":["SRC-17"],"source_ids":["LEX-00030"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00031","moore":"-go/-do","french":"classe 2","sources":["SRC-17"],"source_ids":["LEX-00031"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00032","moore":"-gu","french":"-du`/`-tu","sources":["SRC-17"],"source_ids":["LEX-00032"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00033","moore":"-gí","french":"mis en place/structuré","sources":["SRC-17"],"source_ids":["LEX-00033"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00034","moore":"-ka","french":"-se`/`-si","sources":["SRC-17"],"source_ids":["LEX-00034"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00035","moore":"-ko","french":"-do","sources":["SRC-17"],"source_ids":["LEX-00035"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00036","moore":"-kudre","french":"vieux/usé — `sa:kudre` (vieux balai)","sources":["SRC-17"],"source_ids":["LEX-00036"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00037","moore":"-la","french":"Part.","sources":["SRC-17"],"source_ids":["LEX-00037"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00038","moore":"-le","french":"gogne","sources":["SRC-11"],"source_ids":["LEX-00038"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00039","moore":"-lem","french":"comportement","sources":["SRC-17"],"source_ids":["LEX-00039"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00040","moore":"-m","french":"Oppositions de nombre (singulier/pluriel) documentées :","sources":["SRC-11"],"source_ids":["LEX-00040"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00041","moore":"-ma","french":"Pron.","sources":["SRC-17"],"source_ids":["LEX-00041"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00042","moore":"-me","french":"velndamɛ","sources":["SRC-11"],"source_ids":["LEX-00042"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00043","moore":"-miiga","french":"grand/important","sources":["SRC-17"],"source_ids":["LEX-00043"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00044","moore":"-miisi","french":"rouge, rougeâtre","sources":["SRC-17"],"source_ids":["LEX-00044"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00045","moore":"-mé","french":"marqueur d'assertion en position finale —","sources":["SRC-17"],"source_ids":["LEX-00045"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00046","moore":"-nda","french":"morphème mooré","sources":["SRC-17"],"source_ids":["LEX-00046"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00047","moore":"-neega","french":"beau (suffixe)","sources":["SRC-17"],"source_ids":["LEX-00047"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00048","moore":"-r-","french":"dérivatif","sources":["SRC-17"],"source_ids":["LEX-00048"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00049","moore":"-re","french":"nominalisant","sources":["SRC-17"],"source_ids":["LEX-00049"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00050","moore":"-ri","french":"suffixe","sources":["SRC-17"],"source_ids":["LEX-00050"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00051","moore":"-rã","french":"déterminant","sources":["SRC-17"],"source_ids":["LEX-00051"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00052","moore":"-rãmb","french":"pl. humain","sources":["SRC-17"],"source_ids":["LEX-00052"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00053","moore":"-sa","french":"agentif féminin","sources":["SRC-17"],"source_ids":["LEX-00053"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00054","moore":"-se","french":"-sen","sources":["SRC-17"],"source_ids":["LEX-00054"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00055","moore":"-t-","french":"inaccompli déclaratif","sources":["SRC-17"],"source_ids":["LEX-00055"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00056","moore":"-t-a","french":"inac.décl","sources":["SRC-17"],"source_ids":["LEX-00056"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00057","moore":"-ta","french":"collectif","sources":["SRC-17"],"source_ids":["LEX-00057"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00058","moore":"-toogo","french":"état culminant ?","sources":["SRC-17"],"source_ids":["LEX-00058"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00059","moore":"-tàmé","french":"inaccompli + assertif","sources":["SRC-17"],"source_ids":["LEX-00059"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00060","moore":"-va","french":"suffixe nominal","sources":["SRC-11"],"source_ids":["LEX-00060"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00061","moore":"-wokko","french":"augmentatif","sources":["SRC-17"],"source_ids":["LEX-00061"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00062","moore":"-y","french":"wa-y","sources":["SRC-17"],"source_ids":["LEX-00062"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00063","moore":"-y-yã","french":"particule de l'impératif (2ème personne sg. et pl.) — `Yik-y-yã. Tʋʋm-y-yã` = \"Levez-vous. Travaillez.","sources":["SRC-17"],"source_ids":["LEX-00063"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00064","moore":"-y/-yã","french":"impératif","sources":["SRC-17"],"source_ids":["LEX-00064"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00065","moore":"-à","french":"accompli (base)","sources":["SRC-17"],"source_ids":["LEX-00065"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00066","moore":"-àmé","french":"inaccompli-assertif","sources":["SRC-17"],"source_ids":["LEX-00066"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00067","moore":"-á","french":"suffixe","sources":["SRC-17"],"source_ids":["LEX-00067"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00068","moore":"-ã","french":"déterminant","sources":["SRC-17"],"source_ids":["LEX-00068"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00069","moore":"-é","french":"voyelle épithétique/de soutien","sources":["SRC-17"],"source_ids":["LEX-00069"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00070","moore":"-ø-a-la","french":"pãb-a-la","sources":["SRC-17"],"source_ids":["LEX-00070"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00071","moore":"-ø-ame","french":"wa-ø-amé","sources":["SRC-17"],"source_ids":["LEX-00071"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00072","moore":"-ø-yã","french":"wa-yã","sources":["SRC-17"],"source_ids":["LEX-00072"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00073","moore":"-ā","french":"déterminant","sources":["SRC-17"],"source_ids":["LEX-00073"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00074","moore":"-ā/ã","french":"déterminant suffixal","sources":["SRC-17"],"source_ids":["LEX-00074"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00075","moore":"-ɩ","french":"suffixe B","sources":["SRC-17"],"source_ids":["LEX-00075"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00076","moore":"-ẽ","french":"marqueur irréel, SRC-17 : 101ème métalinguistique","sources":["SRC-17"],"source_ids":["LEX-00076"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00077","moore":"-ẽ²","french":"irréel","sources":["SRC-17"],"source_ids":["LEX-00077"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00078","moore":"-ẽ³","french":"accompli","sources":["SRC-17"],"source_ids":["LEX-00078"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00079","moore":"-ẽ¹","french":"locatif spatio-temporel","sources":["SRC-17"],"source_ids":["LEX-00079"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00081","moore":"/dico","french":"Dictionnaire validé (entrées confirmées par sources)","sources":["SRC-17"],"source_ids":["LEX-00081"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00082","moore":"/grammaire","french":"Résumé structuré des règles grammaticales extraites","sources":["SRC-17"],"source_ids":["LEX-00082"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00083","moore":"/lacunes","french":"Liste des zones non couvertes, questions en suspens","sources":["SRC-17"],"source_ids":["LEX-00083"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00084","moore":"/outil","french":"Génération d'un outil NLP/numérique","sources":["SRC-17"],"source_ids":["LEX-00084"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00085","moore":"/statut","french":"État global des connaissances accumulées","sources":["SRC-17"],"source_ids":["LEX-00085"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00086","moore":"/test","french":"Exercice ou quiz basé sur le corpus ingéré","sources":["SRC-17"],"source_ids":["LEX-00086"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00204","moore":"Beoogo","french":"confirmé","sources":["SRC-13"],"source_ids":["LEX-00204"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00257","moore":"Europe/Nasaar-tẽnga","french":"Europe, litt. \"pays des Blancs","sources":["SRC-17"],"source_ids":["LEX-00257"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00352","moore":"Ligdi","french":"confirmé","sources":["SRC-13"],"source_ids":["LEX-00352"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00490","moore":"Rũnda","french":"confirmé","sources":["SRC-13"],"source_ids":["LEX-00490"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00554","moore":"Talga","french":"confirmé","sources":["SRC-13"],"source_ids":["LEX-00554"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00582","moore":"Verre","french":"confirmé","sources":["SRC-13"],"source_ids":["LEX-00582"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00674","moore":"Yelkaye/yaasõma","french":"D'accord/OK","sources":["SRC-13"],"source_ids":["LEX-00674"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00707","moore":"Zaabre","french":"confirmé","sources":["SRC-13"],"source_ids":["LEX-00707"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00709","moore":"Zaame","french":"confirmé","sources":["SRC-13"],"source_ids":["LEX-00709"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-00741","moore":"albasle/arbasle","french":"emprunt arabe","sources":["SRC-17"],"source_ids":["LEX-00741"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00749","moore":"almete/mankẽs-bila","french":"allumette (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-00749"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00768","moore":"ayn/aeyn","french":"qui ?","sources":["SRC-11"],"source_ids":["LEX-00768"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00769","moore":"azã/bazãabazã","french":"araignée (grande)","sources":["SRC-17"],"source_ids":["LEX-00769"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00794","moore":"ba-yirga/barase","french":"datura","sources":["SRC-17"],"source_ids":["LEX-00794"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00847","moore":"baninga/belko/kẽnda","french":"sorgho blanc (3 variétés)","sources":["SRC-17"],"source_ids":["LEX-00847"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00848","moore":"baninga/kɛnda","french":"sorgho blanc","sources":["SRC-17"],"source_ids":["LEX-00848"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00860","moore":"bare/fare/namsgo/naongo","french":"misère (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-00860"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00863","moore":"barika/birkɛ¹","french":"barrique, tonneau","sources":["SRC-17"],"source_ids":["LEX-00863"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00867","moore":"barkudga/baag-taanga","french":"pomme cannelle","sources":["SRC-17"],"source_ids":["LEX-00867"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00878","moore":"basɩ/lokiri","french":"couscous","sources":["SRC-17"],"source_ids":["LEX-00878"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00885","moore":"bedre/kasemde/kãsemde","french":"grand (3 adj.)","sources":["SRC-17"],"source_ids":["LEX-00885"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00917","moore":"beng-pʋʋgo/beng-sũnga","french":"champ de haricot","sources":["SRC-17"],"source_ids":["LEX-00917"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00922","moore":"beng-sũnga/beng-pʋʋgo","french":"champ de haricot","sources":["SRC-17"],"source_ids":["LEX-00922"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00930","moore":"beoko/pezongo/yalem/yalma/zolgo","french":"idiot (5 synonymes)","sources":["SRC-17"],"source_ids":["LEX-00930"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00966","moore":"biiga/bila","french":"fruit (générique, = \"enfant\")","sources":["SRC-17"],"source_ids":["LEX-00966"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00984","moore":"birga/põosgo¹","french":"fumier, engrais organique","sources":["SRC-17"],"source_ids":["LEX-00984"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-00999","moore":"bog-fɩre/mantaanga","french":"papayer","sources":["SRC-17"],"source_ids":["LEX-00999"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01057","moore":"buiidu/gel-buiim","french":"jaune d'œuf (2 termes)","sources":["SRC-17"],"source_ids":["LEX-01057"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01063","moore":"bula¹/buli¹","french":"germes / germer","sources":["SRC-17"],"source_ids":["LEX-01063"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01064","moore":"bula¹/²","french":"germes","sources":["SRC-17"],"source_ids":["LEX-01064"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01074","moore":"bulvãka/bʋlvãka","french":"feuilles d'oseille","sources":["SRC-17"],"source_ids":["LEX-01074"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01085","moore":"burkĩndi/burkĩndlim","french":"intégrité (2 termes)","sources":["SRC-17"],"source_ids":["LEX-01085"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01106","moore":"bã-/bãag-","french":"13 noms de maladies","sources":["SRC-17"],"source_ids":["LEX-01106"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01117","moore":"bã/ka","french":"maison/concession","sources":["SRC-17"],"source_ids":["LEX-01117"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01136","moore":"bãanem/laafɩ","french":"paix (2 termes)","sources":["SRC-17"],"source_ids":["LEX-01136"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01143","moore":"bãg-biiga/bãg-bila","french":"microbe/amibe, litt. \"petit enfant de maladie\" — `bãaga` (maladie) + `biiga` (enfant)","sources":["SRC-17"],"source_ids":["LEX-01143"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01160","moore":"bãka¹/bãg-kɩdga/bãg-langa","french":"mare, marais","sources":["SRC-17"],"source_ids":["LEX-01160"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01180","moore":"bãnkãna/mankãna","french":"taro","sources":["SRC-17"],"source_ids":["LEX-01180"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01186","moore":"bãoonego/baoongo","french":"monnaie, petite coupure","sources":["SRC-17"],"source_ids":["LEX-01186"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01198","moore":"bõan-daoogo/kʋnkʋdre","french":"margouillat mâle","sources":["SRC-17"],"source_ids":["LEX-01198"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01200","moore":"bõan-kũuri/bõn-kũuri","french":"charrue","sources":["SRC-17"],"source_ids":["LEX-01200"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01202","moore":"bõang-paare/bõn-kɩnde","french":"plaie sous l'orteil","sources":["SRC-04"],"source_ids":["LEX-01202"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01211","moore":"bõgse/bõgemde","french":"briser en mille morceaux","sources":["SRC-17"],"source_ids":["LEX-01211"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01230","moore":"bõn-kãense/kãnga","french":"ces choses / cette chose","sources":["SRC-17"],"source_ids":["LEX-01230"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01241","moore":"bõn-saadga/bõn-vuudga","french":"reptile (générique)","sources":["SRC-17"],"source_ids":["LEX-01241"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01245","moore":"bõn-vɩɩl-yalenga/bõn-yɩgdla","french":"insecte (générique, litt. \"chose volante inutile\")","sources":["SRC-17"],"source_ids":["LEX-01245"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01285","moore":"bĩin-paadse/bĩin-lugsi","french":"latitude/longitude — `bĩin` = ligne tracée. Système cartographique entièrement nommé de façon endogène","sources":["SRC-17"],"source_ids":["LEX-01285"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01316","moore":"bĩndingãoosgo/gutungulungu","french":"bousier, scarabée sacré","sources":["SRC-17"],"source_ids":["LEX-01316"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01340","moore":"bɩdgo²/bɩto","french":"oseille, roselle","sources":["SRC-17"],"source_ids":["LEX-01340"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01364","moore":"bʋd-gẽbga/gẽbga","french":"petite calebasse pour semer","sources":["SRC-17"],"source_ids":["LEX-01364"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01367","moore":"bʋd-wamde/bʋtga","french":"semoir","sources":["SRC-17"],"source_ids":["LEX-01367"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01370","moore":"bʋdb-tuu-tuu/faoogo¹","french":"coucal du Sénégal","sources":["SRC-17"],"source_ids":["LEX-01370"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01415","moore":"bẽdgo/bẽodgo/kũiisri/wɛɛrenga","french":"piège (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-01415"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01428","moore":"bẽgnego/bĩngri","french":"épargne, économie","sources":["SRC-17"],"source_ids":["LEX-01428"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01435","moore":"crépuscule","french":"confirmé","sources":["SRC-17"],"source_ids":["LEX-01435"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-01438","moore":"da-bʋrga/kalãndirye","french":"calendrier","sources":["SRC-17"],"source_ids":["LEX-01438"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01445","moore":"da-yɩtata/ra-yɩtata","french":"après-demain","sources":["SRC-17"],"source_ids":["LEX-01445"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01452","moore":"daare/raare","french":"jour (2 termes)","sources":["SRC-17"],"source_ids":["LEX-01452"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01471","moore":"dargõ/wag-bɛɛga","french":"dragon (2 termes)","sources":["SRC-17"],"source_ids":["LEX-01471"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01477","moore":"daya/rasem/raya","french":"jours (pl., 3 formes)","sources":["SRC-17"],"source_ids":["LEX-01477"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01479","moore":"da²/dag/ra³/rag","french":"passé","sources":["SRC-17"],"source_ids":["LEX-01479"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01513","moore":"doogo/roogo","french":"maison, case, chambre","sources":["SRC-17"],"source_ids":["LEX-01513"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01529","moore":"dĩiri/rĩiri","french":"front","sources":["SRC-17"],"source_ids":["LEX-01529"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01532","moore":"dũnga²/rũnga²","french":"moustique","sources":["SRC-17"],"source_ids":["LEX-01532"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01562","moore":"ekɔl/lekɔll","french":"école (emprunt français)","sources":["SRC-07"],"source_ids":["LEX-01562"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01572","moore":"f/fo/fu/foo/foom","french":"2ème personne, lettre F","sources":["SRC-17"],"source_ids":["LEX-01572"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01585","moore":"fabirama/peesre/pɛɛsa","french":"fabirama (3 synonymes — espèce végétale)","sources":["SRC-17"],"source_ids":["LEX-01585"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01588","moore":"fagla/fãgla/pugla","french":"bonnet, béret","sources":["SRC-17"],"source_ids":["LEX-01588"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01593","moore":"falll/fara","french":"tout blanc (intensif)","sources":["SRC-17"],"source_ids":["LEX-01593"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01606","moore":"fe/feeg","french":"pourvu que","sources":["SRC-17"],"source_ids":["LEX-01606"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01612","moore":"feoogo/longo/võogo","french":"creux (générique, 3 adj.)","sources":["SRC-17"],"source_ids":["LEX-01612"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01622","moore":"fiuugi/keke/kẽbge","french":"couper (générique)","sources":["SRC-17"],"source_ids":["LEX-01622"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01690","moore":"fɛfɛ/saalem","french":"condiment (génériques)","sources":["SRC-17"],"source_ids":["LEX-01690"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01694","moore":"fɛɛsa/peesre/pɛɛsa","french":"fabirama (Frafra potato)","sources":["SRC-17"],"source_ids":["LEX-01694"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01729","moore":"gaarga/gĩsga","french":"fil (générique, 2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-01729"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01732","moore":"gada/tɩtaam/wagelle/wakre","french":"orgueil (4 termes)","sources":["SRC-17"],"source_ids":["LEX-01732"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01741","moore":"gare/garga","french":"indigo/indigotier","sources":["SRC-17"],"source_ids":["LEX-01741"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01750","moore":"gebre/gɛba","french":"mooré natif","sources":["SRC-17"],"source_ids":["LEX-01750"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01766","moore":"gel-lobda/pen-zɩlmde","french":"ovaire","sources":["SRC-17"],"source_ids":["LEX-01766"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01769","moore":"gel-soay/gel-sore","french":"trompes de Fallope","sources":["SRC-06"],"source_ids":["LEX-01769"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01771","moore":"gel-sore/gel-soay","french":"trompe de Fallope","sources":["SRC-17"],"source_ids":["LEX-01771"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01774","moore":"gel-vaka/rog-vaka","french":"utérus","sources":["SRC-17"],"source_ids":["LEX-01774"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01777","moore":"gelle/pag-rogem-bulli","french":"ovule","sources":["SRC-06"],"source_ids":["LEX-01777"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01779","moore":"gelle²/pag-rogem-bulli","french":"ovule","sources":["SRC-17"],"source_ids":["LEX-01779"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01794","moore":"geonfo/kengre","french":"accent (tonal)","sources":["SRC-17"],"source_ids":["LEX-01794"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01799","moore":"gere/gɛya","french":"cuisse","sources":["SRC-17"],"source_ids":["LEX-01799"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01804","moore":"ggũndgu/piila/tɛɛga/yaaga","french":"panier (6 types)","sources":["SRC-17"],"source_ids":["LEX-01804"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01809","moore":"goaadga/karzaka","french":"tamis (synonymes)","sources":["SRC-17"],"source_ids":["LEX-01809"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01845","moore":"gom-soakdga/sokrgomde","french":"syntaxe","sources":["SRC-17"],"source_ids":["LEX-01845"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01858","moore":"gomde/koɛɛga/noore","french":"parole (3 termes)","sources":["SRC-17"],"source_ids":["LEX-01858"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01862","moore":"goobre/nag-zẽgre","french":"zébu","sources":["SRC-17"],"source_ids":["LEX-01862"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01863","moore":"goobre/zẽgrere","french":"zébu","sources":["SRC-17"],"source_ids":["LEX-01863"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01868","moore":"gorgongo/kongo/vãaga","french":"creux (noms, 3 termes)","sources":["SRC-17"],"source_ids":["LEX-01868"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01886","moore":"gãaga/keelem/laafɩ","french":"santé (3 termes)","sources":["SRC-17"],"source_ids":["LEX-01886"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01898","moore":"gãeega/gãnga³","french":"chenille aux poils","sources":["SRC-17"],"source_ids":["LEX-01898"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01899","moore":"gãeemdo/gãeenga","french":"folie, trouble mental","sources":["SRC-04"],"source_ids":["LEX-01899"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01912","moore":"gãnga/goɛɛrba/vẽoodre","french":"chenille (3 termes)","sources":["SRC-17"],"source_ids":["LEX-01912"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01914","moore":"gãngo/gãng-noanga/gãng-nomdem/gãongo","french":"cuir (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-01914"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01915","moore":"gãngãdo/gulgubri","french":"brouillard, brume","sources":["SRC-17"],"source_ids":["LEX-01915"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01928","moore":"gõ-põosgo/gõ-poko","french":"acacia à épines blanches","sources":["SRC-17"],"source_ids":["LEX-01928"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01939","moore":"gõlengõonde/gũun-daoogo","french":"iule, myriapode","sources":["SRC-17"],"source_ids":["LEX-01939"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01954","moore":"gĩindi/gĩilli","french":"tendon, muscle, nerf","sources":["SRC-17"],"source_ids":["LEX-01954"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01996","moore":"gɩgem-baaga/digdinyidga","french":"lycaon","sources":["SRC-17"],"source_ids":["LEX-01996"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-01997","moore":"gɩgemde/bõn-yẽega","french":"lion","sources":["SRC-17"],"source_ids":["LEX-01997"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02005","moore":"gʋga/gõodem²","french":"battue, chasse","sources":["SRC-17"],"source_ids":["LEX-02005"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02006","moore":"gʋgaga/tãoosgo/tãoosre","french":"chasse (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02006"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02028","moore":"gʋls-moogo/bika","french":"stylo, crayon","sources":["SRC-17"],"source_ids":["LEX-02028"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02050","moore":"gʋʋnda/gʋʋn-gʋʋnda","french":"éleveur","sources":["SRC-17"],"source_ids":["LEX-02050"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02098","moore":"jõ:/gnon","french":"tô de mil et haricot","sources":["SRC-17"],"source_ids":["LEX-02098"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02116","moore":"ka-koaada/koaada","french":"cultivateur, paysan","sources":["SRC-17"],"source_ids":["LEX-02116"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02122","moore":"ka-naka/ka-nanga","french":"haricot rouge","sources":["SRC-17"],"source_ids":["LEX-02122"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02136","moore":"ka-sãna/ka-sõngo","french":"sorgho (espèce)","sources":["SRC-17"],"source_ids":["LEX-02136"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02139","moore":"ka-sõngo/ka-sãna","french":"sorgho pour semer","sources":["SRC-17"],"source_ids":["LEX-02139"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02143","moore":"ka-sẽoobgo/karsẽebga","french":"cigale","sources":["SRC-17"],"source_ids":["LEX-02143"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02144","moore":"ka-sẽoobgo/sẽebo/sẽoobgo/sẽoonego","french":"cigale (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02144"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02146","moore":"ka-wãoodo/ka-gũudu","french":"mildiou (parasite du mil)","sources":["SRC-17"],"source_ids":["LEX-02146"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02151","moore":"ka-zom/wed-pelle","french":"cheval blanc-sale (paire synonymique)","sources":["SRC-17"],"source_ids":["LEX-02151"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02160","moore":"kaafo/ki¹","french":"mil (générique)","sources":["SRC-17"],"source_ids":["LEX-02160"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02164","moore":"kaalem/kaoolgo/poorẽ","french":"absence (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02164"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02170","moore":"kaare⁵/kaya⁴","french":"parcelle lotie / lotissement","sources":["SRC-17"],"source_ids":["LEX-02170"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02174","moore":"kadengẽ/kãdenga","french":"préfecture / bâtiment administratif","sources":["SRC-17"],"source_ids":["LEX-02174"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02177","moore":"kafaoogo²/keedre","french":"taon, mouche suceuse de sang","sources":["SRC-17"],"source_ids":["LEX-02177"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02184","moore":"kak-yalle/kakenyalle","french":"cafard","sources":["SRC-17"],"source_ids":["LEX-02184"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02186","moore":"kakanga/kankanga","french":"figuier sauvage, sycomore","sources":["SRC-17"],"source_ids":["LEX-02186"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02191","moore":"kalembãnga/kam-bãnde","french":"bracelet en fer","sources":["SRC-17"],"source_ids":["LEX-02191"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02199","moore":"kalkõto/zu-kõto","french":"cervelle = \"tête-cœur","sources":["SRC-06"],"source_ids":["LEX-02199"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02213","moore":"kamaana/kamaande","french":"maïs, épi de maïs","sources":["SRC-17"],"source_ids":["LEX-02213"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02233","moore":"kaooge/wãage","french":"casser (générique)","sources":["SRC-17"],"source_ids":["LEX-02233"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02247","moore":"kapiudgu/kompidgu","french":"cage à poussins","sources":["SRC-17"],"source_ids":["LEX-02247"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02248","moore":"kapiudgu/kompidgu/pĩmpĩungu","french":"cage à poussins","sources":["SRC-17"],"source_ids":["LEX-02248"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02285","moore":"kasenga/kãsenga","french":"grand (2 variantes)","sources":["SRC-17"],"source_ids":["LEX-02285"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02297","moore":"katr-poondo/katrpõaaga","french":"arbre épineux / fruit","sources":["SRC-17"],"source_ids":["LEX-02297"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02299","moore":"katre/nayĩiri/soaasa/soasa","french":"hyène (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02299"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02305","moore":"kazʋre/kazʋy","french":"petit mil, mil chandelle","sources":["SRC-17"],"source_ids":["LEX-02305"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02307","moore":"kedbre/yedbre/yerbre","french":"clavicule (3 variantes)","sources":["SRC-17"],"source_ids":["LEX-02307"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02336","moore":"keorengo/kɛɛnga/kɛgenga","french":"dur (générique, 3 adj.)","sources":["SRC-17"],"source_ids":["LEX-02336"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02346","moore":"ki-likri/ki-peere/ki-pere","french":"clarté de lune","sources":["SRC-17"],"source_ids":["LEX-02346"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02349","moore":"ki-peoolgo/ki-pɛɛlala","french":"clair de lune","sources":["SRC-17"],"source_ids":["LEX-02349"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02351","moore":"ki-pɛɛla/ki-peoolgo/ki-likri","french":"clair de lune (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02351"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02363","moore":"kidbri/kigilli","french":"dur (très dur)","sources":["SRC-17"],"source_ids":["LEX-02363"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02382","moore":"kirga/yẽn-wãbdga/yẽn-daoogo","french":"molaire","sources":["SRC-17"],"source_ids":["LEX-02382"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02385","moore":"kitrkĩinga/kɩtrzĩgniga","french":"criquet (espèce)","sources":["SRC-17"],"source_ids":["LEX-02385"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02403","moore":"ko-biiga/ko-zulli","french":"larve de moustique","sources":["SRC-17"],"source_ids":["LEX-02403"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02407","moore":"ko-gĩsdim/ko-kugri","french":"glace","sources":["SRC-17"],"source_ids":["LEX-02407"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02416","moore":"ko-maasga/ko-maasga","french":"eau fraîche/froide","sources":["SRC-17"],"source_ids":["LEX-02416"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02418","moore":"ko-nugu/ko-naoore","french":"cours d'eau (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02418"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02425","moore":"ko-raalem/ko-zoetem","french":"eau courante","sources":["SRC-17"],"source_ids":["LEX-02425"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02428","moore":"ko-rɩʋʋngo/ko-ruka","french":"inondation","sources":["SRC-17"],"source_ids":["LEX-02428"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02448","moore":"ko-yũudga/ko-yũudum","french":"eau potable","sources":["SRC-17"],"source_ids":["LEX-02448"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02450","moore":"ko-yũudum/ko-yũudga","french":"eau potable","sources":["SRC-17"],"source_ids":["LEX-02450"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02462","moore":"koaasda/koaasa²","french":"vendeur","sources":["SRC-17"],"source_ids":["LEX-02462"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02474","moore":"kobre/koobre","french":"bracelet (espèce générique)","sources":["SRC-17"],"source_ids":["LEX-02474"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02486","moore":"koe-pal-sika/sʋgre/zẽka","french":"tons bas/moyen/haut","sources":["SRC-17"],"source_ids":["LEX-02486"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02496","moore":"koedre/rilsindi","french":"dur (résistant)","sources":["SRC-17"],"source_ids":["LEX-02496"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02498","moore":"koenkoende/kondkonde","french":"oreillons (4 termes)","sources":["SRC-17"],"source_ids":["LEX-02498"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02515","moore":"koko-liuula/koko-yodre","french":"pomme d'Adam","sources":["SRC-17"],"source_ids":["LEX-02515"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02518","moore":"koko-lʋʋga/koko-lʋʋgo","french":"goitre, litt. \"boule/nœud de la gorge","sources":["SRC-17"],"source_ids":["LEX-02518"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02522","moore":"koko-pitga/yub-paadga","french":"joug","sources":["SRC-17"],"source_ids":["LEX-02522"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02525","moore":"koko-rãana/koko-rõona","french":"angine","sources":["SRC-17"],"source_ids":["LEX-02525"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02532","moore":"kol-koto/kolkoodo","french":"salive","sources":["SRC-17"],"source_ids":["LEX-02532"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02534","moore":"kolkoodo/kolkoogo","french":"salive (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02534"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02543","moore":"kompidgu/kapiudgu/tiuudgu","french":"cage à poussins (3 synonymes confirmés)","sources":["SRC-17"],"source_ids":["LEX-02543"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02597","moore":"ku/busa/busri","french":"igname","sources":["SRC-17"],"source_ids":["LEX-02597"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02600","moore":"kubri/kunkubri","french":"monticule, colline","sources":["SRC-17"],"source_ids":["LEX-02600"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02601","moore":"kubri/tĩndla","french":"colline (petite, 2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02601"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02607","moore":"kud-nare/kutu","french":"fer","sources":["SRC-17"],"source_ids":["LEX-02607"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02616","moore":"kug-lɛlemdga/yams-neere","french":"pierre à lécher (paire synonymique)","sources":["SRC-17"],"source_ids":["LEX-02616"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02624","moore":"kukuri/kurkuri","french":"cochon, porc","sources":["SRC-17"],"source_ids":["LEX-02624"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02637","moore":"kut-n-lɛɛbga/loaabga²","french":"fronde","sources":["SRC-17"],"source_ids":["LEX-02637"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02639","moore":"kutoaaga/ku-toaaga","french":"pioche","sources":["SRC-17"],"source_ids":["LEX-02639"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02650","moore":"kãadem/furi/maryaase/yikãadem","french":"mariage (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02650"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02655","moore":"kãande/tũngu/tũn-kãande","french":"calebassier (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02655"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02660","moore":"kãasdga/saremdga","french":"herse","sources":["SRC-17"],"source_ids":["LEX-02660"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02683","moore":"kãnkãoko/karaaga","french":"sorgho rouge (2 variétés)","sources":["SRC-17"],"source_ids":["LEX-02683"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02689","moore":"kãoobgo/kẽoobgo","french":"récolte de mil","sources":["SRC-17"],"source_ids":["LEX-02689"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02690","moore":"kãoobgo/kẽoobgo/kẽebgo","french":"récolte de mil","sources":["SRC-17"],"source_ids":["LEX-02690"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02692","moore":"kãoongo¹/kĩini","french":"pintade / pintades","sources":["SRC-17"],"source_ids":["LEX-02692"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02697","moore":"kãsge/pãsge","french":"déchirer (générique)","sources":["SRC-17"],"source_ids":["LEX-02697"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02715","moore":"kõb-fõr-fõre/kõb-fõrsende","french":"cartilage","sources":["SRC-17"],"source_ids":["LEX-02715"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02721","moore":"kõb-ra-wɛrma¹/²","french":"rhumatisme osseux/général","sources":["SRC-17"],"source_ids":["LEX-02721"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02735","moore":"kõd-poko/kõod-poko","french":"arbuste","sources":["SRC-17"],"source_ids":["LEX-02735"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02737","moore":"kõmpoaka/bõan-poaka","french":"margouillat","sources":["SRC-17"],"source_ids":["LEX-02737"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02745","moore":"kõnekõogo/kõskõogo","french":"gecko, salamandre","sources":["SRC-17"],"source_ids":["LEX-02745"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02761","moore":"kõskõogo/kõnekõogo","french":"gecko, salamandre","sources":["SRC-17"],"source_ids":["LEX-02761"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02773","moore":"kĩnde/kɩnde","french":"vulve, vagin (terme général)","sources":["SRC-17"],"source_ids":["LEX-02773"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02777","moore":"kũiisri/bẽdgo","french":"piège","sources":["SRC-17"],"source_ids":["LEX-02777"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02791","moore":"kũuri/busa/busri","french":"igname","sources":["SRC-17"],"source_ids":["LEX-02791"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02792","moore":"kũuri/kũya","french":"houe, daba","sources":["SRC-17"],"source_ids":["LEX-02792"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02793","moore":"kũuri/wãka","french":"daba (2 synonymes — confirmé)","sources":["SRC-17"],"source_ids":["LEX-02793"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02795","moore":"kɛgelle/kɛgla","french":"datte du désert","sources":["SRC-17"],"source_ids":["LEX-02795"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02826","moore":"kɩlolo/zɩɩbo/zɩɩdo/zɩslem","french":"poids (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02826"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02832","moore":"kɩn-boko/poglem","french":"vagin","sources":["SRC-17"],"source_ids":["LEX-02832"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02834","moore":"kɩn-gãongo/kɩn-kogre","french":"lèvres de la vulve","sources":["SRC-17"],"source_ids":["LEX-02834"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02859","moore":"kɩɩlga/kɩʋʋlgo","french":"hanche","sources":["SRC-17"],"source_ids":["LEX-02859"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02916","moore":"kʋl-ma/kʋl-kẽenga","french":"fleuve (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02916"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02924","moore":"kʋl-sʋʋre/kʋl-yamsem","french":"crevette (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02924"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02925","moore":"kʋl-sẽnemde/kʋl-waafo¹","french":"polyptère","sources":["SRC-17"],"source_ids":["LEX-02925"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02943","moore":"kʋnkʋdre/kʋn-kʋdga","french":"margouillat mâle","sources":["SRC-17"],"source_ids":["LEX-02943"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02947","moore":"kʋware¹/³","french":"aine enflée + adénite","sources":["SRC-17"],"source_ids":["LEX-02947"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02955","moore":"kʋɩlenga/kʋʋlenga","french":"porte (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02955"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02959","moore":"kʋɩlg-naoore/kʋl-nugu","french":"affluent (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-02959"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02960","moore":"kʋɩlga/kʋlga","french":"marigot, rivière, fontaine, puits","sources":["SRC-17"],"source_ids":["LEX-02960"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02961","moore":"kʋɩlɩɩn-tɩɩga/kʋlen-tɩɩga","french":"arbre corail","sources":["SRC-17"],"source_ids":["LEX-02961"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02976","moore":"kυ/kɩ","french":"tuer (transitif) / mourir (intransitif)","sources":["SRC-17"],"source_ids":["LEX-02976"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-02991","moore":"kẽega²/³","french":"perruche + panier","sources":["SRC-17"],"source_ids":["LEX-02991"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03002","moore":"kẽenga/zãndgo","french":"grand (2 adj.)","sources":["SRC-17"],"source_ids":["LEX-03002"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03018","moore":"kẽglga/kẽglga","french":"datte","sources":["SRC-17"],"source_ids":["LEX-03018"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03027","moore":"kẽnb-yẽoogo/kẽt-yõgla","french":"drongo","sources":["SRC-17"],"source_ids":["LEX-03027"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03093","moore":"lada/lade","french":"canard","sources":["SRC-17"],"source_ids":["LEX-03093"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03100","moore":"lagdwaase/walga","french":"ardoise","sources":["SRC-17"],"source_ids":["LEX-03100"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03106","moore":"lagengo/laogengo","french":"union (noms dérivés)","sources":["SRC-17"],"source_ids":["LEX-03106"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03117","moore":"lalle/lande/lan-korgo","french":"scrotum","sources":["SRC-06"],"source_ids":["LEX-03117"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03125","moore":"lam-pʋʋgo/langa¹/goarga","french":"champ de coton","sources":["SRC-17"],"source_ids":["LEX-03125"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03129","moore":"lamboeega/lamboɛtga","french":"arbuste (espèce)","sources":["SRC-17"],"source_ids":["LEX-03129"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03138","moore":"lame¹","french":"déclaratif","sources":["SRC-17"],"source_ids":["LEX-03138"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-03144","moore":"lan-biiga/lan-bila","french":"testicule = \"enfant du scrotum","sources":["SRC-06"],"source_ids":["LEX-03144"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03145","moore":"lan-bila/lan-biiga","french":"testicule","sources":["SRC-17"],"source_ids":["LEX-03145"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03146","moore":"lande/lalle⁴/lan-korgo","french":"scrotum (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-03146"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03149","moore":"langa¹/lam-pʋʋgo","french":"champ de coton","sources":["SRC-17"],"source_ids":["LEX-03149"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03167","moore":"laoore/lʋmbre","french":"gros et rond","sources":["SRC-17"],"source_ids":["LEX-03167"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03194","moore":"lebe³/lebre","french":"assimilation","sources":["SRC-17"],"source_ids":["LEX-03194"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03231","moore":"lema/lamm","french":"complètement aplati, blotti contre le sol","sources":["SRC-17"],"source_ids":["LEX-03231"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03235","moore":"lembur-miisga/lembu-tɩɩga","french":"citronnier","sources":["SRC-17"],"source_ids":["LEX-03235"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03282","moore":"ligd-ma/ligd-zugu","french":"capital","sources":["SRC-17"],"source_ids":["LEX-03282"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03306","moore":"lilinga/lilgimdi","french":"criquet (espèce)","sources":["SRC-17"],"source_ids":["LEX-03306"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03313","moore":"lisgu/soobo/zu-lukri","french":"baptême (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-03313"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03322","moore":"liuula¹/luiila","french":"oiseau (générique)","sources":["SRC-17"],"source_ids":["LEX-03322"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03331","moore":"loalga/lolse","french":"taureau, bœuf","sources":["SRC-17"],"source_ids":["LEX-03331"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03332","moore":"loalga/lʋlla","french":"taureau / taurillon","sources":["SRC-17"],"source_ids":["LEX-03332"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03337","moore":"loandfulgu/lond-furgu","french":"galago du Sénégal","sources":["SRC-17"],"source_ids":["LEX-03337"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03357","moore":"loeɛtga/wĩiri","french":"corde (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-03357"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03373","moore":"logtore/logto-kasenga","french":"médecin / infirmier","sources":["SRC-17"],"source_ids":["LEX-03373"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03443","moore":"lɛɛba/lɛɛbda","french":"commerçant, marchand","sources":["SRC-17"],"source_ids":["LEX-03443"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03460","moore":"lɩʋʋgo/lʋko²/lʋʋgo","french":"puisette (récipient à puiser)","sources":["SRC-17"],"source_ids":["LEX-03460"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03510","moore":"maandag/maanda","french":"en train de faire (inaccompli)","sources":["SRC-17"],"source_ids":["LEX-03510"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03528","moore":"mad-/maas-","french":"mouiller → frais","sources":["SRC-11"],"source_ids":["LEX-03528"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03547","moore":"mal-bʋʋga/bʋ-lug-pɛɛla","french":"chèvre bicolore","sources":["SRC-17"],"source_ids":["LEX-03547"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03552","moore":"malwalle/manwalle","french":"pigeon, tourterelle","sources":["SRC-17"],"source_ids":["LEX-03552"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03581","moore":"markĩuusa/mayaalle","french":"ombrette","sources":["SRC-17"],"source_ids":["LEX-03581"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03598","moore":"menem/menme","french":"perdre + se perdre","sources":["SRC-17"],"source_ids":["LEX-03598"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03604","moore":"menuzutu/miniziti","french":"méningite","sources":["SRC-17"],"source_ids":["LEX-03604"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03606","moore":"meoogo/moeega","french":"albinos","sources":["SRC-17"],"source_ids":["LEX-03606"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03607","moore":"meoogo/pali/rig-rigi/weoogo","french":"paludisme (4 termes)","sources":["SRC-17"],"source_ids":["LEX-03607"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03630","moore":"miisri/misri","french":"mosquée","sources":["SRC-17"],"source_ids":["LEX-03630"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03653","moore":"minunga/minund","french":"mentalité · habitude · culture","sources":["SRC-07"],"source_ids":["LEX-03653"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03666","moore":"mo-faoogo/mo-paba","french":"herbe à éléphant","sources":["SRC-17"],"source_ids":["LEX-03666"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03667","moore":"mo-golle/waafo¹","french":"serpent","sources":["SRC-17"],"source_ids":["LEX-03667"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03715","moore":"mogfo/moko¹","french":"termite","sources":["SRC-17"],"source_ids":["LEX-03715"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03719","moore":"mogre/bog","french":"mer/profond","sources":["SRC-17"],"source_ids":["LEX-03719"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03754","moore":"mugunga/nabedga","french":"jujubier","sources":["SRC-17"],"source_ids":["LEX-03754"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03776","moore":"munafɩka/wĩnaafɩka","french":"hypocrite (2 emprunts islamiques)","sources":["SRC-17"],"source_ids":["LEX-03776"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03894","moore":"na-bila/nao-bila","french":"orteil","sources":["SRC-17"],"source_ids":["LEX-03894"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03897","moore":"na-gũbga/rebre/rigno-pĩiri","french":"espèces de nattes","sources":["SRC-17"],"source_ids":["LEX-03897"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03902","moore":"na-kãsen-kãare/nao-kãsenkãare","french":"talon","sources":["SRC-17"],"source_ids":["LEX-03902"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03907","moore":"na-pʋga/nao-pʋga","french":"plante du pied","sources":["SRC-17"],"source_ids":["LEX-03907"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03910","moore":"na-sũka/na-sẽbre/nao-kugri","french":"cheville (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-03910"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03912","moore":"na-sẽbre/na-sũka","french":"cheville","sources":["SRC-06"],"source_ids":["LEX-03912"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03916","moore":"na-tẽnga/na-tẽnga","french":"capitale, chef-lieu","sources":["SRC-17"],"source_ids":["LEX-03916"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03922","moore":"na-yiri/na-zaka","french":"palais, cour royale","sources":["SRC-17"],"source_ids":["LEX-03922"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03923","moore":"na-yẽoogo/nao-yẽega","french":"ongle d'orteil","sources":["SRC-17"],"source_ids":["LEX-03923"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03935","moore":"naaba/rĩma","french":"roi (2 termes)","sources":["SRC-17"],"source_ids":["LEX-03935"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03940","moore":"naafo/niigi/niisi","french":"bovin, bœuf, vache","sources":["SRC-17"],"source_ids":["LEX-03940"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03958","moore":"naande/naan-rẽesdem","french":"dessin/plan","sources":["SRC-17"],"source_ids":["LEX-03958"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03964","moore":"naare/tɩgre","french":"abondance (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-03964"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03987","moore":"nag-liuula/nag-zõaag-bewat","french":"pique-bœufs","sources":["SRC-17"],"source_ids":["LEX-03987"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-03990","moore":"nag-reongo/bãgre¹","french":"parc à bétail","sources":["SRC-17"],"source_ids":["LEX-03990"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04006","moore":"nagem/wagelle","french":"ostentation","sources":["SRC-17"],"source_ids":["LEX-04006"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04029","moore":"naneoongo/neoongo","french":"autruche","sources":["SRC-17"],"source_ids":["LEX-04029"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04050","moore":"nao-bẽtre/nao-tabdre","french":"plaie incurable au pied","sources":["SRC-04"],"source_ids":["LEX-04050"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04058","moore":"nao-pʋga/na-pʋga","french":"plante du pied = \"ventre du pied","sources":["SRC-06"],"source_ids":["LEX-04058"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04077","moore":"naoore¹/karga¹/nao-lʋlle","french":"pied / jambe","sources":["SRC-17"],"source_ids":["LEX-04077"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04108","moore":"nayũuri/nayarga","french":"patate douce","sources":["SRC-17"],"source_ids":["LEX-04108"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04130","moore":"neega/neere","french":"beau, bien","sources":["SRC-17"],"source_ids":["LEX-04130"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04152","moore":"nem-zẽoogo/nem-tʋmdga","french":"muscle, chair","sources":["SRC-17"],"source_ids":["LEX-04152"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04154","moore":"nema/nemdo","french":"viande (confirmé)","sources":["SRC-17"],"source_ids":["LEX-04154"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04159","moore":"nemse²/yẽn-namse","french":"gencives","sources":["SRC-17"],"source_ids":["LEX-04159"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04203","moore":"nifu¹/nifri","french":"œil","sources":["SRC-17"],"source_ids":["LEX-04203"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04206","moore":"nigi/nugi","french":"fourmilion (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04206"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04224","moore":"nin-beele/nin-bila/nin-biiga","french":"pupille · prunelle","sources":["SRC-06"],"source_ids":["LEX-04224"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04228","moore":"nin-bila/nin-beelle/nin-biiga","french":"pupille (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04228"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04230","moore":"nin-boko/nin-koore","french":"orbite de l'œil","sources":["SRC-17"],"source_ids":["LEX-04230"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04248","moore":"nin-kõbdo/nin-sũuri","french":"cils, sourcils","sources":["SRC-17"],"source_ids":["LEX-04248"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04268","moore":"nin-pako/nin-paoko","french":"paupière","sources":["SRC-17"],"source_ids":["LEX-04268"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04297","moore":"nini/nin-","french":"personne, œil","sources":["SRC-17"],"source_ids":["LEX-04297"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04342","moore":"no-ribla/no-rɩbla","french":"poulet / jeune coq","sources":["SRC-17"],"source_ids":["LEX-04342"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04360","moore":"noaba/nobre","french":"prunes sauvages (amande comestible)","sources":["SRC-17"],"source_ids":["LEX-04360"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04380","moore":"nogbo²/rɩgsgo","french":"récolte de haricots","sources":["SRC-17"],"source_ids":["LEX-04380"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04413","moore":"noosdo/zẽ-biisi","french":"condiments (collectifs)","sources":["SRC-17"],"source_ids":["LEX-04413"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04424","moore":"nu/nu'u","french":"SRC-06 : cinq dans les numérations anatomiques","sources":["SRC-17"],"source_ids":["LEX-04424"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04441","moore":"nug-bi-tɛɛsdga/nug-raoog-roelle/nug-yaka","french":"index (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04441"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04446","moore":"nug-dʋdre/nug-sẽbre","french":"poignet","sources":["SRC-06"],"source_ids":["LEX-04446"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04448","moore":"nug-gilgu/kud-gilli","french":"poing (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04448"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04450","moore":"nug-kũndi/nug-poore","french":"dos de la main","sources":["SRC-06"],"source_ids":["LEX-04450"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04454","moore":"nug-poore/nug-kũndi","french":"dos de la main","sources":["SRC-17"],"source_ids":["LEX-04454"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04456","moore":"nug-pʋga/nug-talle","french":"paume","sources":["SRC-17"],"source_ids":["LEX-04456"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04459","moore":"nug-raoog-rolle/nug-yaka","french":"index = \"doigt qui montre/pointe","sources":["SRC-06"],"source_ids":["LEX-04459"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04463","moore":"nug-sẽbre/nug-dʋdre","french":"poignet (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04463"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04530","moore":"pa-keem/yĩn-pa-noom","french":"état de maladie","sources":["SRC-04"],"source_ids":["LEX-04530"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04548","moore":"paare/paya","french":"grandes lèvres","sources":["SRC-17"],"source_ids":["LEX-04548"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04582","moore":"pagdga/rignoore","french":"porte (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04582"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04629","moore":"pa¹/ka...ye","french":"négation","sources":["SRC-17"],"source_ids":["LEX-04629"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04634","moore":"pe-bila/pe-ball-bila/pe-ribla","french":"agneau (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04634"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04642","moore":"pe-ribla/pe-bila/pe-ball-bila","french":"agneau (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04642"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04680","moore":"pemde/pengre","french":"emprunt, prêt","sources":["SRC-17"],"source_ids":["LEX-04680"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04705","moore":"peosgo/pesgo","french":"pl. `piisi","sources":["SRC-17"],"source_ids":["LEX-04705"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04706","moore":"peosgo/pesgo/piisi¹","french":"mouton","sources":["SRC-17"],"source_ids":["LEX-04706"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04747","moore":"pilga/pilinga","french":"petite natte","sources":["SRC-17"],"source_ids":["LEX-04747"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04750","moore":"pilgu/piulgu","french":"grenier en paille","sources":["SRC-17"],"source_ids":["LEX-04750"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04751","moore":"pilgu/piulgu/pilinga¹","french":"greniers en paille (différentes tailles)","sources":["SRC-17"],"source_ids":["LEX-04751"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04779","moore":"po-kõbre/po-raoogo","french":"colonne vertébrale","sources":["SRC-17"],"source_ids":["LEX-04779"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04782","moore":"po-raoogo/po-kõbre","french":"colonne vertébrale","sources":["SRC-17"],"source_ids":["LEX-04782"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04813","moore":"poglem/kɩnde/kɩn-boko","french":"vagin/vulve (termes multiples)","sources":["SRC-06"],"source_ids":["LEX-04813"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04851","moore":"poorẽ/kaoolgo/kaalem","french":"absence, vide, manque","sources":["SRC-17"],"source_ids":["LEX-04851"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04853","moore":"porem/ppʋ-yagbo/sãdem/yagbo","french":"mensonge (4 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04853"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04907","moore":"puudu/pʋbdo","french":"écume (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-04907"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04910","moore":"puugu/tɩ-puugu","french":"fleur (générique)","sources":["SRC-17"],"source_ids":["LEX-04910"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04920","moore":"pãbdga/manto","french":"marteau","sources":["SRC-17"],"source_ids":["LEX-04920"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-04932","moore":"pãn-soogo/pãn-soolem","french":"autorité","sources":["SRC-17"],"source_ids":["LEX-04932"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05004","moore":"põosgo¹/birga","french":"fumier, compost","sources":["SRC-17"],"source_ids":["LEX-05004"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05092","moore":"pʋ-koɛɛnga/pʋ-kʋɩre","french":"constipation = \"ventre sec/bouché","sources":["SRC-04"],"source_ids":["LEX-05092"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05112","moore":"pʋ-weere/pʋ-wɛɛga","french":"jachère","sources":["SRC-17"],"source_ids":["LEX-05112"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05181","moore":"pʋg-tʋdbo/pʋga/zɩɩbo","french":"grossesse (3 termes)","sources":["SRC-17"],"source_ids":["LEX-05181"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05349","moore":"raabo/ratem","french":"désir","sources":["SRC-17"],"source_ids":["LEX-05349"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05418","moore":"ragsendako/ragsẽndako","french":"gorge, gosier · voile du palais","sources":["SRC-06"],"source_ids":["LEX-05418"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05445","moore":"raongo/rõaandga","french":"héron cendré","sources":["SRC-17"],"source_ids":["LEX-05445"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05453","moore":"raoolem/raolem/yoore","french":"pénis","sources":["SRC-06"],"source_ids":["LEX-05453"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05513","moore":"reongo/rũm-rende","french":"enclos, parc (générique)","sources":["SRC-17"],"source_ids":["LEX-05513"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05598","moore":"rokre/yõodo","french":"bénéfice, gain","sources":["SRC-17"],"source_ids":["LEX-05598"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05616","moore":"roogo/doogo","french":"pièce","sources":["SRC-17"],"source_ids":["LEX-05616"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05754","moore":"rũm-pɩgsa/tar-pɩgsa","french":"volaille (collectif)","sources":["SRC-17"],"source_ids":["LEX-05754"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05758","moore":"rũm-sa-pɛɛga/rũnd-piku","french":"rotule = \"genou-disque blanc","sources":["SRC-06"],"source_ids":["LEX-05758"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05795","moore":"rɩ-/dɩ-","french":"SRC-11 suite","sources":["SRC-17"],"source_ids":["LEX-05795"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05937","moore":"sa-gãna/sa-gãonga","french":"ciel (espèce/voûte)","sources":["SRC-17"],"source_ids":["LEX-05937"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05959","moore":"sa-tãse/sa-tãsga","french":"foudre, litt. \"tonnerre du ciel","sources":["SRC-17"],"source_ids":["LEX-05959"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-05974","moore":"saaga/saasẽ","french":"ciel","sources":["SRC-17"],"source_ids":["LEX-05974"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06005","moore":"saasga/saasdga","french":"petite pierre plate à lisser le sol","sources":["SRC-17"],"source_ids":["LEX-06005"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06049","moore":"sagdo/saoko","french":"saleté (2 termes)","sources":["SRC-17"],"source_ids":["LEX-06049"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06074","moore":"salenvũ/sanenvũ/sãnenvũ","french":"fontanelle","sources":["SRC-17"],"source_ids":["LEX-06074"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06075","moore":"salenvũ/sãnenvũ","french":"fontanelle","sources":["SRC-06"],"source_ids":["LEX-06075"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06076","moore":"salenvũ/sãnenvũ/zu-longo","french":"fontanelle","sources":["SRC-06"],"source_ids":["LEX-06076"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06091","moore":"samande/sɩmande","french":"cour extérieure","sources":["SRC-17"],"source_ids":["LEX-06091"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06095","moore":"samsre/samsa","french":"beignet(s) de haricot","sources":["SRC-17"],"source_ids":["LEX-06095"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06101","moore":"saooga/warba","french":"danse/danse des Moose","sources":["SRC-17"],"source_ids":["LEX-06101"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06103","moore":"sapalgo/sɩpaolgo","french":"saison sèche","sources":["SRC-17"],"source_ids":["LEX-06103"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06108","moore":"sarda/sare","french":"abonnement/abonner","sources":["SRC-17"],"source_ids":["LEX-06108"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06116","moore":"sarɛta/tereko/wotoro","french":"charrette (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-06116"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06168","moore":"seere/sẽsere","french":"agouti, aulacode","sources":["SRC-17"],"source_ids":["LEX-06168"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06176","moore":"selbo/sʋgse/woose²","french":"repiquage (3 termes)","sources":["SRC-17"],"source_ids":["LEX-06176"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06202","moore":"sidgi¹/²","french":"frissonner ET s'inquiéter —","sources":["SRC-17"],"source_ids":["LEX-06202"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06216","moore":"siiga/kiima","french":"personne = processus","sources":["SRC-17"],"source_ids":["LEX-06216"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06219","moore":"siilfu/siili","french":"sésame","sources":["SRC-17"],"source_ids":["LEX-06219"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06264","moore":"soaka¹/ra-bãande","french":"fléau (battage)","sources":["SRC-17"],"source_ids":["LEX-06264"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06310","moore":"solge¹/²","french":"cacher / inhumer","sources":["SRC-17"],"source_ids":["LEX-06310"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06314","moore":"solme¹/²","french":"conter / passer de branche en branche","sources":["SRC-17"],"source_ids":["LEX-06314"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06320","moore":"sonde¹/sonde²","french":"Le nom patronymique est une louange transmise de génération en génération","sources":["SRC-17"],"source_ids":["LEX-06320"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06362","moore":"su-wardga/wãg-wardga","french":"sarcleuse","sources":["SRC-17"],"source_ids":["LEX-06362"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06364","moore":"subdri/rũm-kũuri/bõan-kũuri","french":"charrue (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-06364"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06374","moore":"suga/sugri","french":"toits en paille de cases rondes","sources":["SRC-17"],"source_ids":["LEX-06374"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06379","moore":"sugri¹/²","french":"toit de chaume / pardon","sources":["SRC-17"],"source_ids":["LEX-06379"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06381","moore":"sugsda/paasda","french":"médiateur, arbitrateur","sources":["SRC-17"],"source_ids":["LEX-06381"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06407","moore":"susga¹/²","french":"crin de cheval / barbe d'épi","sources":["SRC-17"],"source_ids":["LEX-06407"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06411","moore":"susi¹/²","french":"Voie lactée ET tout droit — `A rooga a zugã susi n kẽnda` = \"Il a redressé sa tête tout droit et marche.","sources":["SRC-17"],"source_ids":["LEX-06411"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06420","moore":"suuta/tõakda","french":"soudeur","sources":["SRC-17"],"source_ids":["LEX-06420"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06490","moore":"sãnga/sãnde","french":"beau, beauté","sources":["SRC-17"],"source_ids":["LEX-06490"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06567","moore":"sõmbo/sõm","french":"bien, bienfait","sources":["SRC-17"],"source_ids":["LEX-06567"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06580","moore":"sõodo/sõeya","french":"sorcellerie/sorcier","sources":["SRC-17"],"source_ids":["LEX-06580"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06603","moore":"sĩ-ribdu/sĩ-ribgu","french":"cire d'abeille","sources":["SRC-17"],"source_ids":["LEX-06603"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06607","moore":"sĩdimdi/tẽmdemde","french":"dur (compact)","sources":["SRC-17"],"source_ids":["LEX-06607"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06646","moore":"sũ-puugri/sũ-puuri","french":"colère (état)","sources":["SRC-17"],"source_ids":["LEX-06646"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06655","moore":"sũ-yaalle/sũ-yalenga","french":"nausée, litt. \"cœur qui écœure","sources":["SRC-17"],"source_ids":["LEX-06655"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06674","moore":"sũm-kaam/sĩnkaam","french":"arachide (syn.) = \"sève/huile douce","sources":["SRC-17"],"source_ids":["LEX-06674"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06743","moore":"sɩda¹/sɩda²","french":"La fidélité conjugale et la vérité sont un seul concept","sources":["SRC-17"],"source_ids":["LEX-06743"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06755","moore":"sɩgregre/sɩgege","french":"réincarnation — terme endogène pour un concept de transmigration des âmes","sources":["SRC-17"],"source_ids":["LEX-06755"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06758","moore":"sɩiga/yalẽ","french":"âme","sources":["SRC-17"],"source_ids":["LEX-06758"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06780","moore":"sɩlga¹/sɩlga²","french":"Nomenclature aéronautique complète par métaphore animale","sources":["SRC-17"],"source_ids":["LEX-06780"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06844","moore":"sʋgse/sɛnda","french":"transplanter, repiquer","sources":["SRC-17"],"source_ids":["LEX-06844"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06849","moore":"sʋka¹/²","french":"milieu spatial ET thorax —","sources":["SRC-17"],"source_ids":["LEX-06849"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06853","moore":"sʋl-/wʋg-","french":"tissage","sources":["SRC-17"],"source_ids":["LEX-06853"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06856","moore":"sʋlga²/sʋn-wʋgda/wʋgda","french":"tisserand (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-06856"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06858","moore":"sʋlga¹/sʋlga²","french":"La plus ancienne métaphore du tissage lexicalisée comme réalité unique","sources":["SRC-17"],"source_ids":["LEX-06858"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06866","moore":"sʋɩtãana/sʋʋtãana","french":"diable (emprunt + adaptation)","sources":["SRC-17"],"source_ids":["LEX-06866"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06867","moore":"sʋɩtãana/zĩnana","french":"démon/diable (3 termes)","sources":["SRC-17"],"source_ids":["LEX-06867"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06871","moore":"sʋʋge¹/²","french":"décrocher / tomber en grand nombre","sources":["SRC-17"],"source_ids":["LEX-06871"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06904","moore":"sẽka/yaasre","french":"angle (générique)","sources":["SRC-17"],"source_ids":["LEX-06904"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-06999","moore":"tab-kaoore¹/²","french":"drapeau/tabac en cigare","sources":["SRC-17"],"source_ids":["LEX-06999"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07094","moore":"teoogo²/toore⁴","french":"mortier","sources":["SRC-17"],"source_ids":["LEX-07094"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07095","moore":"teoogo¹/²","french":"objet/récipient/bagages + mortier","sources":["SRC-17"],"source_ids":["LEX-07095"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07102","moore":"ti-/tɩ-","french":"probablement dense","sources":["SRC-17"],"source_ids":["LEX-07102"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07104","moore":"tibi¹/²","french":"✅ T4 intégré","sources":["SRC-17"],"source_ids":["LEX-07104"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07108","moore":"tidga¹/²","french":"✅ T4 intégré","sources":["SRC-17"],"source_ids":["LEX-07108"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07109","moore":"tig-/tigsi","french":"récolte/rassemblement","sources":["SRC-17"],"source_ids":["LEX-07109"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07148","moore":"tilgi¹/²","french":"consigner dans une circonférence + ériger verticalement","sources":["SRC-17"],"source_ids":["LEX-07148"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07174","moore":"toanda²/toalma","french":"marchand","sources":["SRC-17"],"source_ids":["LEX-07174"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07230","moore":"tolle¹/²","french":"tôle + perforé/troué","sources":["SRC-17"],"source_ids":["LEX-07230"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07302","moore":"tulgu/torbila/todbila","french":"pilon (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-07302"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07303","moore":"tulgumdi/tulumdi","french":"à l'envers","sources":["SRC-17"],"source_ids":["LEX-07303"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07310","moore":"tum-/tɩm-","french":"travailler/travail","sources":["SRC-11"],"source_ids":["LEX-07310"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07312","moore":"tura/turgi","french":"nez à nez, rencontrer à l'improviste","sources":["SRC-17"],"source_ids":["LEX-07312"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07354","moore":"tãma/tãmbre²","french":"pièce de 1 franc CFA","sources":["SRC-17"],"source_ids":["LEX-07354"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07367","moore":"tãn-meta/meta","french":"maçon","sources":["SRC-17"],"source_ids":["LEX-07367"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07375","moore":"tãnga/kunkubri","french":"colline","sources":["SRC-17"],"source_ids":["LEX-07375"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07380","moore":"tão/tãoa","french":"frère (générique)","sources":["SRC-17"],"source_ids":["LEX-07380"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07385","moore":"tãoose¹/²","french":"chasser / jaillir, projeter","sources":["SRC-17"],"source_ids":["LEX-07385"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07405","moore":"tõakda/suuta","french":"soudeur","sources":["SRC-17"],"source_ids":["LEX-07405"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07418","moore":"tõgemde/vaodgo/vaoko","french":"creux (états, 3 adj.)","sources":["SRC-17"],"source_ids":["LEX-07418"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07435","moore":"tõog-noogo/tõogo","french":"Gonolek de Barbarie, litt. \"bon/beau gonolek","sources":["SRC-17"],"source_ids":["LEX-07435"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07455","moore":"tõtõoge/tõose","french":"déchirer (itératif)","sources":["SRC-17"],"source_ids":["LEX-07455"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07466","moore":"tĩsi/tĩsga","french":"éternuer / éternuement","sources":["SRC-17"],"source_ids":["LEX-07466"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07510","moore":"tɩ-fuugu/tɩ-bĩm-bĩm","french":"végétation, couverture végétale","sources":["SRC-17"],"source_ids":["LEX-07510"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07522","moore":"tɩ-vendem/tɩ-beelle","french":"comprimé, pilule","sources":["SRC-17"],"source_ids":["LEX-07522"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07526","moore":"tɩ/yɩlẽ","french":"conjonction \"afin que","sources":["SRC-17"],"source_ids":["LEX-07526"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07533","moore":"tɩbsgo/tɩpgo","french":"soins, traitement","sources":["SRC-17"],"source_ids":["LEX-07533"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07542","moore":"tɩlae/tɩlass/tɩlɛ","french":"obligation, nécessité","sources":["SRC-17"],"source_ids":["LEX-07542"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07546","moore":"tɩpa/logtore","french":"médecin, guérisseur","sources":["SRC-17"],"source_ids":["LEX-07546"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07547","moore":"tɩpa/tɩpda","french":"médecin, guérisseur","sources":["SRC-17"],"source_ids":["LEX-07547"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07562","moore":"tɩ³/tɩg","french":"aller en vue de (éloignement)","sources":["SRC-17"],"source_ids":["LEX-07562"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07571","moore":"tɩɩga¹/²","french":"arbre ET dermatose —","sources":["SRC-17"],"source_ids":["LEX-07571"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07582","moore":"tɩɩm¹/²/³","french":"médicament ET fétiche ET talisman —","sources":["SRC-17"],"source_ids":["LEX-07582"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07596","moore":"tʋb-kɩre/kɩgdga","french":"tempe","sources":["SRC-17"],"source_ids":["LEX-07596"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07619","moore":"tʋgg/tɩ/tʋ","french":"auxiliaire \"aller pour/faire","sources":["SRC-17"],"source_ids":["LEX-07619"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07621","moore":"tʋlga/tʋlsem/tʋlsmã","french":"désir (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-07621"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07628","moore":"tʋmda¹/tʋntʋmda","french":"travailleur","sources":["SRC-17"],"source_ids":["LEX-07628"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07661","moore":"tʋʋlga¹/²","french":"chaud = rapide","sources":["SRC-17"],"source_ids":["LEX-07661"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07700","moore":"tẽbe¹/²","french":"bourrer ET gigoter —","sources":["SRC-17"],"source_ids":["LEX-07700"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07735","moore":"tẽn-/tẽng-","french":"territoire / toponymie / institutions","sources":["SRC-17"],"source_ids":["LEX-07735"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07797","moore":"tẽnga/tẽngã","french":"pays, sol, terre","sources":["SRC-17"],"source_ids":["LEX-07797"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07852","moore":"vaage¹/²/³","french":"vider ET tresser une natte ET attraper/soulever —","sources":["SRC-17"],"source_ids":["LEX-07852"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07855","moore":"vage¹/²","french":"remuer les oreilles + picorer","sources":["SRC-17"],"source_ids":["LEX-07855"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07857","moore":"vaka¹/²","french":"nid (à terre) + pépinière","sources":["SRC-17"],"source_ids":["LEX-07857"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07863","moore":"vaoko¹/²","french":"large + creux/fossé","sources":["SRC-17"],"source_ids":["LEX-07863"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07878","moore":"vibgi¹/²","french":"fausse couche + vider en un tas","sources":["SRC-17"],"source_ids":["LEX-07878"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07883","moore":"vigsi¹/²","french":"secouer + devenir branlant","sources":["SRC-17"],"source_ids":["LEX-07883"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07885","moore":"viigi¹/²","french":"reporter/déplacer + démolir pour reconstruire","sources":["SRC-17"],"source_ids":["LEX-07885"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07887","moore":"viki¹/²","french":"déraciner + vider en renversant","sources":["SRC-17"],"source_ids":["LEX-07887"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07890","moore":"vilga¹/²","french":"bande de tissu pour la tête + circonférence","sources":["SRC-17"],"source_ids":["LEX-07890"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07891","moore":"vilgi¹/²","french":"faire rouler + dérouler","sources":["SRC-17"],"source_ids":["LEX-07891"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07898","moore":"virsi¹/²/³","french":"être agité + avoir peur + bouger/faire signe de vie","sources":["SRC-17"],"source_ids":["LEX-07898"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07899","moore":"viuug-luiila/viuugu/vĩuungu","french":"hibou (3 variantes)","sources":["SRC-17"],"source_ids":["LEX-07899"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07901","moore":"vi¹/²","french":"tomber (dents) + reporter/déplacer","sources":["SRC-17"],"source_ids":["LEX-07901"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07914","moore":"vugri¹/²","french":"une fois + spatule en bois","sources":["SRC-17"],"source_ids":["LEX-07914"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07923","moore":"vãdge¹/²","french":"castrer + défoncer/enfoncer","sources":["SRC-17"],"source_ids":["LEX-07923"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07944","moore":"võ¹/²","french":"déraciner + bourdonner","sources":["SRC-17"],"source_ids":["LEX-07944"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07952","moore":"vũmnugi¹/²","french":"commencer + s'engager dans","sources":["SRC-17"],"source_ids":["LEX-07952"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07965","moore":"vɛɛre¹/²","french":"béant/ouvert + verre (emprunt)","sources":["SRC-17"],"source_ids":["LEX-07965"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07972","moore":"vɩlemde¹/²","french":"balancer en l'air + rebrousser chemin","sources":["SRC-17"],"source_ids":["LEX-07972"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-07993","moore":"vɩʋʋgo¹/²","french":"espace vide/inoccupé + temps libre","sources":["SRC-17"],"source_ids":["LEX-07993"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08016","moore":"vʋʋsem¹/²/³","french":"respiration ET repos ET esprit —","sources":["SRC-17"],"source_ids":["LEX-08016"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08072","moore":"wadre¹/²","french":"ganglions enflés + point blanchâtre","sources":["SRC-17"],"source_ids":["LEX-08072"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08074","moore":"wag-/wao","french":"froid selon dialecte","sources":["SRC-11"],"source_ids":["LEX-08074"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08077","moore":"wag-wage¹/²","french":"frisson de froid + voix forte","sources":["SRC-17"],"source_ids":["LEX-08077"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08111","moore":"wakɩre¹/²","french":"pièce de 5 francs + unité de compte","sources":["SRC-17"],"source_ids":["LEX-08111"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08115","moore":"wala¹/²/³","french":"comme/par exemple + pigeons + ou bien","sources":["SRC-17"],"source_ids":["LEX-08115"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08136","moore":"waoko¹/²","french":"desséché + force/brutalité","sources":["SRC-17"],"source_ids":["LEX-08136"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08156","moore":"waoose/yãma-yãma","french":"saletés (pl.)","sources":["SRC-17"],"source_ids":["LEX-08156"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08162","moore":"warbo/koobo","french":"sarclage (générique)","sources":["SRC-17"],"source_ids":["LEX-08162"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08163","moore":"warbo/warga¹/wubs-warga","french":"sarclage (3 niveaux)","sources":["SRC-17"],"source_ids":["LEX-08163"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08171","moore":"warga¹/²","french":"premier sarclage + planche du waré","sources":["SRC-17"],"source_ids":["LEX-08171"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08187","moore":"we-/weo-","french":"sauvage/brousse","sources":["SRC-17"],"source_ids":["LEX-08187"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08207","moore":"wed-baare/wed-doogo","french":"écurie","sources":["SRC-17"],"source_ids":["LEX-08207"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08211","moore":"wed-doogo/wed-baare","french":"écurie","sources":["SRC-17"],"source_ids":["LEX-08211"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08218","moore":"wed-moaaga/weefo","french":"cheval","sources":["SRC-17"],"source_ids":["LEX-08218"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08222","moore":"wed-pelle/ka-zom","french":"cheval blanc-sale","sources":["SRC-17"],"source_ids":["LEX-08222"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08240","moore":"wee/weeg","french":"pas du tout (adv.)","sources":["SRC-17"],"source_ids":["LEX-08240"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08243","moore":"weefo/wed-moaaga","french":"cheval","sources":["SRC-17"],"source_ids":["LEX-08243"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08247","moore":"weele¹/²","french":"écarter grandement/séparer + état de squelette","sources":["SRC-17"],"source_ids":["LEX-08247"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08256","moore":"weere¹/²","french":"place/espace + vulgaire/commun/sans valeur","sources":["SRC-17"],"source_ids":["LEX-08256"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08263","moore":"weke¹/²","french":"éclore + fendre/casser","sources":["SRC-17"],"source_ids":["LEX-08263"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08267","moore":"welbre²/welebre","french":"gui, plante parasite","sources":["SRC-17"],"source_ids":["LEX-08267"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08269","moore":"welbre¹/²/³","french":"corpulent + plante parasite/gui + bourgeon","sources":["SRC-17"],"source_ids":["LEX-08269"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08282","moore":"weo-weo/wɛsga","french":"aboiement","sources":["SRC-17"],"source_ids":["LEX-08282"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08291","moore":"weoore/yo-biiga","french":"gland","sources":["SRC-17"],"source_ids":["LEX-08291"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08296","moore":"wesbo²/wese³","french":"tallage / taller","sources":["SRC-17"],"source_ids":["LEX-08296"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08298","moore":"wese¹/²/³","french":"aboyer + casser en morceaux + taller","sources":["SRC-17"],"source_ids":["LEX-08298"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08305","moore":"widgi¹/²","french":"laver le visage + allumer","sources":["SRC-17"],"source_ids":["LEX-08305"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08306","moore":"widi¹/²","french":"porter des chaussures + brûler","sources":["SRC-17"],"source_ids":["LEX-08306"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08313","moore":"wiifu/wĩifu/waeefo","french":"cicatrice (3 variantes)","sources":["SRC-17"],"source_ids":["LEX-08313"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08323","moore":"wilga¹/²","french":"composante/membre/quartier + pétiole","sources":["SRC-17"],"source_ids":["LEX-08323"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08340","moore":"wisi¹/²","french":"enfumer/embaumer + humer la vapeur","sources":["SRC-17"],"source_ids":["LEX-08340"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08349","moore":"wi¹/²","french":"scarifications ethniques + puiser en grande quantité","sources":["SRC-17"],"source_ids":["LEX-08349"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08353","moore":"woasa/wosɩ","french":"cassure nette","sources":["SRC-17"],"source_ids":["LEX-08353"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08355","moore":"wob-/wobg-","french":"éléphant / trompe / membres inférieurs","sources":["SRC-17"],"source_ids":["LEX-08355"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08363","moore":"wob-yaade/wob-yãoogo","french":"cissus (lianes)","sources":["SRC-17"],"source_ids":["LEX-08363"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08364","moore":"wob-yaade/wob-zãre","french":"liane","sources":["SRC-17"],"source_ids":["LEX-08364"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08366","moore":"wob-yãado/wob-yãoogo","french":"liane","sources":["SRC-17"],"source_ids":["LEX-08366"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08396","moore":"wolfo/wolfre","french":"Wolof / langue Wolof","sources":["SRC-17"],"source_ids":["LEX-08396"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08419","moore":"wotoro/tereko","french":"charrette","sources":["SRC-17"],"source_ids":["LEX-08419"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08433","moore":"wubs-warga/sapaol-warga","french":"premier sarclage à sol sec","sources":["SRC-17"],"source_ids":["LEX-08433"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08442","moore":"wul-wuli/wulli/wula","french":"chaud et étouffant","sources":["SRC-17"],"source_ids":["LEX-08442"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08463","moore":"wuswulli/wulgu/wul-faaga","french":"brouillard, brume","sources":["SRC-17"],"source_ids":["LEX-08463"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08484","moore":"wãdge¹/²","french":"griffer/pincer + couper avec les doigts","sources":["SRC-17"],"source_ids":["LEX-08484"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08495","moore":"wãgda/wãgdga","french":"voyelle","sources":["SRC-17"],"source_ids":["LEX-08495"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08514","moore":"wãre¹/²","french":"résidu de minerai + nourriture de la veille","sources":["SRC-17"],"source_ids":["LEX-08514"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08515","moore":"wãsemba/wãsengo","french":"forme très douloureuse de lèpre","sources":["SRC-17"],"source_ids":["LEX-08515"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08517","moore":"wãsge¹/²/³","french":"rendre lépreux + couper à travers un champ + sécher un peu","sources":["SRC-17"],"source_ids":["LEX-08517"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08529","moore":"wõdge¹/²","french":"laver à la main + forcer","sources":["SRC-17"],"source_ids":["LEX-08529"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08556","moore":"wõsme/wõsge²","french":"pourri, se putréfier","sources":["SRC-17"],"source_ids":["LEX-08556"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08562","moore":"wĩ/wĩigi","french":"filer le coton","sources":["SRC-17"],"source_ids":["LEX-08562"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08568","moore":"wĩiri/loeere","french":"corde générique","sources":["SRC-17"],"source_ids":["LEX-08568"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08569","moore":"wĩiri/loeɛtga","french":"corde (générique)","sources":["SRC-17"],"source_ids":["LEX-08569"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08586","moore":"wĩnd-/wĩnto-/wĩn-","french":"soleil / orientation / temps solaire","sources":["SRC-17"],"source_ids":["LEX-08586"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08604","moore":"wĩntoogo¹/²","french":"Ardeur du soleil + Jour","sources":["SRC-17"],"source_ids":["LEX-08604"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08610","moore":"wũnusi/wũusi¹","french":"s'infecter, faire du pus","sources":["SRC-17"],"source_ids":["LEX-08610"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08617","moore":"wɛdga¹/²","french":"liane + morceau/portion/avance sur salaire","sources":["SRC-17"],"source_ids":["LEX-08617"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08622","moore":"wɛgelle/wɛgla/wɛglgo","french":"dur (rigide, 3 adj.)","sources":["SRC-17"],"source_ids":["LEX-08622"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08627","moore":"wɛlga¹/²","french":"partagé + croisement/bifurcation","sources":["SRC-17"],"source_ids":["LEX-08627"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08630","moore":"wɛrenga¹/²","french":"piège + chétif/rabougri","sources":["SRC-17"],"source_ids":["LEX-08630"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08632","moore":"wɛsga¹/²","french":"aboiement + abominable/horrible","sources":["SRC-17"],"source_ids":["LEX-08632"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08641","moore":"wɛɛga¹/yĩn-kõb-raado","french":"ossements, squelette","sources":["SRC-17"],"source_ids":["LEX-08641"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08673","moore":"wɩm-/wɩn-","french":"chaud · soleil · réchauffer","sources":["SRC-11"],"source_ids":["LEX-08673"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08682","moore":"wɩnge¹/²","french":"chauffer ET se dépêcher —","sources":["SRC-17"],"source_ids":["LEX-08682"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08695","moore":"wɩsge²/³","french":"devenir dégourdi/éveillé + atteindre un niveau suffisant","sources":["SRC-17"],"source_ids":["LEX-08695"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08713","moore":"wɩɩse¹/²","french":"ramasser du bois mort ET éclairer —","sources":["SRC-17"],"source_ids":["LEX-08713"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08718","moore":"wʋbe/wʋbdo/wʋbre","french":"vomir / vomissement","sources":["SRC-17"],"source_ids":["LEX-08718"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08753","moore":"wʋya/wilg-m-menga/wuk-m-menga","french":"vanité, orgueil","sources":["SRC-17"],"source_ids":["LEX-08753"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08755","moore":"wʋʋga/wʋʋgo","french":"varan du Nil","sources":["SRC-17"],"source_ids":["LEX-08755"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08760","moore":"wυlge/wυlga","french":"tremper/mou","sources":["SRC-17"],"source_ids":["LEX-08760"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08768","moore":"wẽbge¹/²","french":"tenir serré + tâter avec la main","sources":["SRC-17"],"source_ids":["LEX-08768"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08769","moore":"wẽbre¹/²","french":"boulette + robuste/bien formé","sources":["SRC-17"],"source_ids":["LEX-08769"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08786","moore":"wẽn-bere/wẽn-loaaka/wẽn-watga","french":"système des 3 temps (confirmé W4)","sources":["SRC-17"],"source_ids":["LEX-08786"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08806","moore":"wẽnd-doogo/wẽn-doogo","french":"église, litt. \"maison de Dieu","sources":["SRC-17"],"source_ids":["LEX-08806"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08809","moore":"wẽnde/wẽnd","french":"Dieu (générique)","sources":["SRC-17"],"source_ids":["LEX-08809"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08845","moore":"wẽnn-kaoore/zaabre/zafare","french":"après-midi (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-08845"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08875","moore":"yaab-raoogo/poaka","french":"grands-parents","sources":["SRC-17"],"source_ids":["LEX-08875"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08876","moore":"yaab-tʋb-ragẽ-raoogo/poaka","french":"yagen-tʋb-ragẽ-raoogo/poaka","sources":["SRC-17"],"source_ids":["LEX-08876"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08886","moore":"yaafo/yaoofof/yuufu","french":"éphémère (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-08886"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08887","moore":"yaafo¹/²","french":"termite ET éphémère —","sources":["SRC-17"],"source_ids":["LEX-08887"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08912","moore":"yaas-selle/yaas-susga","french":"angle droit, litt. \"angle-carré/droit","sources":["SRC-17"],"source_ids":["LEX-08912"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08934","moore":"yagda/pʋ-yagda/ko-wãada/poarma","french":"menteur (4 termes)","sources":["SRC-17"],"source_ids":["LEX-08934"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08939","moore":"yagdo¹/²","french":"argile/poterie ET corpulence —","sources":["SRC-17"],"source_ids":["LEX-08939"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08968","moore":"yakemde¹/yakemde²","french":"La syllabe est une enjambée de la parole — ancrage kinesthésique du langage","sources":["SRC-17"],"source_ids":["LEX-08968"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08975","moore":"yalemdo/zolemdo","french":"idiotie (2 termes)","sources":["SRC-17"],"source_ids":["LEX-08975"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08978","moore":"yalem¹/²","french":"idiot ET largeur/superficie —","sources":["SRC-17"],"source_ids":["LEX-08978"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-08994","moore":"yalme¹/²/³","french":"maltraiter + être large + faire la misère —","sources":["SRC-17"],"source_ids":["LEX-08994"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09015","moore":"yamba/yɛmbga","french":"esclave","sources":["SRC-17"],"source_ids":["LEX-09015"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09017","moore":"yamdga/yẽesenga","french":"intelligent (2 adjectifs)","sources":["SRC-17"],"source_ids":["LEX-09017"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09029","moore":"yamyam/yẽesem/sãoore","french":"intelligence (3 termes)","sources":["SRC-17"],"source_ids":["LEX-09029"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09032","moore":"yam¹/yam²","french":"La vésicule biliaire est le siège de la sagesse, de la volonté et du désir","sources":["SRC-17"],"source_ids":["LEX-09032"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09038","moore":"yao-bi-ribla/pugla","french":"cadets","sources":["SRC-17"],"source_ids":["LEX-09038"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09042","moore":"yaoa/yao-bi-ribla","french":"frère cadet","sources":["SRC-17"],"source_ids":["LEX-09042"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09051","moore":"yaoodo¹/²","french":"salaire ET impôt/taxe —","sources":["SRC-17"],"source_ids":["LEX-09051"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09076","moore":"ye/yɛ","french":"SRC-10","sources":["SRC-17"],"source_ids":["LEX-09076"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09116","moore":"yelle¹/²","french":"problème/affaire/chose/faute + sujet","sources":["SRC-17"],"source_ids":["LEX-09116"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09144","moore":"yeynye¹/²","french":"un à un + uniquement","sources":["SRC-17"],"source_ids":["LEX-09144"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09156","moore":"yibgi/yĩmi/yubgi","french":"oublier (3 verbes)","sources":["SRC-17"],"source_ids":["LEX-09156"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09157","moore":"yibgri/yubga","french":"oubli passager","sources":["SRC-17"],"source_ids":["LEX-09157"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09158","moore":"yibgri/yĩmbu/yĩmsgu","french":"oubli (3 termes)","sources":["SRC-17"],"source_ids":["LEX-09158"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09166","moore":"yiimdi/yaam-bila","french":"rein = \"petit enfant du foie","sources":["SRC-06"],"source_ids":["LEX-09166"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09210","moore":"yoabga¹/²","french":"arbuste + produit épilation","sources":["SRC-17"],"source_ids":["LEX-09210"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09211","moore":"yoala¹/²","french":"lisse/sans aspérité + absence de difficulté","sources":["SRC-17"],"source_ids":["LEX-09211"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09228","moore":"yoge¹/²","french":"plaisanter = desserrer","sources":["SRC-17"],"source_ids":["LEX-09228"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09237","moore":"yolgo/yondo","french":"sac en toile/jute","sources":["SRC-17"],"source_ids":["LEX-09237"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09251","moore":"yoogo¹/²","french":"mauvais + mauvais caractère","sources":["SRC-17"],"source_ids":["LEX-09251"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09256","moore":"yoore/raoolem/raolem","french":"pénis (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-09256"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09269","moore":"yub-paadga/zu-raoogo/koko-pitga","french":"joug (générique, 3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-09269"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09292","moore":"yã-raoogo/yã-gʋlenga/yã-sagbo","french":"gros intestin = \"grand intestin","sources":["SRC-06"],"source_ids":["LEX-09292"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09308","moore":"yãanem¹/²","french":"malnutrition par sevrage brusque ET oxydation —","sources":["SRC-17"],"source_ids":["LEX-09308"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09338","moore":"yãgre¹/²","french":"clôture/enclos + haie","sources":["SRC-17"],"source_ids":["LEX-09338"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09357","moore":"yãnme¹/²","french":"marcher à quatre pattes + se traîner","sources":["SRC-17"],"source_ids":["LEX-09357"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09374","moore":"yãrge¹/²","french":"crier = devenir rugueux","sources":["SRC-17"],"source_ids":["LEX-09374"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09384","moore":"yõ-boko/yõ-roogo","french":"narine (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-09384"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09391","moore":"yõ-yũlga/yõ-yũnbu","french":"saignement de nez","sources":["SRC-17"],"source_ids":["LEX-09391"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09400","moore":"yõgenme¹/²","french":"coincer les bouts + organiser","sources":["SRC-17"],"source_ids":["LEX-09400"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09543","moore":"yɩlenga¹/²","french":"multiple, multiplication","sources":["SRC-17"],"source_ids":["LEX-09543"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09570","moore":"yɩɩlle¹/²","french":"chant, cantique","sources":["SRC-17"],"source_ids":["LEX-09570"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09577","moore":"yʋ-/yʋʋr-","french":"nom / réputation / identité","sources":["SRC-17"],"source_ids":["LEX-09577"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09584","moore":"yʋbga/zẽ-yʋbga","french":"sauce de légumes","sources":["SRC-17"],"source_ids":["LEX-09584"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09586","moore":"yʋddd¹/²","french":"rouge vif = frais","sources":["SRC-17"],"source_ids":["LEX-09586"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09617","moore":"yʋʋre¹/²","french":"nom propre / substantif","sources":["SRC-17"],"source_ids":["LEX-09617"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09628","moore":"yẽbge¹/yẽbgre","french":"fondation d'une construction","sources":["SRC-17"],"source_ids":["LEX-09628"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09650","moore":"yẽega¹/²","french":"ongle + griffe","sources":["SRC-17"],"source_ids":["LEX-09650"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09674","moore":"yẽgre²/³","french":"racine = origine","sources":["SRC-17"],"source_ids":["LEX-09674"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09686","moore":"yẽn-kʋrsdga/yẽn-sɩlenga","french":"canine","sources":["SRC-17"],"source_ids":["LEX-09686"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09712","moore":"yẽsme¹/²","french":"téter + allaiter","sources":["SRC-17"],"source_ids":["LEX-09712"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09747","moore":"zabd-/zab-","french":"radical du combat","sources":["SRC-17"],"source_ids":["LEX-09747"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09762","moore":"zade/zãdre","french":"ténia","sources":["SRC-17"],"source_ids":["LEX-09762"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09763","moore":"zaeega/zɛɛga","french":"aire de battage","sources":["SRC-17"],"source_ids":["LEX-09763"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09787","moore":"zaka¹/²/³/⁴","french":"concession = usé = unité arithmétique = dîme islamique","sources":["SRC-17"],"source_ids":["LEX-09787"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09790","moore":"zalem","french":"confirmé","sources":["SRC-17"],"source_ids":["LEX-09790"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-09800","moore":"zanga/zãnga/zãnzãnga","french":"chauve-souris (3 variantes)","sources":["SRC-17"],"source_ids":["LEX-09800"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09812","moore":"zaoore¹/²/³","french":"langue = trône = jarre","sources":["SRC-17"],"source_ids":["LEX-09812"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09818","moore":"zap-pĩim/zap-peemde","french":"alêne","sources":["SRC-17"],"source_ids":["LEX-09818"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09829","moore":"zelbre/zelle","french":"beau","sources":["SRC-17"],"source_ids":["LEX-09829"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09856","moore":"zende/zɛla","french":"hache","sources":["SRC-17"],"source_ids":["LEX-09856"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09857","moore":"zendme/zerme","french":"déchiqueter","sources":["SRC-17"],"source_ids":["LEX-09857"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09860","moore":"zeyõ/gebre","french":"oignon","sources":["SRC-17"],"source_ids":["LEX-09860"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09862","moore":"zibri¹/zĩbri","french":"liane (générique + espèce)","sources":["SRC-17"],"source_ids":["LEX-09862"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09864","moore":"zig-bila/zigri","french":"clitoris","sources":["SRC-17"],"source_ids":["LEX-09864"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09867","moore":"ziiri/zĩiri","french":"gloire + honneur","sources":["SRC-17"],"source_ids":["LEX-09867"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09870","moore":"zirẽ-bebe-neda/zĩriri-bebe-neda","french":"menteur, litt. \"personne qui vit dans le mensonge","sources":["SRC-17"],"source_ids":["LEX-09870"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09871","moore":"zirẽ/zĩrẽ/zirzirẽ-beedo","french":"mensonge (3 variantes)","sources":["SRC-17"],"source_ids":["LEX-09871"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09892","moore":"zoe¹/²/³","french":"courir = avoir peur = déjà (accompli)","sources":["SRC-17"],"source_ids":["LEX-09892"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09899","moore":"zondlem/zondo","french":"cécité","sources":["SRC-04"],"source_ids":["LEX-09899"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09901","moore":"zoobre/ra-zoobre","french":"bois de pioche (barre à mine)","sources":["SRC-17"],"source_ids":["LEX-09901"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09920","moore":"zu-kõto/kalkõto","french":"cervelle = \"cœur de la tête","sources":["SRC-06"],"source_ids":["LEX-09920"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09921","moore":"zu-kõto/kalkõto/kõto¹","french":"cervelle (physique)","sources":["SRC-17"],"source_ids":["LEX-09921"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09964","moore":"zugu¹/²","french":"tête = sommet = épi = postposition","sources":["SRC-17"],"source_ids":["LEX-09964"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09968","moore":"zul-/zulum-","french":"profondeur / inclinaison / nasse / vider","sources":["SRC-17"],"source_ids":["LEX-09968"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09983","moore":"zulunga/zũnunga","french":"nasse","sources":["SRC-17"],"source_ids":["LEX-09983"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09984","moore":"zulunga/zũnunga/naase²","french":"nasse (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-09984"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09987","moore":"zulunga¹/²","french":"nasse / outils de pêche","sources":["SRC-17"],"source_ids":["LEX-09987"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-09994","moore":"zzẽemde/zẽenga","french":"coquillage","sources":["SRC-17"],"source_ids":["LEX-09994"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10001","moore":"zãage¹/²","french":"éloigner / préserver","sources":["SRC-17"],"source_ids":["LEX-10001"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10024","moore":"zãmse¹/²/³","french":"apprendre = rêver = chauve-souris","sources":["SRC-17"],"source_ids":["LEX-10024"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10045","moore":"zãnzũuri/zũnzũuri/zũuri","french":"chenille (3 variantes)","sources":["SRC-17"],"source_ids":["LEX-10045"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10051","moore":"zõge/zõke","french":"casser en petits morceaux","sources":["SRC-17"],"source_ids":["LEX-10051"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10066","moore":"zĩm-gõaaga/zĩm-lɛooga/lɛooga","french":"hameçon","sources":["SRC-17"],"source_ids":["LEX-10066"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10069","moore":"zĩm-yõagda/zĩm-yẽeda","french":"pêcheur (2 termes)","sources":["SRC-17"],"source_ids":["LEX-10069"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10070","moore":"zĩm-yõgre/zĩm-lobre","french":"pêche (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-10070"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10075","moore":"zĩnana/zĩn-ddẽgdo","french":"démon (être de l'ombre)","sources":["SRC-17"],"source_ids":["LEX-10075"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10082","moore":"zũnd-/zũn-","french":"désordre / nasse / chenilles","sources":["SRC-17"],"source_ids":["LEX-10082"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10090","moore":"zɛɛga/zaeega","french":"aire de battage du mil","sources":["SRC-17"],"source_ids":["LEX-10090"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10095","moore":"zɩ-kaalgo/zɩ-paoore","french":"anémie (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-10095"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10114","moore":"zɩ-wĩiga/zɩ-sore","french":"vaisseau sanguin","sources":["SRC-17"],"source_ids":["LEX-10114"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10119","moore":"zɩlemde¹/²/³/⁴","french":"langue = parole = bénédiction = malédiction","sources":["SRC-17"],"source_ids":["LEX-10119"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10130","moore":"zɩta¹/²","french":"ignorant = ingrat","sources":["SRC-17"],"source_ids":["LEX-10130"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10148","moore":"zʋ¹/²/³","french":"craindre = gémir = dépasser","sources":["SRC-17"],"source_ids":["LEX-10148"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10164","moore":"zẽedo¹/²","french":"sauce = jardin potager","sources":["SRC-17"],"source_ids":["LEX-10164"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10170","moore":"zẽege¹/²","french":"rouge = feu","sources":["SRC-17"],"source_ids":["LEX-10170"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10175","moore":"zẽgda","french":"inaccompli","sources":["SRC-17"],"source_ids":["LEX-10175"],"flags":["technical_or_metadata_gloss"]}
+{"id":"malm-LEX-10182","moore":"zẽka¹/²","french":"latérite = omoplate","sources":["SRC-17"],"source_ids":["LEX-10182"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10218","moore":"ãbga¹/kãbga","french":"puce, tique","sources":["SRC-17"],"source_ids":["LEX-10218"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10221","moore":"ãd-kaoodga/ãd-loaadga/ãd-zʋʋre","french":"étoile filante (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-10221"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10224","moore":"ãd-zʋʋre/ãd-kaoodga/ãd-loaadga","french":"étoile filante (3 synonymes)","sources":["SRC-17"],"source_ids":["LEX-10224"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10234","moore":"ãndũnini/rũniya/tẽnga","french":"monde","sources":["SRC-17"],"source_ids":["LEX-10234"],"flags":["morpheme_or_symbolic_form"]}
+{"id":"malm-LEX-10237","moore":"ãsba/yɛsba","french":"oncle maternel (2 synonymes)","sources":["SRC-17"],"source_ids":["LEX-10237"],"flags":["morpheme_or_symbolic_form"]}

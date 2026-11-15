@@ -1,0 +1,32 @@
+{
+  "schema": "bozer-malm-quality-audit-v1",
+  "generated_at": "2026-11-15",
+  "source": "https://github.com/progressio-media/malm-data/blob/main/lexicon.json",
+  "entries": 10234,
+  "native_validated_entries": 0,
+  "rights_cleared_entries": 0,
+  "invalid_rows": 0,
+  "duplicate_ids": 0,
+  "duplicate_exact_pairs": 0,
+  "ambiguous_moore_forms": 49,
+  "french_glosses_with_multiple_moore_forms": 664,
+  "review_queue_entries": 709,
+  "review_flag_counts": {
+    "morpheme_or_symbolic_form": 698,
+    "technical_or_metadata_gloss": 13
+  },
+  "source_counts": {
+    "SRC-17": 9500,
+    "SRC-11": 186,
+    "SRC-13": 231,
+    "SRC-07": 225,
+    "SRC-04": 52,
+    "SRC-06": 49
+  },
+  "policy": {
+    "all_imported_entries_remain_candidates": true,
+    "automatic_promotion_forbidden": true,
+    "diacritics_preserved": true,
+    "multiple_forms_for_one_french_gloss_are_not_auto_resolved": true
+  }
+}
