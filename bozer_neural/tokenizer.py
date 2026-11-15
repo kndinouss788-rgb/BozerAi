@@ -130,15 +130,13 @@ class BozerByteBPETokenizer:
         return raw.decode("utf-8", errors="replace")
 
     def to_dict(self):
-        payload = {
+        return {
             "type": "byte_bpe",
             "base_vocab_size": BASE_VOCAB_SIZE,
             "vocab_size": self.vocab_size,
+            "active_vocab_size": self.active_vocab_size,
             "merges": [list(pair) for pair in self.merges],
         }
-        if self.active_vocab_size != self.vocab_size:
-            payload["active_vocab_size"] = self.active_vocab_size
-        return payload
 
     @classmethod
     def from_dict(cls, payload):
