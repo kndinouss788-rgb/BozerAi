@@ -6,6 +6,14 @@ import org.junit.Test
 
 class BozerNeuralBrainTest {
     @Test
+    fun originalNeuralCoreIsPermanentAndNotMisreportedAsTrained() {
+        assertTrue(BozerNeuralBrain.CORE_ALWAYS_ACTIVE)
+        assertTrue(BozerNeuralBrain.CORE_ID == "bozer_neural")
+        assertTrue(BozerNeuralBrain.FOUNDATION_MODEL_STATUS == "not_trained")
+        assertTrue(BozerNeuralBrain.AUXILIARY_BACKENDS_ROLE == "language_generation_only")
+    }
+
+    @Test
     fun sharedPolicyDefinesIdentityAndActionSafety() {
         assertTrue(BozerNeuralBrain.PERSONALITY_PROMPT.contains("Tu es BOZER"))
         assertTrue(BozerNeuralBrain.PERSONALITY_PROMPT.contains("Une proposition d'action n'est pas une action exécutée"))
