@@ -69,7 +69,10 @@ def evaluate_1b(
                     config.context_length, device=target_device,
                     generator=generator,
                 )
-                _, loss = model(x, y, loss_mask=mask)
+                _, loss = model(
+                    x, y, loss_mask=mask,
+                    active_vocab_size=tokenizer.active_vocab_size,
+                )
                 scores.append(float(loss.detach().float().cpu()))
             category_test_loss[category] = sum(scores) / len(scores)
         # Macro-average prevents long categories from hiding weak categories.
