@@ -84,3 +84,36 @@ def test_evaluator_checks_splits_and_reports_each_category(tmp_path):
     assert len(result["category_test_loss"]) == 6
     assert len(result["examples"]) == 6
     assert result["tokenizer_vocab_size"] == 270
+
+
+
+def test_plain_text_partitions_are_validated_without_cross_split_blocks(tmp_path):
+    from bozer_neural.validate_corpus import validate_splits
+
+    train = tmp_path / "train.txt"
+    validation = tmp_path / "validation.txt"
+    test = tmp_path / "test.txt"
+    train.write_text("Premier paragraphe français.\nSuite du texte.\n", encoding="utf-8")
+    validation.write_text("Deuxième paragraphe français.\nTexte de validation.\n", encoding="utf-8")
+    test.write_text("Troisième paragraphe français.\nTexte réservé au test.\n", encoding="utf-8")
+
+    report = validate_splits(train, validation, test)
+
+    assert report["train"]["text_blocks"] == 1
+    assert report["validation"]["text_blocks"] == 1
+    assert report["test"]["text_blocks"] == 1
+
+
+def test_plain_text_partition_leakage_is_rejected(tmp_path):
+    import pytest
+    from bozer_neural.validate_corpus import validate_splits
+
+    train = tmp_path / "train.txt"
+    validation = tmp_path / "validation.txt"
+    test = tmp_path / "test.txt"
+    train.write_text("Bloc partagé entre partitions.\n", encoding="utf-8")
+    validation.write_text("Bloc partagé entre partitions.\n", encoding="utf-8")
+    test.write_text("Bloc réservé au test.\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="leakage"):
+        validate_splits(train, validation, test)
