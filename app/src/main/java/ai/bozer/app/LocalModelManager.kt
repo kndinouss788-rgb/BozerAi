@@ -10,7 +10,7 @@ import java.net.URL
 import java.security.MessageDigest
 import kotlin.coroutines.coroutineContext
 
-/** Downloads the pinned Qwen GGUF into BOZER's private internal storage. */
+/** Downloads an optional pre-trained Qwen auxiliary model into private storage. It is not BOZER NEURAL. */
 class LocalModelManager(context: Context) {
     private val modelDir = File(context.filesDir, "models").apply { mkdirs() }
     private val modelFile = File(modelDir, MODEL_FILENAME)
