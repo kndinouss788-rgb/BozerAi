@@ -153,6 +153,13 @@ def train_1b(
         raise ValueError("early_stopping_patience cannot be negative")
     if validation_data_path is None:
         raise ValueError("a separate validation_data_path is required for 1B training")
+    is_text_pretraining = Path(data_path).suffix.lower() != ".jsonl"
+    if is_text_pretraining != (Path(validation_data_path).suffix.lower() != ".jsonl"):
+        raise ValueError("training and validation must both be JSONL dialogues or both be plain text")
+    training_objective = (
+        "next_token_prediction_all_text_tokens"
+        if is_text_pretraining else "assistant_answer_tokens_and_eos_only"
+    )
     if learning_rate <= 0:
         raise ValueError("learning_rate must be positive")
     if warmup_steps < 0:
@@ -304,7 +311,7 @@ def train_1b(
                 "split_audit": split_audit,
                 "train_tokens": int(train_tokens.numel()),
                 "validation_tokens": int(validation_tokens.numel()),
-                "training_objective": "assistant_answer_tokens_and_eos_only",
+                "training_objective": training_objective,
                 "precision": precision,
                 "active_vocab_size": tokenizer.active_vocab_size,
                 "gradient_checkpointing": gradient_checkpointing,
@@ -399,7 +406,7 @@ def train_1b(
                 "split_audit": split_audit,
                 "train_tokens": int(train_tokens.numel()),
                 "validation_tokens": int(validation_tokens.numel()),
-                "training_objective": "assistant_answer_tokens_and_eos_only",
+                "training_objective": training_objective,
                 "precision": precision,
                 "active_vocab_size": tokenizer.active_vocab_size,
                 "gradient_checkpointing": gradient_checkpointing,
@@ -422,6 +429,7 @@ def train_1b(
         "best_validation_loss": best_validation_loss,
         "history": history,
         "parameter_count": model.parameter_count(),
+        "training_objective": training_objective,
         "split_audit": split_audit,
     }
 
@@ -430,8 +438,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Train the BOZER NEURAL 1B model from random initialization"
     )
-    parser.add_argument("--data", required=True, help="training JSONL")
-    parser.add_argument("--validation-data", required=True, help="held-out validation JSONL")
+    parser.add_argument("--data", required=True, help="training dialogue JSONL or plain-text pretraining corpus")
+    parser.add_argument("--validation-data", required=True, help="held-out validation dialogue JSONL or plain-text corpus")
     parser.add_argument("--output", default="artifacts/bozer-neural-1b.pt")
     parser.add_argument("--steps", type=int, default=1000)
     parser.add_argument("--batch-size", type=int, default=1)
