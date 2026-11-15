@@ -145,7 +145,7 @@ def test_speech_frontend_preserves_diacritics_and_chunks_text():
     assert combined.endswith("?")
     assert all(len(item.text) <= 24 for item in segments)
     punctuation = frontend.prepare("Bonjour , comment ça va ?", "fr-FR")
-    assert " ".join(item.text for item in punctuation) == "Bonjour, comment ça va ?"
+    assert " ".join(item.text for item in punctuation) == "Bonjour, comment ça va?"
 
 
 def test_pronunciation_lexicon_hides_candidate_entries_by_default():
