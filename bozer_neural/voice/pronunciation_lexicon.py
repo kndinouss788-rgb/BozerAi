@@ -19,6 +19,8 @@ class PronunciationEntry:
     source: str
     status: str
     reviewed_by: str | None = None
+    source_license: str | None = None
+    rights_status: str = "pending"
 
     def __post_init__(self):
         if not all(v.strip() for v in (self.spelling, self.language,
@@ -28,6 +30,8 @@ class PronunciationEntry:
             raise ValueError("unsupported pronunciation status")
         if self.status == "validated" and not self.reviewed_by:
             raise ValueError("validated pronunciation requires a reviewer")
+        if self.status == "validated" and (not self.source_license or self.rights_status != "cleared"):
+            raise ValueError("validated pronunciation requires cleared source rights and a license")
 
 
 class PronunciationLexicon:
