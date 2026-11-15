@@ -59,10 +59,43 @@ def read_records(path):
 
 
 def validate_splits(train_path, validation_path, test_path):
+    paths = {
+        "train": Path(train_path),
+        "validation": Path(validation_path),
+        "test": Path(test_path),
+    }
+    suffixes = {path.suffix.lower() for path in paths.values()}
+    if suffixes != {".jsonl"}:
+        if ".jsonl" in suffixes:
+            raise ValueError("all pretraining partitions must be plain text, not a mix of JSONL and text")
+        resolved = [path.resolve() for path in paths.values()]
+        if len(set(resolved)) != 3:
+            raise ValueError("train, validation and test must be three different files")
+        unit_owners = {}
+        report = {}
+        for name, path in paths.items():
+            text = path.read_text(encoding="utf-8")
+            units = {
+                normalize_prompt(part)
+                for part in text.replace("\r\n", "\n").split("\n\n")
+                if normalize_prompt(part)
+            }
+            if not units:
+                raise ValueError(f"{name} plain-text corpus is empty: {path}")
+            report[name] = {"text_blocks": len(units)}
+            for unit in units:
+                previous = unit_owners.get(unit)
+                if previous is not None and previous != name:
+                    raise ValueError(
+                        f"exact text-block leakage between {previous} and {name}"
+                    )
+                unit_owners.setdefault(unit, name)
+        return report
+
     splits = {
-        "train": read_records(train_path),
-        "validation": read_records(validation_path),
-        "test": read_records(test_path),
+        "train": read_records(paths["train"]),
+        "validation": read_records(paths["validation"]),
+        "test": read_records(paths["test"]),
     }
     prompt_owner = {}
     all_turn_prompt_owner = {}
