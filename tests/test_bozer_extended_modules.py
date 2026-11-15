@@ -11,7 +11,7 @@ from bozer_neural.language.morphology import MorphologyRule, RuleBasedMorphology
 from bozer_neural.language.moore_french import MooreFrenchTranslator
 from bozer_neural.voice.frontend import SpeechTextFrontend
 from bozer_neural.voice.pronunciation_lexicon import (
-    PronunciationEntry, PronunciationLexicon,
+    PronunciationEntry, PronunciationLexicon, load_pronunciation_lexicon,
 )
 from bozer_neural.voice.tts_contract import AudioChunk, SpeechController, SpeechRequest
 
