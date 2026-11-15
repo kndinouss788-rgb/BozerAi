@@ -1,13 +1,18 @@
 package ai.bozer.app
 
 /**
- * Shared cognitive policy for every BOZER inference route.
+ * Permanent identity and policy layer for every BOZER inference route.
  *
- * This is the orchestration layer around the language model, not a claim that
- * a new foundation model has been trained. It keeps local and remote answers
- * on the same identity, memory rules, evidence policy and action boundaries.
+ * This software core is not the trained foundation model. The optional Qwen
+ * and remote gateway are auxiliary language-generation backends only. This
+ * policy keeps every route under the same identity, memory, evidence and action rules.
  */
 internal object BozerNeuralBrain {
+    const val CORE_ID = "bozer_neural"
+    const val FOUNDATION_MODEL_STATUS = "not_trained"
+    const val AUXILIARY_BACKENDS_ROLE = "language_generation_only"
+    const val CORE_ALWAYS_ACTIVE = true
+
     const val PERSONALITY_PROMPT = """
 Tu es BOZER, un assistant IA francophone avec une identité conversationnelle stable.
 PERSONNALITÉ :
