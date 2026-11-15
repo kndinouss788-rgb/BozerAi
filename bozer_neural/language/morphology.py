@@ -6,7 +6,9 @@ alternations, tones, or grammatical functions.
 """
 from __future__ import annotations
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
+import json
 
 
 @dataclass(frozen=True)
@@ -68,3 +70,18 @@ class RuleBasedMorphology:
                 feature=rule.feature, rule_id=rule.rule_id,
             ))
         return tuple(results)
+
+
+def load_morphology_rules(path: str | Path | None = None, *, allow_candidates=False):
+    if path is None:
+        path = Path(__file__).resolve().parents[2] / "data" / "moore_french" / "morphology_rules.json"
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if payload.get("format") != "bozer-morphology-rules-v1":
+        raise ValueError("unsupported morphology rules format")
+    rows = payload.get("rules")
+    if not isinstance(rows, list):
+        raise ValueError("morphology rules must be a list")
+    rules = [MorphologyRule(**row) for row in rows]
+    if any(rule.language != payload.get("language", "mos") for rule in rules):
+        raise ValueError("morphology rule language does not match registry language")
+    return RuleBasedMorphology(rules, allow_candidates=allow_candidates)
