@@ -296,8 +296,10 @@ def test_parallel_corpus_preparation_requires_rights_and_keeps_sources_isolated(
             "id": f"entry-{split}", "source_id": source_id,
             "source_text": "Bonjour", "target_text": "Ne y yibeoogo",
             "source_language": "fr", "target_language": "mos",
-            "source": "native contributor", "source_license": "CC0",
-            "reviewed_by": "native-reviewer", "status": "validated",
+            "source": "native contributor", "source_reference": "field-session-001",
+            "source_license": "CC0", "reviewed_by": "native-reviewer",
+            "native_reviewed_by": "native-reviewer", "reviewed_at": "2026-11-15",
+            "status": "validated",
             "rights_status": "cleared",
         })
     input_path = tmp_path / "parallel.jsonl"
