@@ -23,8 +23,8 @@ def validate_parallel_records(records: list[dict]) -> list[str]:
             errors.append(f"{prefix}.id is duplicated")
         else:
             seen_ids.add(entry_id)
-        for field in ("source_id", "source_text", "target_text", "source",
-                      "source_license", "reviewed_by"):
+        for field in ("source_id", "source_text", "target_text", "source", "source_reference",
+                      "source_license", "reviewed_by", "reviewed_at"):
             if not isinstance(row.get(field), str) or not row[field].strip():
                 errors.append(f"{prefix}.{field} is missing")
         if row.get("source_language") not in SUPPORTED_LANGUAGES:
@@ -37,6 +37,10 @@ def validate_parallel_records(records: list[dict]) -> list[str]:
             errors.append(f"{prefix} is not linguistically validated")
         if row.get("rights_status") != "cleared":
             errors.append(f"{prefix} source rights are not cleared")
+        if "mos" in {row.get("source_language"), row.get("target_language")} and not (
+            isinstance(row.get("native_reviewed_by"), str) and row["native_reviewed_by"].strip()
+        ):
+            errors.append(f"{prefix} Mooré pair needs a native-speaker reviewer")
     return errors
 
 
@@ -88,6 +92,12 @@ def prepare_parallel_corpus(input_path, output_dir, *, train_percent=90,
             "source_id": row["source_id"],
             "language_pair": [source_language, target_language],
             "entry_id": row["id"],
+            "source_reference": row["source_reference"],
+            "source_license": row["source_license"],
+            "reviewed_by": row["reviewed_by"],
+            "reviewed_at": row["reviewed_at"],
+            "native_reviewed_by": row.get("native_reviewed_by"),
+            "rights_status": row["rights_status"],
         })
     if any(not partition for partition in partitions.values()):
         counts = {name: len(items) for name, items in partitions.items()}
