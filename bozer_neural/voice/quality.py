@@ -16,8 +16,8 @@ class AudioQualityReport:
     channels: int
     sample_width_bits: int
     duration_seconds: float
-    peak_dbfs: float
-    rms_dbfs: float
+    peak_dbfs: float | None
+    rms_dbfs: float | None
     clipped_sample_percent: float
     near_silence_percent: float
     warnings: tuple[str, ...]
@@ -63,7 +63,7 @@ def analyze_wav_quality(path: str | Path) -> AudioQualityReport:
     near_silence = sum(abs(value) <= full_scale * 0.001 for value in values) / len(values) * 100
 
     def dbfs(value):
-        return 20 * math.log10(value) if value > 0 else float("-inf")
+        return 20 * math.log10(value) if value > 0 else None
 
     warnings = []
     if peak < 0.05:
@@ -79,8 +79,8 @@ def analyze_wav_quality(path: str | Path) -> AudioQualityReport:
         channels=channels,
         sample_width_bits=width * 8,
         duration_seconds=round(frames / rate, 3),
-        peak_dbfs=round(dbfs(peak), 2),
-        rms_dbfs=round(dbfs(rms), 2),
+        peak_dbfs=round(dbfs(peak), 2) if peak > 0 else None,
+        rms_dbfs=round(dbfs(rms), 2) if rms > 0 else None,
         clipped_sample_percent=round(clipped, 4),
         near_silence_percent=round(near_silence, 3),
         warnings=tuple(warnings),
