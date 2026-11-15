@@ -60,13 +60,19 @@ object SecretaryCommandParser {
     fun parse(input: String): SecretaryCommand? {
         val text = input.trim().removeSuffix(".").removeSuffix("!").trim()
         val normalized = normalize(text)
-        val add = Regex("^(?:bozer[, ]*)?(?:ajoute|ajouter|note|enregistre)(?:-moi)?\\s+(?:une tache|a ma liste|dans ma liste)\\s+(.+)$")
-            .find(normalized)?.groupValues?.get(1)?.trim()
-        if (!add.isNullOrBlank()) return SecretaryCommand.Add(text.substringAfterLast(" ").let {
-            val originalTitle = Regex("(?i)(?:ajoute|ajouter|note|enregistre)(?:-moi)?\\s+(?:une tâche|une tache|à ma liste|a ma liste|dans ma liste)\\s+(.+)$")
-                .find(text)?.groupValues?.get(1)?.trim()
-            originalTitle ?: add
-        })
+        val add = Regex(
+            "^(?:bozer[, ]*)?(?:ajoute|ajouter|note|enregistre)(?:-moi)?\\s+" +
+                "(?:(?:une\\s+tache)(?:\\s+(?:a\\s+ma\\s+liste))?|a\\s+ma\\s+liste|dans\\s+ma\\s+liste)" +
+                "\\s*[:,-]?\\s*(.+)$"
+        ).find(normalized)?.groupValues?.get(1)?.trim()
+        if (!add.isNullOrBlank()) {
+            val originalTitle = Regex(
+                "(?i)^(?:bozer[, ]*)?(?:ajoute|ajouter|note|enregistre)(?:-moi)?\\s+" +
+                    "(?:(?:une\\s+t[âa]che)(?:\\s+(?:à|a)\\s+ma\\s+liste)?|(?:à|a)\\s+ma\\s+liste|dans\\s+ma\\s+liste)" +
+                    "\\s*[:,-]?\\s*(.+)$"
+            ).find(text)?.groupValues?.get(1)?.trim()
+            return SecretaryCommand.Add((originalTitle ?: add).trim().trimEnd('.', '!', '?'))
+        }
 
         val complete = Regex("^(?:termine|terminer|acheve|achever|coche)\\s+(?:(?:la tâche|la tache)\\s+)?(.+)$", RegexOption.IGNORE_CASE)
             .find(text)?.groupValues?.get(1)?.trim()
@@ -89,6 +95,10 @@ object SecretaryCommandParser {
             .trim()
 }
 
+fun formatOpenSecretaryTasks(tasks: List<SecretaryTask>): String =
+    if (tasks.isEmpty()) "Tu n'as aucune tâche en attente."
+    else "Voici tes tâches en attente :\\n" + tasks.joinToString("\\n") { "• ${it.title}" }
+
 class SecretaryCommandProcessor(private val repository: SecretaryRepository) {
     fun execute(input: String): String? = when (val command = SecretaryCommandParser.parse(input)) {
         null -> null
@@ -110,8 +120,7 @@ class SecretaryCommandProcessor(private val repository: SecretaryRepository) {
         }
         SecretaryCommand.ListOpen -> {
             val open = repository.tasks(includeCompleted = false)
-            if (open.isEmpty()) "Tu n'as aucune tâche en attente."
-            else "Voici tes tâches en attente :\\n" + open.joinToString("\\n") { "• ${it.title}" }
+            formatOpenSecretaryTasks(open)
         }
     }
 }
