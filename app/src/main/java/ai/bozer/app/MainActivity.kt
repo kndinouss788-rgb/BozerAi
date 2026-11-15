@@ -178,7 +178,7 @@ private fun BozerChat(
     var settingsOpen by remember { mutableStateOf(false) }
     var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", false)) }
     val voiceOutput = remember(context) { BozerVoiceOutput(context) }
-    DisposableEffect(voiceOutput) { onDispose { voiceOutput.shutdown() } }
+    DisposableEffect(voiceOutput) { onDispose { voiceOutput.release() } }
     var secretaryOpen by remember { mutableStateOf(false) }
     var tiktokOpen by remember { mutableStateOf(false) }
     var tiktokDescription by remember { mutableStateOf("") }
