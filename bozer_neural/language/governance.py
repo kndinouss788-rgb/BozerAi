@@ -31,7 +31,7 @@ def promote_candidate(entry: dict, decision: ReviewDecision) -> dict:
         date.fromisoformat(decision.reviewed_at)
     except ValueError as exc:
         raise ValueError("reviewed_at must be an ISO date") from exc
-    for field in ("source", "source_reference", "source_license"):
+    for field in ("french", "moore", "source", "source_reference", "source_license"):
         if not isinstance(entry.get(field), str) or not entry[field].strip():
             raise ValueError(f"candidate is missing {field}")
     promoted = dict(entry)
