@@ -7,9 +7,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 enum class BrainMode(val label: String, val description: String) {
-    AUTO("Automatique", "Internet disponible : serveurs BOZER. Sans Internet : cerveau local."),
-    ONLINE("En ligne", "Utilise uniquement les serveurs distants."),
-    OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
+    AUTO("Automatique", "Moteur distant d’appoint si disponible, sinon modèle local auxiliaire pré-entraîné."),
+    ONLINE("En ligne", "Utilise uniquement le moteur distant auxiliaire derrière la passerelle BOZER."),
+    OFFLINE("Hors ligne", "Utilise le modèle Qwen local auxiliaire, pas le modèle original BOZER NEURAL.");
 
     companion object {
         fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: AUTO
@@ -49,10 +49,10 @@ class ChatRepository(
             return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
         }
         if (selectedMode == BrainMode.OFFLINE && !model.isLoaded) {
-            return@withLock "Le cerveau local n'est pas encore installé ou chargé. Installe-le une première fois pour utiliser le mode Hors ligne."
+            return@withLock "Le modèle local auxiliaire n'est pas encore installé ou chargé. Installe-le une première fois pour utiliser le mode Hors ligne."
         }
         if (selectedMode == BrainMode.AUTO && !onlineAvailable && !model.isLoaded) {
-            return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le cerveau local."
+            return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le modèle auxiliaire local."
         }
 
         val searchQuery = if (selectedMode == BrainMode.OFFLINE || !onlineAvailable) null else extractSearchQuery(latestUserText)
@@ -86,7 +86,7 @@ class ChatRepository(
                     if (selectedMode == BrainMode.AUTO && model.isLoaded) {
                         model.generate(prompt)
                     } else {
-                        "Le cerveau distant n'est pas joignable : " +
+                        "Le moteur distant auxiliaire n'est pas joignable : " +
                             (remoteError.message ?: "erreur réseau") +
                             if (selectedMode == BrainMode.AUTO) ". Réessaie quand la connexion sera rétablie." else ". Vérifie Internet ou passe en Automatique."
                     }
@@ -103,7 +103,7 @@ class ChatRepository(
                 }
             }
         } catch (error: Exception) {
-            "Je rencontre un problème avec mon moteur local : " + (error.message ?: "erreur inconnue") + ". Réessaie dans un instant."
+            "Je rencontre un problème avec mon moteur local auxiliaire : " + (error.message ?: "erreur inconnue") + ". Réessaie dans un instant."
         }
     }
 
