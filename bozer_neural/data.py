@@ -46,12 +46,41 @@ def read_records(path):
 
 
 def ensure_disjoint_prompts(training_path, validation_path):
-    """Refuse accidental prompt overlap between training and validation files."""
-    if Path(training_path).resolve() == Path(validation_path).resolve():
+    """Refuse exact prompt/document-unit overlap between train and validation."""
+    training_path = Path(training_path)
+    validation_path = Path(validation_path)
+    if training_path.resolve() == validation_path.resolve():
         raise ValueError("training and validation paths must be different files")
 
     def normalize(value):
         return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+    if training_path.suffix.lower() != ".jsonl" or validation_path.suffix.lower() != ".jsonl":
+        if training_path.suffix.lower() == ".jsonl" or validation_path.suffix.lower() == ".jsonl":
+            raise ValueError("training and validation must both be JSONL dialogues or both be plain text")
+        def collect_units(path):
+            text = path.read_text(encoding="utf-8")
+            units = {
+                normalize(part)
+                for part in text.replace("\r\n", "\n").split("\n\n")
+                if normalize(part)
+            }
+            if not units:
+                raise ValueError(f"plain-text corpus is empty: {path}")
+            return units
+        training_units = collect_units(training_path)
+        validation_units = collect_units(validation_path)
+        overlap = training_units & validation_units
+        if overlap:
+            raise ValueError(
+                f"training/validation leakage: {len(overlap)} normalized text block(s) overlap"
+            )
+        return {
+            "training_prompts": len(training_units),
+            "validation_prompts": len(validation_units),
+            "overlap": 0,
+            "mode": "plain_text_blocks",
+        }
 
     def collect_prompts(path):
         prompts = set()
@@ -69,7 +98,8 @@ def ensure_disjoint_prompts(training_path, validation_path):
             "overlap across current or history turns"
         )
     return {"training_prompts": len(training_prompts),
-            "validation_prompts": len(validation_prompts), "overlap": 0}
+            "validation_prompts": len(validation_prompts), "overlap": 0,
+            "mode": "dialogue_prompts"}
 
 def format_prompt(item):
     turns = []
