@@ -3,10 +3,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import unicodedata
 from pathlib import Path
 
 VALID_STATUSES = {"candidate", "validated", "rejected"}
 VALID_CATEGORIES = {"word", "phrase", "expression", "proverb", "sentence"}
+
+
+def _normal(value: str) -> str:
+    return unicodedata.normalize("NFC", value).casefold().strip()
 
 
 def validate_payload(payload: dict) -> list[str]:
@@ -18,7 +23,7 @@ def validate_payload(payload: dict) -> list[str]:
         return errors + ["entries must be a list"]
 
     ids: set[str] = set()
-    keys: set[tuple[str, str]] = set()
+    pairs: set[tuple[str, str]] = set()
     for index, entry in enumerate(entries):
         prefix = f"entries[{index}]"
         if not isinstance(entry, dict):
@@ -38,11 +43,10 @@ def validate_payload(payload: dict) -> list[str]:
         category = entry.get("category", "phrase")
         if category not in VALID_CATEGORIES:
             errors.append(f"{prefix}.category is invalid")
-        for lang, value in (("fr", entry["french"]), ("mos", entry["moore"])):
-            key = (lang, value.casefold().strip())
-            if key in keys:
-                errors.append(f"{prefix} duplicates a {lang} lookup key")
-            keys.add(key)
+        pair = (_normal(entry["french"]), _normal(entry["moore"]))
+        if pair in pairs:
+            errors.append(f"{prefix} duplicates an exact French–Mooré pair")
+        pairs.add(pair)
         if entry["status"] == "validated":
             if not entry.get("source") or not entry.get("reviewed_by"):
                 errors.append(f"{prefix} validated entry needs source and reviewed_by")

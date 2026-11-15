@@ -29,10 +29,28 @@ class MooreFrenchTranslatorTests(unittest.TestCase):
         self.assertEqual(result.status, "candidate")
         self.assertEqual(result.confidence, "lexicon_exact")
 
+    def test_bulk_malm_candidates_load_only_in_candidate_mode(self):
+        default = load_default_translator()
+        self.assertEqual(default.translate("chien", "fr", "mos").status, "not_found")
+        candidate = load_default_translator(allow_candidates=True)
+        result = candidate.translate("chien", "fr", "mos")
+        self.assertEqual(result.translated_text, "baaga¹")
+        self.assertEqual(result.status, "candidate")
+
     def test_reverse_lookup(self):
         translator = load_default_translator(allow_candidates=True)
         result = translator.translate("Ne y yibeoogo", "mos", "fr")
         self.assertEqual(result.translated_text, "Bonjour (le matin)")
+
+    def test_polysemous_form_returns_ambiguous_instead_of_guessing(self):
+        translator = MooreFrenchTranslator([
+            {"id": "a", "french": "balai", "moore": "saaga", "status": "candidate"},
+            {"id": "b", "french": "pluie", "moore": "saaga", "status": "candidate"},
+        ], allow_candidates=True)
+        result = translator.translate("saaga", "mos", "fr")
+        self.assertFalse(result.found)
+        self.assertEqual(result.status, "ambiguous")
+        self.assertEqual(set(result.alternatives), {"balai", "pluie"})
 
     def test_unknown_phrase_is_not_guessed(self):
         translator = load_default_translator(allow_candidates=True)
@@ -47,13 +65,17 @@ class MooreFrenchTranslatorTests(unittest.TestCase):
                 "status": "validated"
             }])
 
-    def test_duplicate_keys_are_rejected(self):
+    def test_exact_duplicate_pair_is_not_arbitrarily_selected(self):
         entry = {
             "id": "one", "french": "bonjour", "moore": "greeting",
             "status": "candidate"
         }
-        with self.assertRaisesRegex(ValueError, "duplicate translation key"):
-            MooreFrenchTranslator([entry, {**entry, "id": "two"}], allow_candidates=True)
+        translator = MooreFrenchTranslator(
+            [entry, {**entry, "id": "two"}], allow_candidates=True
+        )
+        result = translator.translate("bonjour", "fr", "mos")
+        self.assertEqual(result.translated_text, "greeting")
+        self.assertEqual(result.status, "candidate")
 
     def test_same_language_is_unchanged(self):
         result = load_default_translator().translate("Bonjour", "fr", "fr")

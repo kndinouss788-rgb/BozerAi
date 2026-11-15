@@ -37,6 +37,21 @@ class MooreLexiconValidationTests(unittest.TestCase):
         errors = validate_payload(payload([entry, entry]))
         self.assertTrue(any("id is duplicated" in error for error in errors))
 
+    def test_exact_duplicate_pairs_are_rejected(self):
+        entry = {"id": "first", "french": "Bonjour", "moore": "X", "status": "candidate"}
+        duplicate = {**entry, "id": "second"}
+        errors = validate_payload(payload([entry, duplicate]))
+        self.assertTrue(any("exact French–Mooré pair" in error for error in errors))
+
+    def test_homonyms_and_synonyms_are_allowed_for_native_review(self):
+        entries = [
+            {"id": "a", "french": "balai", "moore": "saaga", "status": "candidate"},
+            {"id": "b", "french": "pluie", "moore": "saaga", "status": "candidate"},
+            {"id": "c", "french": "femme", "moore": "pog", "status": "candidate"},
+            {"id": "d", "french": "femme", "moore": "pug", "status": "candidate"},
+        ]
+        self.assertEqual(validate_payload(payload(entries)), [])
+
     def test_unknown_status_is_rejected(self):
         entry = {"id": "x", "french": "Bonjour", "moore": "X", "status": "approved"}
         errors = validate_payload(payload([entry]))

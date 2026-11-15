@@ -1,8 +1,8 @@
 """Conservative Mooré <-> French phrase translator.
 
 Only entries marked "validated" are returned by default. Candidate entries are
-visible only when explicitly requested. This is a lexicon/phrasebook engine,
-not a claim of full grammatical machine translation.
+visible only when explicitly requested. Multiple meanings never resolve to an
+arbitrary translation.
 """
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ class TranslationResult:
     confidence: str
     entry_id: str | None = None
     note: str | None = None
+    alternatives: tuple[str, ...] = ()
 
     @property
     def found(self) -> bool:
@@ -42,26 +43,23 @@ class MooreFrenchTranslator:
 
     def __init__(self, entries: Iterable[dict], *, allow_candidates: bool = False):
         self.allow_candidates = allow_candidates
-        self._index: dict[tuple[str, str, str], dict] = {}
-        seen = set()
+        self._index: dict[tuple[str, str, str], list[dict]] = {}
         for entry in entries:
             self._validate_entry(entry)
-            if entry["status"] != "validated" and not allow_candidates:
+            status = entry["status"]
+            if status == "rejected" or (status == "candidate" and not allow_candidates):
                 continue
             for source_lang, target_lang, source_key, target_value in (
                 ("fr", "mos", "french", "moore"),
                 ("mos", "fr", "moore", "french"),
             ):
                 key = (source_lang, target_lang, normalize_text(entry[source_key]))
-                if key in seen:
-                    raise ValueError(f"duplicate translation key: {key}")
-                seen.add(key)
-                self._index[key] = {
+                self._index.setdefault(key, []).append({
                     "target": entry[target_value],
                     "id": entry["id"],
-                    "status": entry["status"],
+                    "status": status,
                     "note": entry.get("note"),
-                }
+                })
 
     @staticmethod
     def _validate_entry(entry: dict) -> None:
@@ -92,8 +90,8 @@ class MooreFrenchTranslator:
                 "unchanged", "exact", note="Source and target languages are identical."
             )
         key = (source_language, target_language, normalize_text(text))
-        entry = self._index.get(key)
-        if entry is None:
+        records = self._index.get(key, [])
+        if not records:
             return TranslationResult(
                 text, None, source_language, target_language,
                 "not_found", "none",
@@ -102,9 +100,19 @@ class MooreFrenchTranslator:
                     "request a native-speaker translation or add a reviewed lexicon entry."
                 ),
             )
+        targets = tuple(dict.fromkeys(record["target"] for record in records))
+        if len(targets) > 1:
+            return TranslationResult(
+                text, None, source_language, target_language,
+                "ambiguous", "none",
+                note="Several candidate translations or senses match this exact form; no guess was selected.",
+                alternatives=targets,
+            )
+        # Prefer a validated record when several sources support the same target.
+        selected = next((r for r in records if r["status"] == "validated"), records[0])
         return TranslationResult(
-            text, entry["target"], source_language, target_language,
-            entry["status"], "lexicon_exact", entry["id"], entry.get("note")
+            text, selected["target"], source_language, target_language,
+            selected["status"], "lexicon_exact", selected["id"], selected.get("note")
         )
 
 
@@ -116,10 +124,44 @@ def load_default_translator(
             Path(__file__).resolve().parents[2]
             / "data" / "moore_french" / "lexicon.json"
         )
-    payload = json.loads(Path(lexicon_path).read_text(encoding="utf-8"))
+    lexicon_path = Path(lexicon_path)
+    payload = json.loads(lexicon_path.read_text(encoding="utf-8"))
     if payload.get("format") != "bozer-moore-french-lexicon-v1":
         raise ValueError("unsupported Mooré/French lexicon format")
     entries = payload.get("entries")
     if not isinstance(entries, list):
         raise ValueError("lexicon entries must be a list")
+
+    if allow_candidates:
+        candidates_path = lexicon_path.parent / "malm_candidates.jsonl"
+        if candidates_path.is_file():
+            with candidates_path.open(encoding="utf-8") as stream:
+                for line_number, line in enumerate(stream, start=1):
+                    if not line.strip():
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError as exc:
+                        raise ValueError(
+                            f"invalid MALM candidate JSON at line {line_number}"
+                        ) from exc
+                    entries.append({
+                        "id": row["id"],
+                        "french": row["french"],
+                        "moore": row["moore"],
+                        "status": "candidate",
+                        "source": "MALM Data — progressio-media/malm-data",
+                        "source_reference": (
+                            "MALM lexicon.json; "
+                            + ", ".join(row.get("source_ids", []))
+                        ),
+                        "source_license": (
+                            "MIT declared by upstream repository; underlying "
+                            "third-party source rights are not independently confirmed."
+                        ),
+                        "note": (
+                            "Bulk-imported candidate only; native-speaker review "
+                            "and source-level rights review are still required."
+                        ),
+                    })
     return MooreFrenchTranslator(entries, allow_candidates=allow_candidates)
