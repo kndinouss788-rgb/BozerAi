@@ -264,15 +264,25 @@ def train_1b(
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=learning_rate, betas=(0.9, 0.95), weight_decay=0.1
     )
-    if previous and previous.get("optimizer_state_dict"):
+    training_state = previous.get("training", {}) if previous else {}
+    previous_objective = training_state.get("training_objective")
+    objective_changed = bool(
+        previous and previous_objective != training_objective
+    )
+    # Keep learned weights, but reset optimizer momentum and stage schedule
+    # when moving between raw-text pretraining and dialogue tuning.
+    if previous and not objective_changed and previous.get("optimizer_state_dict"):
         optimizer.load_state_dict(previous["optimizer_state_dict"])
 
     scaler = torch.cuda.amp.GradScaler(enabled=use_scaler)
-    training_state = previous.get("training", {}) if previous else {}
-    global_step = int(training_state.get("global_step", 0))
+    global_step = (
+        0 if objective_changed else int(training_state.get("global_step", 0))
+    )
     total_target_step = global_step + steps
     batch_generator = torch.Generator(device="cpu")
-    saved_generator_state = training_state.get("batch_generator_state")
+    saved_generator_state = (
+        None if objective_changed else training_state.get("batch_generator_state")
+    )
     if saved_generator_state is not None:
         batch_generator.set_state(saved_generator_state)
     else:
@@ -285,11 +295,10 @@ def train_1b(
         autocast_dtype=autocast_dtype,
         active_vocab_size=tokenizer.active_vocab_size,
     )
-    best_validation_loss = float(
-        training_state.get("best_validation_loss", initial_validation_loss)
+    best_validation_loss = (
+        initial_validation_loss if objective_changed or not previous
+        else float(training_state.get("best_validation_loss", initial_validation_loss))
     )
-    if not previous:
-        best_validation_loss = initial_validation_loss
     no_improvement = 0
     history = []
     best_path = Path(output_path).with_name(
@@ -312,6 +321,8 @@ def train_1b(
                 "train_tokens": int(train_tokens.numel()),
                 "validation_tokens": int(validation_tokens.numel()),
                 "training_objective": training_objective,
+                "previous_training_objective": previous_objective,
+                "objective_changed_on_resume": objective_changed,
                 "precision": precision,
                 "active_vocab_size": tokenizer.active_vocab_size,
                 "gradient_checkpointing": gradient_checkpointing,
@@ -407,6 +418,8 @@ def train_1b(
                 "train_tokens": int(train_tokens.numel()),
                 "validation_tokens": int(validation_tokens.numel()),
                 "training_objective": training_objective,
+                "previous_training_objective": previous_objective,
+                "objective_changed_on_resume": objective_changed,
                 "precision": precision,
                 "active_vocab_size": tokenizer.active_vocab_size,
                 "gradient_checkpointing": gradient_checkpointing,
