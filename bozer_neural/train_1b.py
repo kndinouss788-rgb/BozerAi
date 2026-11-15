@@ -42,7 +42,8 @@ def _sample_batch(source, batch_size, context_length, device, generator):
 
 @torch.no_grad()
 def estimate_loss(model, source, config, batches=8, batch_size=1,
-                  device="cpu", seed=2026, autocast_dtype=None):
+                  device="cpu", seed=2026, autocast_dtype=None,
+                  active_vocab_size=None):
     """Estimate assistant-only loss on a fixed validation sampling sequence."""
     if batches < 1 or batch_size < 1:
         raise ValueError("batches and batch_size must be positive")
@@ -63,7 +64,10 @@ def estimate_loss(model, source, config, batches=8, batch_size=1,
                 dtype=autocast_dtype,
                 enabled=use_amp,
             ):
-                _, loss = model(x, y, loss_mask=mask)
+                _, loss = model(
+                    x, y, loss_mask=mask,
+                    active_vocab_size=active_vocab_size,
+                )
             scores.append(float(loss.detach().float().cpu()))
     finally:
         model.train(was_training)
@@ -272,6 +276,7 @@ def train_1b(
         batches=eval_batches, batch_size=batch_size,
         device=target_device, seed=seed + 100_000,
         autocast_dtype=autocast_dtype,
+        active_vocab_size=tokenizer.active_vocab_size,
     )
     best_validation_loss = float(
         training_state.get("best_validation_loss", initial_validation_loss)
@@ -301,6 +306,7 @@ def train_1b(
                 "validation_tokens": int(validation_tokens.numel()),
                 "training_objective": "assistant_answer_tokens_and_eos_only",
                 "precision": precision,
+                "active_vocab_size": tokenizer.active_vocab_size,
                 "gradient_checkpointing": gradient_checkpointing,
                 "batch_generator_state": batch_generator.get_state(),
                 "checkpoint_role": "initial_validation_baseline",
@@ -330,7 +336,10 @@ def train_1b(
                 dtype=autocast_dtype,
                 enabled=autocast_dtype is not None,
             ):
-                _, loss = model(x, y, loss_mask=mask)
+                _, loss = model(
+                    x, y, loss_mask=mask,
+                    active_vocab_size=tokenizer.active_vocab_size,
+                )
                 scaled_loss = loss / grad_accum_steps
             if use_scaler:
                 scaler.scale(scaled_loss).backward()
@@ -359,6 +368,7 @@ def train_1b(
             batches=eval_batches, batch_size=batch_size,
             device=target_device, seed=seed + 100_000 + completed_step,
             autocast_dtype=autocast_dtype,
+            active_vocab_size=tokenizer.active_vocab_size,
         )
         record = {
             "step": completed_step,
@@ -391,6 +401,7 @@ def train_1b(
                 "validation_tokens": int(validation_tokens.numel()),
                 "training_objective": "assistant_answer_tokens_and_eos_only",
                 "precision": precision,
+                "active_vocab_size": tokenizer.active_vocab_size,
                 "gradient_checkpointing": gradient_checkpointing,
                 "batch_generator_state": batch_generator.get_state(),
             },
