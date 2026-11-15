@@ -8,10 +8,12 @@ Generated: 2026-11-15
 - Missing required fields: **0**
 - Duplicate IDs: **0**
 - Duplicate exact Mooré–French pairs: **0**
-- Mooré forms linked to multiple French glosses: **49**
-- French glosses linked to multiple Mooré forms: **664**
-- Rows routed to specialist review queue: **709**
+- Mooré forms linked to multiple French glosses: **49** forms across **98** records
+- French glosses linked to multiple Mooré forms: **664** glosses across **1831** records
+- Rows in the complete human-review queue: **2459**
 
-The checks identify technical/metadata-like French glosses and morphological or symbolic Mooré forms. These are review warnings, not automatic rejection rules. All records remain candidates, and no candidate is promoted by script.
+The review queue contains records with ambiguous mappings, multiple candidate forms for the same broad French gloss, technical/metadata-like glosses, or symbolic/morphological forms. These are review warnings, not automatic rejection rules.
 
-The candidate translator must report ambiguity when one French gloss has multiple Mooré forms rather than silently choosing a form.
+All records remain candidates. No entry is promoted by script. Diacritics and source IDs are preserved. The translator reports ambiguity rather than choosing arbitrarily.
+
+The MALM repository declares MIT, but its README attributes the bulk of the material to third-party publications. Its primary SRC-17 source is the 2020 dictionary compiled by Urs Niggli; a separate inventory reports no explicit license for reuse of that dictionary PDF. Rights confirmation remains open.

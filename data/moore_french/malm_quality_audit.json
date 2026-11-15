@@ -9,11 +9,15 @@
   "duplicate_ids": 0,
   "duplicate_exact_pairs": 0,
   "ambiguous_moore_forms": 49,
+  "rows_using_ambiguous_moore_forms": 98,
   "french_glosses_with_multiple_moore_forms": 664,
-  "review_queue_entries": 709,
+  "rows_in_multi_form_french_glosses": 1831,
+  "review_queue_entries": 2459,
   "review_flag_counts": {
     "morpheme_or_symbolic_form": 698,
-    "technical_or_metadata_gloss": 13
+    "multiple_moore_forms_for_french_gloss": 1831,
+    "technical_or_metadata_gloss": 13,
+    "ambiguous_moore_form": 98
   },
   "source_counts": {
     "SRC-17": 9500,
@@ -27,6 +31,6 @@
     "all_imported_entries_remain_candidates": true,
     "automatic_promotion_forbidden": true,
     "diacritics_preserved": true,
-    "multiple_forms_for_one_french_gloss_are_not_auto_resolved": true
+    "multiple_forms_never_auto_resolved": true
   }
 }
