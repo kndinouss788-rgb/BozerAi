@@ -312,7 +312,7 @@ object AndroidCommandParser {
             .find(text)?.let { return AndroidCommand.Navigate(it.groupValues[1].trim()) }
 
 
-        Regex("""^(?:programme|mets|regle)\\s+(?:une\\s+)?alarme\\s+(?:tous les jours|chaque jour|du lundi au dimanche)\\s+(?:a|à)\\s+(\\d{1,2})(?:h|:)(\\d{0,2})(?:\\s+(?:pour|intitulee)\\s+(.+))?$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:programme|mets|regle)\s+(?:une\s+)?alarme\s+(?:tous les jours|chaque jour|du lundi au dimanche)\s+(?:a|à)\s+(\d{1,2})(?:h|:)(\d{0,2})(?:\s+(?:pour|intitulee)\s+(.+))?$""", RegexOption.IGNORE_CASE)
             .find(text)?.let {
                 val hour = it.groupValues[1].toIntOrNull() ?: return null
                 val minute = it.groupValues[2].ifBlank { "0" }.toIntOrNull() ?: return null
@@ -320,7 +320,7 @@ object AndroidCommandParser {
                 return AndroidCommand.SetRecurringAlarm(hour, minute, it.groupValues.getOrNull(3).orEmpty().ifBlank { "BOZER" }, 127)
             }
 
-        Regex("""^(?:programme|mets|regle)\\s+(?:une\\s+)?alarme\\s+(?:du lundi au vendredi|en semaine)\\s+(?:a|à)\\s+(\\d{1,2})(?:h|:)(\\d{0,2})(?:\\s+(?:pour|intitulee)\\s+(.+))?$""", RegexOption.IGNORE_CASE)
+        Regex("""^(?:programme|mets|regle)\s+(?:une\s+)?alarme\s+(?:du lundi au vendredi|en semaine)\s+(?:a|à)\s+(\d{1,2})(?:h|:)(\d{0,2})(?:\s+(?:pour|intitulee)\s+(.+))?$""", RegexOption.IGNORE_CASE)
             .find(text)?.let {
                 val hour = it.groupValues[1].toIntOrNull() ?: return null
                 val minute = it.groupValues[2].ifBlank { "0" }.toIntOrNull() ?: return null
