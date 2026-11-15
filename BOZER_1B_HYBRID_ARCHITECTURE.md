@@ -130,3 +130,18 @@ Le premier bloc logiciel du modèle cible est maintenant présent sur la branche
 **Éléments qui ne sont pas encore accomplis :** l'entraînement du modèle 1B n'a pas démarré, aucun checkpoint entraîné n'a été produit, le corpus reste beaucoup trop petit pour un modèle de cette taille, et l'intégration Android ainsi que les mesures sur téléphone ne sont pas faites. La présence de scripts et de tests ne prouve pas encore que le modèle sait converser utilement.
 
 La configuration par défaut conserve le compte exact de **1 115 785 216 paramètres**. Avec des poids FP32, gradients et états AdamW, l'entraînement demande un minimum théorique d'environ **17,85 Go** avant les activations et buffers. Le pipeline applique une garde mémoire afin d'éviter un lancement accidentel sur un appareil insuffisant.
+
+## Correctifs et validation automatisée — 15 novembre 2026
+
+Le tokenizer sérialise désormais systématiquement `active_vocab_size`, y compris lorsque la taille active est égale à la taille totale du vocabulaire. Le modèle 1B accepte cette taille active lors de l'entraînement et de l'évaluation : les lignes réservées et non apprises sont exclues de la distribution softmax et de la perte, et les identifiants inactifs présents dans les entrées ou les cibles sont refusés.
+
+Le workflow **BOZER NEURAL 1B architecture checks** a réussi le 15 novembre 2026 (run GitHub Actions `43691757559`) :
+- compilation Python : réussie ;
+- validation du corpus v0.5 : réussie (263 entraînement, 60 validation, 60 test) ;
+- tests d'architecture, d'entraînement miniature et d'évaluation : **14 réussis**.
+
+Cette réussite valide le code et le chemin d'entraînement sur un petit modèle de test. Elle ne signifie pas que le modèle complet 1B a été instancié, entraîné ou exécuté sur téléphone.
+
+## Étape suivante
+
+Avant l'entraînement du modèle 1B, il reste à constituer un corpus de pré-entraînement français beaucoup plus vaste et légalement réutilisable, puis à disposer d'une machine GPU avec une mémoire suffisante. Le plancher théorique de l'état d'entraînement FP32 avec gradients et deux moments AdamW est de 17 852 563 456 octets, sans compter les activations et les buffers. Les runners CPU gratuits de GitHub Actions ne sont pas une cible d'entraînement réaliste pour ce modèle.
