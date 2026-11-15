@@ -4,6 +4,17 @@ on:
   push:
     branches:
       - bozer-neural-v0.1
+    paths:
+      - ".github/workflows/bozer-neural-1b-checks.yml"
+      - "bozer_neural/**"
+      - "data/bozer_neural_v0_5/**"
+      - "requirements-neural.txt"
+      - "tests/test_bozer_neural*.py"
+      - "tests/test_bozer_pretraining_corpus.py"
+      - "tests/test_bozer_tts_corpus.py"
+      - "tests/test_bozer_voice_profile.py"
+      - "tests/test_moore_french_translator.py"
+      - "tests/test_malm_lexicon_import.py"
   pull_request:
     branches:
       - main

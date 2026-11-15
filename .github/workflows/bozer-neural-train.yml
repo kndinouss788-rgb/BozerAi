@@ -1,15 +1,6 @@
 name: BOZER NEURAL initial baseline training (corpus v0.5)
 
 "on":
-  push:
-    branches:
-      - bozer-neural-v0.1
-    paths:
-      - ".github/workflows/bozer-neural-train.yml"
-      - "bozer_neural/**"
-      - "data/bozer_neural_v0_5/**"
-      - "requirements-neural.txt"
-      - "tests/test_bozer_neural.py"
   workflow_dispatch:
 
 permissions:
