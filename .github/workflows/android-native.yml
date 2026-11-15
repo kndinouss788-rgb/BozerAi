@@ -10,7 +10,7 @@ on:
       - "gradle.properties"
       - ".github/workflows/android-native.yml"
   pull_request:
-    branches: [main, feature/remote-ai-quota-router]
+    branches: [main, feature/remote-ai-quota-router, bozer-neural-v0.1]
     paths:
       - "app/**"
       - "build.gradle.kts"
@@ -21,6 +21,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: bozer-android-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   android-apk:
