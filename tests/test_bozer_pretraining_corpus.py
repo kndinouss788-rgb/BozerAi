@@ -41,7 +41,6 @@ def test_prepare_corpus_is_deterministic_and_splits_whole_source_documents(tmp_p
     assert first["split_method"] == "sha256_source_id_mod_100_source_document_grouping"
     assert first["training_ready"] is False
 
-    # Each source document appears in one and only one partition.
     owner = {}
     for source_record in first["sources"]:
         split = source_record.get("split")
