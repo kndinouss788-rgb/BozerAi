@@ -275,3 +275,39 @@ def test_tts_audio_quality_reports_peak_and_clipping(tmp_path):
     assert report.sample_rate == 16000
     assert report.clipped_sample_percent > 0
     assert "clipping_detected" in report.warnings
+
+
+def test_parallel_corpus_preparation_requires_rights_and_keeps_sources_isolated(tmp_path):
+    import hashlib
+    import json
+    from bozer_neural.language.parallel_corpus import prepare_parallel_corpus
+
+    selected = {}
+    for index in range(10000):
+        source_id = f"doc-{index}"
+        bucket = int(hashlib.sha256(source_id.encode()).hexdigest()[:8], 16) % 100
+        split = "train" if bucket < 60 else "validation" if bucket < 80 else "test"
+        selected.setdefault(split, source_id)
+        if len(selected) == 3:
+            break
+    rows = []
+    for split, source_id in selected.items():
+        rows.append({
+            "id": f"entry-{split}", "source_id": source_id,
+            "source_text": "Bonjour", "target_text": "Ne y yibeoogo",
+            "source_language": "fr", "target_language": "mos",
+            "source": "native contributor", "source_license": "CC0",
+            "reviewed_by": "native-reviewer", "status": "validated",
+            "rights_status": "cleared",
+        })
+    input_path = tmp_path / "parallel.jsonl"
+    input_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows), encoding="utf-8")
+    output = tmp_path / "prepared"
+    report = prepare_parallel_corpus(input_path, output, train_percent=60, validation_percent=20)
+    assert report["records_by_split"] == {"train": 1, "validation": 1, "test": 1}
+    assert report["source_isolation"] is True
+
+    rows[0]["rights_status"] = "pending"
+    input_path.write_text(json.dumps(rows[0]), encoding="utf-8")
+    with pytest.raises(ValueError, match="rights are not cleared"):
+        prepare_parallel_corpus(input_path, output)
