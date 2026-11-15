@@ -145,3 +145,42 @@ Cette réussite valide le code et le chemin d'entraînement sur un petit modèle
 ## Étape suivante
 
 Avant l'entraînement du modèle 1B, il reste à constituer un corpus de pré-entraînement français beaucoup plus vaste et légalement réutilisable, puis à disposer d'une machine GPU avec une mémoire suffisante. Le plancher théorique de l'état d'entraînement FP32 avec gradients et deux moments AdamW est de 17 852 563 456 octets, sans compter les activations et les buffers. Les runners CPU gratuits de GitHub Actions ne sont pas une cible d'entraînement réaliste pour ce modèle.
+
+## Pipeline d'apprentissage en deux phases — 15 novembre 2026
+
+Le code BOZER 1B distingue maintenant deux objectifs qui ne doivent pas être confondus :
+
+1. **Pré-entraînement linguistique** : fichiers texte UTF-8 séparés en partitions train/validation/test. Le modèle apprend à prédire le token suivant sur le texte, y compris les tokens de fin. Le tokenizer BPE est appris uniquement sur le fichier d'entraînement.
+2. **Ajustement conversationnel BOZER** : dialogues JSONL avec historique éventuel. La perte ne porte que sur la réponse BOZER et le token EOS.
+
+Le même point d'entrée `bozer_neural.train_1b` accepte maintenant les deux formats. Pour passer du pré-entraînement au réglage conversationnel, fournir le checkpoint du premier stade avec `--resume`. Les poids sont conservés, mais l'optimiseur, l'état du sampler, le compteur de phase et la meilleure perte de validation sont réinitialisés lorsque l'objectif change. L'évaluateur accepte aussi un jeu de test texte pour le pré-entraînement, ou un jeu JSONL pour mesurer les réponses conversationnelles.
+
+Les partitions texte sont contrôlées contre les blocs de texte normalisés strictement identiques entre train, validation et test. Ce contrôle n'est pas un détecteur de paraphrases ni un audit complet de contamination. La première version charge les corpus tokenisés en mémoire ; elle ne constitue pas encore un pipeline de pré-entraînement distribué ou à très grande échelle.
+
+Exemple de commandes sur une machine GPU suffisamment équipée :
+
+```bash
+# Phase 1 : pré-entraînement linguistique depuis zéro
+python -m bozer_neural.train_1b \
+  --data data/pretraining/train.txt \
+  --validation-data data/pretraining/validation.txt \
+  --output artifacts/bozer-neural-1b-pretrain.pt \
+  --device cuda --precision bf16
+
+# Phase 2 : ajustement conversationnel à partir des poids de la phase 1
+python -m bozer_neural.train_1b \
+  --data data/bozer_neural_v0_5/train_fr.jsonl \
+  --validation-data data/bozer_neural_v0_5/validation_fr.jsonl \
+  --resume artifacts/bozer-neural-1b-pretrain.pt \
+  --output artifacts/bozer-neural-1b-dialogue.pt \
+  --device cuda --precision bf16
+```
+
+## Vérification du pipeline — 15 novembre 2026
+
+Le workflow GitHub Actions `43692453035` a réussi :
+- compilation des modules : réussie ;
+- validation des trois partitions conversationnelles v0.5 : réussie ;
+- tests d'architecture, de tokenizer, d'entraînement texte, de transition entre phases et d'évaluation : **18 réussis**.
+
+Ces tests emploient de petites configurations afin de vérifier le code sans allouer le modèle 1B. Aucun poids du modèle cible n'a encore été entraîné. Le corpus synthétique v0.5 (263 dialogues d'entraînement, 60 de validation, 60 de test) n'est pas un corpus suffisant pour le pré-entraînement d'un modèle d'un milliard de paramètres. Il faut réunir un corpus de textes français diversifié, légalement réutilisable et vérifié, puis disposer d'une infrastructure GPU adaptée.
