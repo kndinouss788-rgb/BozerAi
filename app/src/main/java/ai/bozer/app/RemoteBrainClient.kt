@@ -10,8 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Calls BOZER's own gateway. Provider keys stay on the server and are never
- * packaged in the Android APK.
+ * Calls BOZER's own gateway for optional remote text generation. This is an
+ * auxiliary provider route, not BOZER NEURAL's original trained model.
+ * Provider keys stay on the server and are never packaged in the Android APK.
  */
 class RemoteBrainClient(
     private val endpoint: String,
