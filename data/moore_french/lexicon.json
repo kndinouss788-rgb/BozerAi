@@ -1,0 +1,24 @@
+{
+  "format": "bozer-moore-french-lexicon-v1",
+  "languages": {
+    "fr": "Français",
+    "mos": "Mooré"
+  },
+  "policy": {
+    "default_acceptance": "validated_only",
+    "candidate_entries_are_not_translation_authority": true,
+    "require_native_speaker_review": true,
+    "do_not_invent_missing_translations": true
+  },
+  "entries": [
+    {
+      "id": "mos-greeting-morning-0001",
+      "french": "Bonjour (le matin)",
+      "moore": "Ne y yibeoogo",
+      "status": "candidate",
+      "source": "Mooré learning course and Peace Corps Burkina Faso language manual; exact editions and page references still to be rechecked before release",
+      "reviewed_by": null,
+      "note": "Candidate greeting found in documentary research. Not yet validated by a native Mooré speaker; excluded from default translation results."
+    }
+  ]
+}
