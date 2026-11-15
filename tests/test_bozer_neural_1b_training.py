@@ -89,3 +89,45 @@ def test_one_step_training_creates_a_versioned_checkpoint(tmp_path):
     assert saved["tokenizer"]["active_vocab_size"] <= 270
     assert saved["config"]["vocab_size"] == 270
     assert saved["training"]["gradient_checkpointing"] is True
+    assert saved["training"]["training_objective"] == "assistant_answer_tokens_and_eos_only"
+
+
+
+def test_one_step_plain_text_pretraining_uses_all_next_tokens(tmp_path):
+    train_path = tmp_path / "pretrain.txt"
+    validation_path = tmp_path / "validation.txt"
+    checkpoint_path = tmp_path / "bozer-text-pretrain.pt"
+    train_path.write_text(
+        "Le soleil se lève au-dessus de la ville.\n"
+        "Les habitants commencent leur journée.\n\n"
+        "Un robot apprend à classer des objets.\n"
+        "Il vérifie chaque résultat avec attention.\n",
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        "La pluie tombe doucement sur les champs.\n"
+        "Les plantes reçoivent l'eau nécessaire.\n\n"
+        "Un véhicule autonome observe la route.\n"
+        "Il respecte les règles de circulation.\n",
+        encoding="utf-8",
+    )
+
+    config = Bozer1BConfig(
+        vocab_size=259, context_length=8, d_model=16, n_layers=1,
+        n_query_heads=2, n_kv_heads=1, head_dim=8, ffn_dim=32,
+    )
+    result = train_1b(
+        data_path=train_path,
+        validation_data_path=validation_path,
+        output_path=checkpoint_path,
+        steps=1, batch_size=1, learning_rate=1e-3,
+        eval_interval=1, eval_batches=1, tokenizer_vocab_size=270,
+        grad_accum_steps=1, warmup_steps=0, early_stopping_patience=0,
+        device="cpu", precision="fp32", config=config,
+    )
+
+    saved = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    assert result["training_objective"] == "next_token_prediction_all_text_tokens"
+    assert saved["training"]["training_objective"] == "next_token_prediction_all_text_tokens"
+    assert saved["training"]["split_audit"]["mode"] == "plain_text_blocks"
+    assert result["global_step"] == 1
