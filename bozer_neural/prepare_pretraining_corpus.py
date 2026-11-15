@@ -11,17 +11,17 @@ import re
 import unicodedata
 from pathlib import Path
 
-EMAIL_RE = re.compile(r"(?i)\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b")
-URL_RE = re.compile(r"(?i)\\b(?:https?://|www\\.)\\S+")
-PHONE_RE = re.compile(r"(?<!\\w)(?:\\+?\\d[\\d .()/-]{7,}\\d)(?!\\w)")
+EMAIL_RE = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
+URL_RE = re.compile(r"(?i)\b(?:https?://|www\.)\S+")
+PHONE_RE = re.compile(r"(?<!\w)(?:\+?\d[\d .()/-]{7,}\d)(?!\w)")
 MANIFEST_FORMAT = "bozer-source-manifest-v1"
 
 
 def normalize_block(value):
     value = unicodedata.normalize("NFKC", value)
-    value = value.replace("\\r\\n", "\\n").replace("\\r", "\\n")
-    value = re.sub(r"[ \\t]+", " ", value)
-    value = re.sub(r" *\\n *", "\\n", value)
+    value = value.replace("\r\n", "\n").replace("\r", "\n")
+    value = re.sub(r"[ \t]+", " ", value)
+    value = re.sub(r" *\n *", "\n", value)
     return value.strip()
 
 
@@ -143,7 +143,7 @@ def prepare_corpus(input_dir, output_dir, min_chars=80, max_chars=12000,
         raw_bytes = path.read_bytes()
         raw = raw_bytes.decode("utf-8-sig")
         document_blocks = []
-        for raw_block in re.split(r"\\n\\s*\\n+", raw):
+        for raw_block in re.split(r"\n\s*\n+", raw):
             block = normalize_block(raw_block)
             if not block:
                 continue
@@ -223,7 +223,7 @@ def prepare_corpus(input_dir, output_dir, min_chars=80, max_chars=12000,
     }
     for name, items in splits.items():
         items.sort(key=lambda pair: pair[0])
-        content = "\\n\\n".join(block for _, block in items) + "\\n"
+        content = "\n\n".join(block for _, block in items) + "\n"
         destination = output_dir / f"{name}.txt"
         destination.write_text(content, encoding="utf-8")
         report.setdefault("output_sha256", {})[destination.name] = hashlib.sha256(
@@ -231,7 +231,7 @@ def prepare_corpus(input_dir, output_dir, min_chars=80, max_chars=12000,
         ).hexdigest()
 
     (output_dir / "report.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return report
