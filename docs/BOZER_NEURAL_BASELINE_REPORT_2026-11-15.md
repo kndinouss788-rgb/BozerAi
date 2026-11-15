@@ -102,3 +102,12 @@ Le modèle cible 1B demande, au plancher théorique FP32, 17 852 563 456 octets 
 5. Poursuivre les expériences sur le petit modèle, puis mesurer un modèle intermédiaire avant de réserver le 1B à une infrastructure GPU adéquate.
 
 Aucune modification Android, aucun secret, aucune fusion de PR et aucun appel à une API comme cerveau n'ont été nécessaires à cette étape.
+
+
+## Besoins de pré-entraînement et sources
+
+Le dossier data/bozer_pretraining_v1/ ne contient actuellement aucun fichier texte de pré-entraînement : seulement le README, l'outil de préparation et l'audit des sources. Le corpus V0.5 reste un jeu de dialogues supervisés, pas un corpus général.
+
+L'audit de sources est dans [data/bozer_pretraining_v1/SOURCES_AND_RIGHTS.md](../data/bozer_pretraining_v1/SOURCES_AND_RIGHTS.md). Les débats de l'Assemblée nationale et les textes HAS sont des candidats, pas des sources déjà autorisées pour BOZER. Le premier a une fiche « Licence Ouverte » sans version explicite ; le second indique LO 2.0 mais signale des extractions PDF/XML parfois erronées ou obsolètes. Wikipédia exige une analyse des obligations CC BY-SA/GFDL et des contenus importés ; Common Crawl est exclu en l'absence de droits vérifiés au niveau des sites.
+
+Pour donner un ordre de grandeur, la règle de planification Chinchilla d'environ 20 tokens par paramètre conduirait à environ 22,3 milliards de tokens de pré-entraînement pour 1 115 785 216 paramètres. C'est une heuristique, pas un minimum universel. Le corpus de dialogues V0.5 (22 882 tokens d'entraînement) ne doit pas être comparé directement à un corpus de pré-entraînement : il sert à l'ajustement supervisé et reste très petit. Référence : [Hoffmann et al., 2022](https://arxiv.org/abs/2203.15556).
