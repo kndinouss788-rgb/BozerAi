@@ -184,3 +184,10 @@ Le workflow GitHub Actions `43692453035` a réussi :
 - tests d'architecture, de tokenizer, d'entraînement texte, de transition entre phases et d'évaluation : **18 réussis**.
 
 Ces tests emploient de petites configurations afin de vérifier le code sans allouer le modèle 1B. Aucun poids du modèle cible n'a encore été entraîné. Le corpus synthétique v0.5 (263 dialogues d'entraînement, 60 de validation, 60 de test) n'est pas un corpus suffisant pour le pré-entraînement d'un modèle d'un milliard de paramètres. Il faut réunir un corpus de textes français diversifié, légalement réutilisable et vérifié, puis disposer d'une infrastructure GPU adaptée.
+
+
+## Rapport d'entraînement de référence — 15 novembre 2026
+
+Le run [43699171904](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43699171904) a réussi : compilation, validation du corpus, 19 tests `unittest`, 39 tests `pytest`, entraînement CPU du modèle de référence pendant 600 étapes et évaluation des 60 exemples tenus à l'écart. Les pertes mesurées sont : entraînement 6,2467 → 4,1852, validation 4,2717 et test 4,3086. Le checkpoint et le rapport sont publiés dans l'artefact `bozer-neural-baseline-corpus-v0.5` de ce run.
+
+**Lecture honnête :** les réponses générées sur le test restent largement incohérentes. Le pipeline d'entraînement est démontré, pas une compétence conversationnelle utile. Le modèle cible de 1 115 785 216 paramètres n'a pas été entraîné ; seuls ses tests sur une configuration miniature ont été exécutés. Voir [`docs/BOZER_NEURAL_BASELINE_REPORT_2026-11-15.md`](docs/BOZER_NEURAL_BASELINE_REPORT_2026-11-15.md) pour les chiffres, le format des checkpoints et la suite recommandée.

@@ -62,7 +62,7 @@ Ne jamais choisir une version uniquement parce que la perte d'entraînement bais
 
 Un workflow manuel est disponible dans `.github/workflows/bozer-neural-train.yml`. Dans GitHub, ouvrir l'onglet **Actions**, sélectionner **BOZER NEURAL V0.4 full training**, puis lancer **Run workflow** sur la branche `bozer-neural-v0.1`. Il valide les données, lance les tests, entraîne depuis l'initialisation aléatoire pendant un maximum de 600 étapes, évalue le meilleur checkpoint sur le jeu de test et publie un artefact contenant les poids et le rapport JSON.
 
-Le workflow manuel a été ajouté, mais il n'a pas encore été exécuté avec succès. Les exécutions automatiques observées jusqu'ici se terminent en échec avec zéro job listé ; aucun poids entraîné ne doit donc être considéré comme disponible tant qu'un artefact valide n'a pas été produit.
+Le workflow de référence a été exécuté avec succès le 15 novembre 2026 (run [43699171904](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43699171904)). Il a compilé les modules, validé les partitions, exécuté 19 tests `unittest` et 39 tests `pytest`, entraîné le petit modèle depuis une initialisation aléatoire pendant 600 étapes sur CPU, puis évalué les 60 exemples du jeu de test. Un checkpoint et un rapport ont été publiés dans l'artefact `bozer-neural-baseline-corpus-v0.5`. Cette réussite ne concerne pas l'entraînement du modèle cible 1B.
 
 ## Boucle d'apprentissage contrôlée
 
@@ -70,6 +70,11 @@ Voir `bozer_neural/LEARNING.md`. Les retours sont d'abord placés dans une file 
 
 ## Limites et prochaines étapes
 
-Le code du pipeline est maintenant plus complet, mais aucun checkpoint V0.4 entraîné n'a encore été confirmé par une exécution réussie dans cet environnement. Les exécutions GitHub Actions récentes sont marquées en échec avec zéro job retourné, ce qui bloque la confirmation automatisée. Le modèle n'est pas encore connecté à l'application Android.
+Un checkpoint du petit modèle de référence a bien été produit et vérifié dans l'artefact GitHub Actions. En revanche, aucun checkpoint du modèle 1B n'existe : seules son architecture et des configurations miniatures ont été testées. Les générations du petit modèle sur les 60 exemples de test restent largement incohérentes ; la baisse de perte ne démontre donc pas une capacité conversationnelle utile. Le modèle n'est pas connecté à l'application Android.
 
 Les prochaines étapes sont : résoudre l'exécution CI, lancer et inspecter un vrai entraînement, augmenter le corpus avec des exemples humains contrôlés, mesurer la qualité sur des prompts entièrement nouveaux, puis seulement envisager une intégration mobile.
+
+
+## Rapport de référence vérifié — 15 novembre 2026
+
+Voir [`BOZER_NEURAL_BASELINE_REPORT_2026-11-15.md`](BOZER_NEURAL_BASELINE_REPORT_2026-11-15.md) pour la configuration exacte, les pertes mesurées, l'évaluation des 60 réponses inédites, le format du checkpoint et les limites constatées.
