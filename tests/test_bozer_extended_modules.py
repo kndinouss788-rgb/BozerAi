@@ -211,3 +211,67 @@ def test_memory_expiration_and_phone_action_confirmation_guards():
         ActionPlan("send", (PlannedAction(
             ActionKind.SEND_MESSAGE, required_capability="sms"
         ),), "proposal", 0.9)
+
+
+def test_dictionary_governance_requires_rights_and_native_review():
+    from bozer_neural.language.governance import ReviewDecision, promote_candidate, validate_release_entries
+    candidate = {
+        "id": "mos-0001", "french": "bonjour", "moore": "form-test",
+        "status": "candidate", "source": "contributor",
+        "source_reference": "submission-001", "source_license": "CC0",
+    }
+    with pytest.raises(ValueError, match="rights"):
+        promote_candidate(candidate, ReviewDecision(
+            "mos-0001", True, "reviewer", "2026-11-15", "pending"
+        ))
+    approved = promote_candidate(candidate, ReviewDecision(
+        "mos-0001", True, "native-reviewer", "2026-11-15", "cleared"
+    ))
+    assert approved["status"] == "validated"
+    assert validate_release_entries([approved]) == []
+    assert validate_release_entries([candidate])
+
+
+def test_checkpoint_runtime_loads_only_a_valid_checkpoint(tmp_path):
+    from bozer_neural.runtime import BozerNeuralRuntime
+    from bozer_neural.train_1b import CHECKPOINT_FORMAT
+    from bozer_neural.tokenizer import BozerByteBPETokenizer
+
+    model = tiny_model()
+    tokenizer = BozerByteBPETokenizer(padded_vocab_size=300)
+    checkpoint_path = tmp_path / "tiny.pt"
+    torch.save({
+        "format": CHECKPOINT_FORMAT,
+        "config": model.config.to_dict(),
+        "tokenizer": tokenizer.to_dict(),
+        "model_state_dict": model.state_dict(),
+    }, checkpoint_path)
+    runtime = BozerNeuralRuntime.from_checkpoint(checkpoint_path)
+    answer = runtime.complete("Bonjour", GenerationConfig(
+        max_new_tokens=0, active_vocab_size=tokenizer.active_vocab_size
+    ))
+    assert answer == ""
+
+
+def test_checkpoint_runtime_rejects_unknown_checkpoint_format(tmp_path):
+    from bozer_neural.runtime import BozerNeuralRuntime
+    checkpoint_path = tmp_path / "bad.pt"
+    torch.save({"format": "not-bozer"}, checkpoint_path)
+    with pytest.raises(ValueError, match="checkpoint format"):
+        BozerNeuralRuntime.from_checkpoint(checkpoint_path)
+
+
+def test_tts_audio_quality_reports_peak_and_clipping(tmp_path):
+    import wave
+    from bozer_neural.voice.quality import analyze_wav_quality
+    wav_path = tmp_path / "sample.wav"
+    samples = [-32768, -1000, 0, 1000, 32767]
+    with wave.open(str(wav_path), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(16000)
+        audio.writeframes(b"".join(int(v).to_bytes(2, "little", signed=True) for v in samples))
+    report = analyze_wav_quality(wav_path)
+    assert report.sample_rate == 16000
+    assert report.clipped_sample_percent > 0
+    assert "clipping_detected" in report.warnings
