@@ -45,7 +45,7 @@ IDENTITÉ :
 """
 
 
-    const val PLAN_GENERATION_PROMPT = """
+    val PLAN_GENERATION_PROMPT = """
 Tu es le planificateur d'actions de BOZER. Convertis l'objectif utilisateur en plan JSON strict, sans Markdown.
 Schéma obligatoire : {"goal":"...","steps":[{"id":"step_1","title":"...","action":"...","depends_on":[],"requires_confirmation":false}]}
 Règles :
