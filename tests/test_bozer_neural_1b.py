@@ -110,3 +110,25 @@ def test_generation_respects_requested_length():
     )
     assert generated.shape == (1, 6)
     assert int(generated.max()) < 12
+
+
+
+def test_reserved_vocabulary_rows_are_excluded_from_supervised_loss():
+    model = BozerNeural1B(tiny_config())
+    input_ids = torch.tensor([[1, 10, 11, 12]], dtype=torch.long)
+    targets = torch.tensor([[10, 11, 12, 13]], dtype=torch.long)
+
+    logits, loss = model(
+        input_ids, targets, active_vocab_size=270
+    )
+
+    assert torch.isfinite(loss)
+    assert torch.isneginf(logits[..., 270:]).all()
+
+
+def test_active_vocabulary_rejects_reserved_input_tokens():
+    model = BozerNeural1B(tiny_config())
+    input_ids = torch.tensor([[1, 10, 299]], dtype=torch.long)
+
+    with pytest.raises(ValueError, match="inactive token"):
+        model(input_ids, active_vocab_size=270)
