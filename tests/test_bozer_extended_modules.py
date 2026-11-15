@@ -30,11 +30,11 @@ def test_generation_applies_active_vocab_and_returns_expected_shape():
     prompt = torch.tensor([[1, 7, 8]], dtype=torch.long)
     config = GenerationConfig(
         max_new_tokens=3, min_new_tokens=3, temperature=0,
-        top_k=1, top_p=1, eos_token_id=None, active_vocab_size=32,
+        top_k=1, top_p=1, eos_token_id=None, active_vocab_size=270,
     )
     result = generate(model, prompt, config)
     assert result.shape == (1, 6)
-    assert int(result.max()) < 32
+    assert int(result.max()) < 270
 
 
 def test_generation_restores_model_training_mode():
@@ -43,7 +43,7 @@ def test_generation_restores_model_training_mode():
     prompt = torch.tensor([[1, 7]], dtype=torch.long)
     generate(model, prompt, GenerationConfig(
         max_new_tokens=1, temperature=0, top_k=1, eos_token_id=None,
-        active_vocab_size=24,
+        active_vocab_size=270,
     ))
     assert model.training
 
