@@ -43,3 +43,5 @@ class ActionPlan:
                                ActionKind.SET_ALARM, ActionKind.OPEN_APP}:
                 if not action.required_capability:
                     raise ValueError(f"{action.kind.value} requires a capability gate")
+                if action.kind in {ActionKind.CALL, ActionKind.SEND_MESSAGE, ActionKind.SET_ALARM} and not action.requires_confirmation:
+                    raise ValueError(f"{action.kind.value} requires explicit user confirmation")
