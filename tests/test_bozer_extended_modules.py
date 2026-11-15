@@ -144,11 +144,15 @@ def test_speech_frontend_preserves_diacritics_and_chunks_text():
     assert "sãaga" in combined
     assert combined.endswith("?")
     assert all(len(item.text) <= 24 for item in segments)
+    punctuation = frontend.prepare("Bonjour , comment ça va ?", "fr-FR")
+    assert " ".join(item.text for item in punctuation) == "Bonjour, comment ça va ?"
 
 
 def test_pronunciation_lexicon_hides_candidate_entries_by_default():
-    reviewed = PronunciationEntry("sãaga", "mos-BF", "phoneme-sequence",
-                                   "field-note", "validated", "reviewer")
+    reviewed = PronunciationEntry(
+        "sãaga", "mos-BF", "phoneme-sequence", "field-note", "validated",
+        "reviewer", source_license="CC0", rights_status="cleared",
+    )
     candidate = PronunciationEntry("word", "mos-BF", "pending",
                                     "pending-note", "candidate")
     lexicon = PronunciationLexicon([reviewed, candidate])

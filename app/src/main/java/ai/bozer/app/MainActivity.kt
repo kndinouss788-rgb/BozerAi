@@ -177,7 +177,10 @@ private fun BozerChat(
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", false)) }
-    val voiceOutput = remember(context) { BozerVoiceOutput(context) }
+    var voiceTtsStatus by remember { mutableStateOf("Initialisation du moteur vocal Android…") }
+    val voiceOutput = remember(context) {
+        BozerVoiceOutput(context) { status -> voiceTtsStatus = status }
+    }
     DisposableEffect(voiceOutput) { onDispose { voiceOutput.release() } }
     var secretaryOpen by remember { mutableStateOf(false) }
     var tiktokOpen by remember { mutableStateOf(false) }
@@ -560,6 +563,30 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             .edit().putBoolean("voice_replies", it).apply()
                                         if (!it) voiceOutput.stop()
                                     })
+                                }
+                                Text(
+                                    voiceTtsStatus,
+                                    color = Color(0xFF7D8A9B),
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                                Text(
+                                    "Moteur provisoire Android. La voix originale BOZER reste à entraîner.",
+                                    color = Color(0xFF9AA6B3),
+                                    fontSize = 10.sp,
+                                    lineHeight = 14.sp
+                                )
+                                TextButton(
+                                    onClick = {
+                                        runCatching {
+                                            context.startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
+                                        }.onFailure {
+                                            voiceTtsStatus = "Impossible d'ouvrir la gestion des voix Android."
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Gérer / installer les voix françaises", color = Color(0xFF258DB8))
                                 }
                                 TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady) {
                                     Text(if (modelReady) "Modèle auxiliaire prêt" else if (modelBusy) "Installation en cours…" else "Installer le modèle auxiliaire", color = Color(0xFF258DB8))
