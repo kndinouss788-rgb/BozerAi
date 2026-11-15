@@ -2,7 +2,7 @@ name: BOZER Android APK build
 
 on:
   push:
-    branches: [main, feature/remote-ai-quota-router]
+    branches: [main, feature/remote-ai-quota-router, bozer-neural-v0.1]
     paths:
       - "app/**"
       - "build.gradle.kts"
