@@ -1,7 +1,9 @@
 """Indexed, provenance-aware lookup for the BOZER Mooré–French lexicon."""
 from __future__ import annotations
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
+import json
 from .moore_french import normalize_text
 
 
@@ -99,3 +101,36 @@ class MooreFrenchDictionary:
                 if len(hits) >= limit:
                     break
         return tuple(hits)
+
+
+def load_default_dictionary(*, include_candidates: bool = False,
+                            lexicon_path: str | Path | None = None) -> MooreFrenchDictionary:
+    if lexicon_path is None:
+        lexicon_path = Path(__file__).resolve().parents[2] / "data" / "moore_french" / "lexicon.json"
+    path = Path(lexicon_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("format") != "bozer-moore-french-lexicon-v1":
+        raise ValueError("unsupported Mooré/French lexicon format")
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        raise ValueError("lexicon entries must be a list")
+    if include_candidates:
+        candidates_path = path.parent / "malm_candidates.jsonl"
+        if candidates_path.is_file():
+            with candidates_path.open(encoding="utf-8") as stream:
+                for line_number, line in enumerate(stream, 1):
+                    if not line.strip():
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError as exc:
+                        raise ValueError(f"invalid candidate JSON at line {line_number}") from exc
+                    entries.append({
+                        "id": row["id"], "french": row["french"],
+                        "moore": row["moore"], "status": "candidate",
+                        "source": "MALM Data — progressio-media/malm-data",
+                        "source_reference": ", ".join(row.get("source_ids", [])),
+                        "category": row.get("category", "word"),
+                        "note": "Candidate only: rights and native-speaker review pending.",
+                    })
+    return MooreFrenchDictionary(entries, include_candidates=include_candidates)
