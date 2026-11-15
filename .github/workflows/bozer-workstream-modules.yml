@@ -1,0 +1,26 @@
+name: BOZER standalone workstream module tests
+
+on:
+  push:
+    branches: [bozer-neural-v0.1]
+    paths:
+      - "bozer_neural/**"
+      - "tests/test_bozer_workstream_modules.py"
+      - ".github/workflows/bozer-workstream-modules.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  module-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install pytest torch
+      - name: Test standalone BOZER modules
+        run: python -m pytest tests/test_bozer_workstream_modules.py -q
