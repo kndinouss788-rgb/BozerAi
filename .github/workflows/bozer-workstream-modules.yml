@@ -6,6 +6,7 @@ on:
     paths:
       - "bozer_neural/**"
       - "tests/test_bozer_workstream_modules.py"
+      - "tests/test_bozer_extended_modules.py"
       - ".github/workflows/bozer-workstream-modules.yml"
   workflow_dispatch:
 
@@ -23,4 +24,4 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install pytest torch
       - name: Test standalone BOZER modules
-        run: python -m pytest tests/test_bozer_workstream_modules.py -q
+        run: python -m pytest tests/test_bozer_workstream_modules.py tests/test_bozer_extended_modules.py -q
