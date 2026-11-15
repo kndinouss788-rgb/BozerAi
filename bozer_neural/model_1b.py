@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from torch.utils.checkpoint import checkpoint
 
 from .config_1b import Bozer1BConfig
+from .tokenizer import BASE_VOCAB_SIZE
 
 
 class RMSNorm(nn.Module):
@@ -189,7 +190,8 @@ class BozerNeural1B(nn.Module):
     def parameter_count(self):
         return sum(parameter.numel() for parameter in self.parameters())
 
-    def forward(self, input_ids, targets=None, loss_mask=None):
+    def forward(self, input_ids, targets=None, loss_mask=None,
+                active_vocab_size=None):
         if input_ids.ndim != 2:
             raise ValueError("input_ids must have shape [batch, sequence]")
         if input_ids.dtype != torch.long:
@@ -218,6 +220,21 @@ class BozerNeural1B(nn.Module):
         hidden = self.final_norm(x)
         # The output projection is tied to the input token embeddings.
         logits = F.linear(hidden, self.token_embedding.weight)
+        if active_vocab_size is not None:
+            if not isinstance(active_vocab_size, int):
+                raise TypeError("active_vocab_size must be an integer")
+            if not BASE_VOCAB_SIZE <= active_vocab_size <= self.config.vocab_size:
+                raise ValueError("active_vocab_size is outside the model vocabulary")
+            if input_ids.numel() and int(input_ids.max()) >= active_vocab_size:
+                raise ValueError("input_ids contain a reserved, inactive token")
+            if targets is not None and targets.numel() and int(targets.max()) >= active_vocab_size:
+                raise ValueError("targets contain a reserved, inactive token")
+            if active_vocab_size < self.config.vocab_size:
+                inactive = (
+                    torch.arange(self.config.vocab_size, device=logits.device)
+                    >= active_vocab_size
+                ).view(1, 1, -1)
+                logits = logits.masked_fill(inactive, float("-inf"))
 
         loss = None
         if targets is not None:
