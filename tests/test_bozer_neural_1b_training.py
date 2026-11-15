@@ -131,3 +131,58 @@ def test_one_step_plain_text_pretraining_uses_all_next_tokens(tmp_path):
     assert saved["training"]["training_objective"] == "next_token_prediction_all_text_tokens"
     assert saved["training"]["split_audit"]["mode"] == "plain_text_blocks"
     assert result["global_step"] == 1
+
+
+
+def test_switching_from_text_pretraining_to_dialogue_tuning_resets_stage_state(tmp_path):
+    train_text = tmp_path / "pretrain.txt"
+    validation_text = tmp_path / "pretrain-validation.txt"
+    train_text.write_text(
+        "Les oiseaux chantent dans les arbres.\n"
+        "Le vent traverse doucement la vallée.\n",
+        encoding="utf-8",
+    )
+    validation_text.write_text(
+        "Les étoiles apparaissent dans le ciel.\n"
+        "La nuit devient calme et silencieuse.\n",
+        encoding="utf-8",
+    )
+    config = Bozer1BConfig(
+        vocab_size=259, context_length=8, d_model=16, n_layers=1,
+        n_query_heads=2, n_kv_heads=1, head_dim=8, ffn_dim=32,
+    )
+    pretrain_checkpoint = tmp_path / "pretrain.pt"
+    train_1b(
+        data_path=train_text, validation_data_path=validation_text,
+        output_path=pretrain_checkpoint, steps=2, batch_size=1,
+        eval_interval=1, eval_batches=1, tokenizer_vocab_size=270,
+        grad_accum_steps=1, warmup_steps=0, early_stopping_patience=0,
+        device="cpu", precision="fp32", config=config,
+    )
+
+    dialogue_train = tmp_path / "dialogue-train.jsonl"
+    dialogue_validation = tmp_path / "dialogue-validation.jsonl"
+    write_record(
+        dialogue_train, "Bonjour BOZER, comment vas-tu ?",
+        "Je suis prêt à t'aider. Que souhaites-tu faire ?",
+    )
+    write_record(
+        dialogue_validation, "Peux-tu expliquer un raisonnement ?",
+        "Je vais présenter les étapes et vérifier chacune d'elles.",
+    )
+    dialogue_checkpoint = tmp_path / "dialogue-tuned.pt"
+    result = train_1b(
+        data_path=dialogue_train,
+        validation_data_path=dialogue_validation,
+        output_path=dialogue_checkpoint, steps=1, batch_size=1,
+        eval_interval=1, eval_batches=1, tokenizer_vocab_size=270,
+        resume_checkpoint=pretrain_checkpoint, grad_accum_steps=1,
+        warmup_steps=0, early_stopping_patience=0, device="cpu",
+        precision="fp32", config=config,
+    )
+
+    saved = torch.load(dialogue_checkpoint, map_location="cpu", weights_only=False)
+    assert result["global_step"] == 1
+    assert saved["training"]["objective_changed_on_resume"] is True
+    assert saved["training"]["previous_training_objective"] == "next_token_prediction_all_text_tokens"
+    assert saved["training"]["training_objective"] == "assistant_answer_tokens_and_eos_only"
