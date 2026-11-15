@@ -301,7 +301,7 @@ def test_parallel_corpus_preparation_requires_rights_and_keeps_sources_isolated(
             "rights_status": "cleared",
         })
     input_path = tmp_path / "parallel.jsonl"
-    input_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows), encoding="utf-8")
+    input_path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
     output = tmp_path / "prepared"
     report = prepare_parallel_corpus(input_path, output, train_percent=60, validation_percent=20)
     assert report["records_by_split"] == {"train": 1, "validation": 1, "test": 1}
