@@ -1,10 +1,6 @@
-name: BOZER NEURAL corpus, tokenizer and model checks
+name: BOZER NEURAL legacy baseline smoke checks (manual)
 
 "on":
-  push:
-    branches: [bozer-neural-v0.1]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
