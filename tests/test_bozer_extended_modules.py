@@ -5,9 +5,9 @@ from bozer_neural.config_1b import Bozer1BConfig
 from bozer_neural.generation import (
     GenerationConfig, filter_next_token_logits, generate, sample_next_token,
 )
-from bozer_neural.language.dictionary import MooreFrenchDictionary
+from bozer_neural.language.dictionary import MooreFrenchDictionary, load_default_dictionary
 from bozer_neural.language.evaluation import TranslationExample, evaluate_translator
-from bozer_neural.language.morphology import MorphologyRule, RuleBasedMorphology
+from bozer_neural.language.morphology import MorphologyRule, RuleBasedMorphology, load_morphology_rules
 from bozer_neural.language.moore_french import MooreFrenchTranslator
 from bozer_neural.voice.frontend import SpeechTextFrontend
 from bozer_neural.voice.pronunciation_lexicon import (
@@ -177,3 +177,37 @@ def test_speech_controller_can_cancel_streamed_output():
     controller.cancel()
     with pytest.raises(StopIteration):
         next(stream)
+
+
+def test_default_dictionary_loader_uses_only_owned_reviewed_lexicon():
+    dictionary = load_default_dictionary()
+    assert dictionary.exact("bonjour (le matin)", "fr") == ()
+    candidates = load_default_dictionary(include_candidates=True)
+    assert candidates.exact("bonjour (le matin)", "fr")
+    assert all(hit.status == "candidate" for hit in candidates.exact("bonjour (le matin)", "fr"))
+
+
+def test_empty_morphology_registry_loads_without_invented_rules():
+    morphology = load_morphology_rules()
+    assert morphology.analyze("anyword", "mos") == ()
+
+
+def test_empty_pronunciation_registry_loads_without_invented_sounds():
+    lexicon = load_pronunciation_lexicon()
+    assert lexicon.lookup("sãaga", "mos-BF") == ()
+
+
+def test_memory_expiration_and_phone_action_confirmation_guards():
+    from datetime import datetime, timezone, timedelta
+    from bozer_neural.memory import MemoryRecord, MemoryStore
+    from bozer_neural.planning import ActionKind, ActionPlan, PlannedAction
+
+    store = MemoryStore()
+    expired_at = (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()
+    record = MemoryRecord.create("temporary", kind="fact", source="user", expires_at=expired_at)
+    store.add(record)
+    assert store.recall() == ()
+    with pytest.raises(ValueError, match="explicit user confirmation"):
+        ActionPlan("send", (PlannedAction(
+            ActionKind.SEND_MESSAGE, required_capability="sms"
+        ),), "proposal", 0.9)
