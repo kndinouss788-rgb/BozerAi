@@ -4,43 +4,86 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import java.util.Locale
 
-/** Local speech output; no cloud voice API or recurring network cost. */
-class BozerVoiceOutput(context: Context) : TextToSpeech.OnInitListener {
-    private val engine = TextToSpeech(context.applicationContext, this)
-    @Volatile private var ready = false
-    @Volatile private var pendingText: String? = null
+/**
+ * Temporary Android system-TTS adapter for development and accessibility.
+ *
+ * This is NOT BOZER's original trained voice: Android chooses the installed
+ * voice and may use its own engine/network settings. The final BOZER TTS
+ * implementation will replace this adapter behind BozerSpeechEngine.
+ */
+class BozerVoiceOutput(context: Context) :
+    BozerSpeechEngine,
+    TextToSpeech.OnInitListener {
 
+    private val engine = TextToSpeech(context.applicationContext, this)
+
+    @Volatile private var ready = false
+    @Volatile private var released = false
+    private var pendingText: String? = null
+    private var pendingUtteranceId: String? = null
+    private var activeUtteranceId: String? = null
+
+    @Synchronized
     override fun onInit(status: Int) {
-        ready = status == TextToSpeech.SUCCESS
+        if (released || status != TextToSpeech.SUCCESS) {
+            ready = false
+            return
+        }
+        val languageStatus = engine.setLanguage(Locale.forLanguageTag("fr-FR"))
+        ready = languageStatus >= TextToSpeech.LANG_AVAILABLE
         if (!ready) return
-        engine.language = Locale.forLanguageTag("fr-FR")
+
         val pending = pendingText
+        val pendingId = pendingUtteranceId
         pendingText = null
-        if (!pending.isNullOrBlank()) speak(pending)
+        pendingUtteranceId = null
+        if (!pending.isNullOrBlank()) speak(pending, pendingId ?: "bozer_reply")
     }
 
     @Synchronized
-    fun speak(text: String) {
+    override fun speak(text: String, utteranceId: String) {
+        if (released) return
         val clean = text.trim().take(1800)
         if (clean.isBlank()) return
         if (!ready) {
             pendingText = clean
+            pendingUtteranceId = utteranceId
             return
         }
-        engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "bozer_reply")
+        activeUtteranceId = utteranceId
+        // QUEUE_FLUSH ensures one current BOZER utterance; newer speech replaces older speech.
+        engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
     @Synchronized
-    fun stop() {
-        pendingText = null
-        if (ready) engine.stop()
+    override fun stop(utteranceId: String?) {
+        val matchesPending = utteranceId == null || pendingUtteranceId == utteranceId
+        if (matchesPending) {
+            pendingText = null
+            pendingUtteranceId = null
+        }
+        val matchesActive = utteranceId == null || activeUtteranceId == utteranceId
+        if (ready && matchesActive) {
+            engine.stop()
+            activeUtteranceId = null
+        }
     }
 
+    override fun isReady(): Boolean = ready && !released
+
     @Synchronized
-    fun shutdown() {
+    override fun release() {
+        if (released) return
         pendingText = null
+        pendingUtteranceId = null
+        activeUtteranceId = null
+        ready = false
+        released = true
         engine.stop()
         engine.shutdown()
-        ready = false
     }
+
+    /** Kept temporarily for compatibility with older callers. */
+    @Deprecated("Use release()")
+    fun shutdown() = release()
 }
