@@ -29,14 +29,14 @@ Construire un dictionnaire Mooré–Français dont BOZER maîtrise la provenance
 | tone_notes | non | Notes tonales, sans supposition |
 | example_moore | non | Exemple Mooré original |
 | example_french | non | Traduction française de l'exemple |
-| source_type | oui | `original_contributor`, `open_license`, `fieldwork` |
+| source_type | oui | `original_contributor`, `open_license`, `fieldwork`, `documentary_reference_pending_rights_review` |
 | source_reference | oui | Référence précise ou identifiant de contribution |
 | source_license | oui | Licence/conditions de la source |
 | reviewed_by | validation | Pseudonyme du relecteur natif |
 | reviewed_at | validation | Date ISO de validation |
 | notes | non | Ambiguïtés et contexte d'usage |
 
-## Workflow de validation
+Les références documentaires dont les droits ne sont pas établis peuvent uniquement alimenter une file de recherche marquée `candidate`. Elles ne doivent pas être présentées comme corpus réutilisable ou validé. Avant toute diffusion commerciale ou réutilisation substantielle, vérifier les droits auprès du détenteur de la source ou remplacer ces propositions par des contributions originales autorisées.\n\n## Workflow de validation
 
 1. Collecter une proposition et sa source.
 2. Vérifier la graphie, le sens et le contexte.
