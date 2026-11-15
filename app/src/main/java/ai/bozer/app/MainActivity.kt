@@ -173,7 +173,7 @@ private fun BozerChat(
     var sending by remember { mutableStateOf(false) }
     var modelReady by remember { mutableStateOf(false) }
     var modelBusy by remember { mutableStateOf(false) }
-    var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
+    var modelStatus by remember { mutableStateOf("BOZER NEURAL original est en construction. Le modèle local auxiliaire n'est pas installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", false)) }
@@ -210,12 +210,12 @@ private fun BozerChat(
 
     LaunchedEffect(Unit) {
         if (modelManager.verifyInstalled()) {
-            modelStatus = "Chargement du cerveau local…"
+            modelStatus = "Chargement du modèle local auxiliaire…"
             modelBusy = true
             try {
                 withContext(Dispatchers.IO) { engine.load(modelManager.installedModel()!!.absolutePath) }
                 modelReady = true
-                modelStatus = "Cerveau local prêt."
+                modelStatus = "Modèle local auxiliaire prêt."
             } catch (error: Exception) {
                 modelStatus = "Chargement impossible : ${error.message ?: "erreur inconnue"}"
             } finally { modelBusy = false }
@@ -225,7 +225,7 @@ private fun BozerChat(
     fun installAndLoad() {
         if (modelBusy || modelReady) return
         modelBusy = true
-        modelStatus = "Téléchargement du modèle Qwen…"
+        modelStatus = "Téléchargement du modèle auxiliaire Qwen pré-entraîné…"
         scope.launch {
             try {
                 var lastPercent = -1
@@ -241,7 +241,7 @@ private fun BozerChat(
                 }
                 withContext(Dispatchers.IO) { engine.load(file.absolutePath) }
                 modelReady = true
-                modelStatus = "Cerveau local prêt — hors ligne."
+                modelStatus = "Modèle auxiliaire Qwen chargé — hors ligne. BOZER NEURAL original reste en développement."
             } catch (error: Exception) {
                 modelStatus = "Installation impossible : ${error.message ?: "erreur inconnue"}"
             } finally { modelBusy = false }
@@ -535,7 +535,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     Text("Ouvrir BOZER SECRETARY  →", color = Color(0xFF258DB8), fontWeight = FontWeight.SemiBold)
                                 }
                                 Text("INTELLIGENCE", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                                Text("Mode du cerveau", color = Color(0xFF172538), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Mode du moteur de réponse", color = Color(0xFF172538), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                 BrainMode.entries.forEach { mode ->
                                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                                         .background(if (brainMode == mode) Color(0xFFEAF7FF) else Color(0xFFF7FAFC))
@@ -562,7 +562,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     })
                                 }
                                 TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady) {
-                                    Text(if (modelReady) "Cerveau local prêt" else if (modelBusy) "Installation en cours…" else "Installer le cerveau local", color = Color(0xFF258DB8))
+                                    Text(if (modelReady) "Modèle auxiliaire prêt" else if (modelBusy) "Installation en cours…" else "Installer le modèle auxiliaire", color = Color(0xFF258DB8))
                                 }
                                 if (modelBusy || modelStatus.startsWith("Installation impossible") || modelStatus.startsWith("Chargement impossible")) {
                                     Text(modelStatus, color = Color(0xFF7D8A9B), fontSize = 11.sp)
