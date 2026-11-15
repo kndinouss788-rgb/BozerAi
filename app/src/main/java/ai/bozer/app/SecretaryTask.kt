@@ -97,7 +97,7 @@ object SecretaryCommandParser {
 
 fun formatOpenSecretaryTasks(tasks: List<SecretaryTask>): String =
     if (tasks.isEmpty()) "Tu n'as aucune tâche en attente."
-    else "Voici tes tâches en attente :\\n" + tasks.joinToString("\\n") { "• ${it.title}" }
+    else "Voici tes tâches en attente :\n" + tasks.joinToString("\n") { "• ${it.title}" }
 
 class SecretaryCommandProcessor(private val repository: SecretaryRepository) {
     fun execute(input: String): String? = when (val command = SecretaryCommandParser.parse(input)) {
