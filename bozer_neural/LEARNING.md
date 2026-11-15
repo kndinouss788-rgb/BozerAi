@@ -39,7 +39,7 @@ Le premier entraînement exécutable vise volontairement le petit Transformer de
 
 Le corpus V0.5 contient 263 dialogues d'entraînement, 60 de validation et 60 de test, répartis dans six catégories. Les exemples sont synthétiques et servent à éprouver le pipeline ; ils ne suffisent pas à enseigner le français général à un assistant.
 
-Le workflow **BOZER NEURAL initial baseline training (corpus v0.5)** entraîne depuis des poids aléatoires sur la branche isolée `bozer-neural-v0.1`, puis évalue les 60 exemples de test. Il publie le checkpoint et le rapport sous forme d'artifact GitHub Actions. Il ne publie rien dans l'application Android.
+Le workflow **BOZER NEURAL 1B architecture checks and baseline training** exécute les tests du modèle cible sur une configuration miniature, entraîne le petit modèle depuis des poids aléatoires sur la branche isolée `bozer-neural-v0.1`, puis évalue les 60 exemples de test. Il publie le checkpoint et le rapport sous forme d'artifact GitHub Actions. Il ne publie rien dans l'application Android. Le workflow manuel `bozer-neural-train.yml` permet aussi de relancer séparément l'entraînement de référence.
 
 Commande locale équivalente :
 
