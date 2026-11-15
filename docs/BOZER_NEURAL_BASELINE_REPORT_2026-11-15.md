@@ -4,8 +4,8 @@
 
 - Dépôt : `kndinouss788-rgb/BozerAi`
 - Branche : `bozer-neural-v0.1`
-- Commit testé : `4ab658576ac9d60332a627f78f856ef1943af160`
-- Workflow réussi : [BOZER NEURAL 1B architecture checks and baseline training — run 43699171904](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43699171904)
+- Commit testé : `4724a2228d95cf903f534546ecbac163c271f39b`
+- Workflow réussi : [BOZER NEURAL 1B architecture checks and baseline training — run 43701951456](https://github.com/kndinouss788-rgb/BozerAi/actions/runs/43699171904)
 - Artefact : `bozer-neural-baseline-corpus-v0.5` (checkpoint courant, meilleur checkpoint et rapport JSON)
 
 ## Ce qui est codé
@@ -55,7 +55,7 @@ La diminution de la perte montre que la boucle d'optimisation apprend des régul
 
 ## Résultat qualitatif sur les exemples jamais vus
 
-Les 60 prompts de test ont été passés au modèle après entraînement. Les générations consignées sont généralement fragmentaires, incohérentes ou incorrectes. Exemples constatés dans le rapport :
+Les 60 prompts de test ont été passés au modèle après entraînement. Les générations consignées sont généralement fragmentaires, incohérentes ou incorrectes. Le nouvel évaluateur calcule aussi une correspondance exacte après normalisation NFKC, casse, ponctuation et espaces : **0/60 réponses exactes (0 %)**, avec **58/60 sorties non vides**. Ce score strict n'est pas une mesure complète de compréhension ; il confirme néanmoins que le modèle ne sait pas encore répondre correctement sur ces tâches inédites. Exemples constatés dans le rapport :
 - À « combien font 7 fois 8 ? », le modèle génère une suite de fragments et de nombres, pas « 56 ».
 - À un calcul de reste de 4 000 F, il ne produit que « F. ».
 - À une demande de planification, il produit parfois une seule lettre.
@@ -67,7 +67,7 @@ Aucun score sémantique fiable ni taux de réussite de tâche n'a été calculé
 Le run `43699171904` a terminé avec succès :
 - compilation des modules Python ;
 - validation des partitions V0.5 ;
-- 19 tests `unittest` du pipeline de référence ;
+- 20 tests `unittest` du pipeline de référence ;
 - 39 tests `pytest`, dont architecture 1B, entraînement miniature, évaluation, pré-entraînement texte, tokenizer, traducteur Mooré–français et importeur de lexique ;
 - entraînement CPU de 600 étapes du petit modèle ;
 - évaluation des 60 exemples de test ;
@@ -111,3 +111,13 @@ Le dossier data/bozer_pretraining_v1/ ne contient actuellement aucun fichier tex
 L'audit de sources est dans [data/bozer_pretraining_v1/SOURCES_AND_RIGHTS.md](../data/bozer_pretraining_v1/SOURCES_AND_RIGHTS.md). Les débats de l'Assemblée nationale et les textes HAS sont des candidats, pas des sources déjà autorisées pour BOZER. Le premier a une fiche « Licence Ouverte » sans version explicite ; le second indique LO 2.0 mais signale des extractions PDF/XML parfois erronées ou obsolètes. Wikipédia exige une analyse des obligations CC BY-SA/GFDL et des contenus importés ; Common Crawl est exclu en l'absence de droits vérifiés au niveau des sites.
 
 Pour donner un ordre de grandeur, la règle de planification Chinchilla d'environ 20 tokens par paramètre conduirait à environ 22,3 milliards de tokens de pré-entraînement pour 1 115 785 216 paramètres. C'est une heuristique, pas un minimum universel. Le corpus de dialogues V0.5 (22 882 tokens d'entraînement) ne doit pas être comparé directement à un corpus de pré-entraînement : il sert à l'ajustement supervisé et reste très petit. Référence : [Hoffmann et al., 2022](https://arxiv.org/abs/2203.15556).
+
+
+## Mesure de génération ajoutée le 15 novembre 2026
+
+Le module `bozer_neural/evaluate.py` expose maintenant `normalize_answer` et `score_generations`. Le rapport JSON fournit :
+- le nombre et le taux de correspondances exactes normalisées ;
+- le nombre et le taux de générations non vides ;
+- les mêmes compteurs par catégorie.
+
+La normalisation ignore la casse, les différences Unicode de compatibilité, la ponctuation et les espaces. Elle conserve les mots, les accents et les nombres. Elle ne mesure pas la pertinence sémantique. Résultat sur le jeu V0.5 : 0/60 exact, 58/60 non vides ; chaque catégorie obtient 0/10 exact. Cette mesure rend la faiblesse du modèle explicite au lieu de se fier à la seule perte.
