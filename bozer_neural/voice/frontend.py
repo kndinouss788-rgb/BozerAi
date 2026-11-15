@@ -36,6 +36,8 @@ class SpeechTextFrontend:
 
     def prepare(self, text: str, language: str) -> tuple[SpeechSegment, ...]:
         normalized = normalize_for_speech(text, language)
+        # Whitespace before spoken punctuation should not become a pause/token.
+        normalized = re.sub(r"\\s+([,.;:!?…])", r"\\1", normalized)
         if not normalized:
             return ()
         # Sentence-aware splitting. Punctuation remains attached to its sentence.
