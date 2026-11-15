@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import pytest
 
@@ -16,11 +15,10 @@ def _paragraph(index):
 def test_prepare_corpus_is_deterministic_deduplicated_and_disjoint(tmp_path):
     source = tmp_path / "sources"
     source.mkdir()
-    blocks = [_paragraph(i) for i in range(100)]
-    # Add an exact duplicate and obvious personal data to check redaction.
+    blocks = [_paragraph(i) for i in range(160)]
     (source / "one.txt").write_text(
-        "\\n\\n".join(blocks + [blocks[0]]) +
-        "\\n\\nContact: personne@example.org www.example.org +226 70 12 34 56 " +
+        "\n\n".join(blocks + [blocks[0]]) +
+        "\n\nContact: personne@example.org www.example.org +226 70 12 34 56 " +
         ("Texte additionnel pour dépasser la longueur minimale. " * 3),
         encoding="utf-8",
     )
@@ -37,11 +35,18 @@ def test_prepare_corpus_is_deterministic_deduplicated_and_disjoint(tmp_path):
         name: (out1 / f"{name}.txt").read_text(encoding="utf-8")
         for name in ("train", "validation", "test")
     }
-    assert not (set(contents["train"].split("\\n\\n")) &
-                set(contents["validation"].split("\\n\\n")))
-    assert "personne@example.org" not in "".join(contents.values())
-    assert "www.example.org" not in "".join(contents.values())
-    assert "[EMAIL]" in "".join(contents.values())
+    blocks_by_split = {
+        name: set(value for value in content.split("\n\n") if value)
+        for name, content in contents.items()
+    }
+    assert not (blocks_by_split["train"] & blocks_by_split["validation"])
+    assert not (blocks_by_split["train"] & blocks_by_split["test"])
+    assert not (blocks_by_split["validation"] & blocks_by_split["test"])
+    all_content = "".join(contents.values())
+    assert "personne@example.org" not in all_content
+    assert "www.example.org" not in all_content
+    assert "[EMAIL]" in all_content
+    assert "[PHONE]" in all_content
     assert json.loads((out1 / "report.json").read_text())["format"] == "bozer-pretraining-corpus-v1"
 
 

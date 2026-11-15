@@ -10,16 +10,16 @@ import re
 import unicodedata
 from pathlib import Path
 
-EMAIL_RE = re.compile(r"(?i)\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b")
-URL_RE = re.compile(r"(?i)\\b(?:https?://|www\\.)\\S+")
-PHONE_RE = re.compile(r"(?<!\\w)(?:\\+?\\d[\\d .()/-]{7,}\\d)(?!\\w)")
+EMAIL_RE = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
+URL_RE = re.compile(r"(?i)\b(?:https?://|www\.)\S+")
+PHONE_RE = re.compile(r"(?<!\w)(?:\+?\d[\d .()/-]{7,}\d)(?!\w)")
 
 
 def normalize_block(value):
     value = unicodedata.normalize("NFKC", value)
-    value = value.replace("\\r\\n", "\\n").replace("\\r", "\\n")
-    value = re.sub(r"[ \\t]+", " ", value)
-    value = re.sub(r" *\\n *", "\\n", value)
+    value = value.replace("\r\n", "\n").replace("\r", "\n")
+    value = re.sub(r"[ \t]+", " ", value)
+    value = re.sub(r" *\n *", "\n", value)
     return value.strip()
 
 
@@ -60,12 +60,11 @@ def prepare_corpus(input_dir, output_dir, min_chars=80, max_chars=12000,
     for path in files:
         raw = path.read_text(encoding="utf-8-sig")
         source_count = 0
-        for raw_block in re.split(r"\\n\\s*\\n+", raw):
+        for raw_block in re.split(r"\n\s*\n+", raw):
             block = normalize_block(raw_block)
             if not block:
                 continue
-            block = redact_obvious_personal_data(block)
-            block = normalize_block(block)
+            block = normalize_block(redact_obvious_personal_data(block))
             counts["read"] += 1
             if len(block) < min_chars:
                 counts["too_short"] += 1
@@ -113,7 +112,7 @@ def prepare_corpus(input_dir, output_dir, min_chars=80, max_chars=12000,
     }
     for name, items in splits.items():
         items.sort(key=lambda pair: pair[0])
-        content = "\\n\\n".join(block for _, block in items) + "\\n"
+        content = "\n\n".join(block for _, block in items) + "\n"
         destination = output_dir / f"{name}.txt"
         destination.write_text(content, encoding="utf-8")
         report.setdefault("output_sha256", {})[destination.name] = hashlib.sha256(
@@ -121,7 +120,7 @@ def prepare_corpus(input_dir, output_dir, min_chars=80, max_chars=12000,
         ).hexdigest()
 
     (output_dir / "report.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return report
