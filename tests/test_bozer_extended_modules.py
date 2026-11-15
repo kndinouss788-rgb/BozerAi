@@ -311,3 +311,25 @@ def test_parallel_corpus_preparation_requires_rights_and_keeps_sources_isolated(
     input_path.write_text(json.dumps(rows[0]), encoding="utf-8")
     with pytest.raises(ValueError, match="rights are not cleared"):
         prepare_parallel_corpus(input_path, output)
+
+
+def test_silence_audio_metrics_are_json_compatible(tmp_path):
+    import json
+    import wave
+    from bozer_neural.voice.quality import analyze_wav_quality
+    wav_path = tmp_path / "silence.wav"
+    with wave.open(str(wav_path), "wb") as audio:
+        audio.setnchannels(1)
+        audio.setsampwidth(2)
+        audio.setframerate(16000)
+        audio.writeframes(b"\\x00\\x00" * 1600)
+    report = analyze_wav_quality(wav_path)
+    assert report.peak_dbfs is None
+    assert report.rms_dbfs is None
+    assert "mostly_silence" in report.warnings
+    json.dumps(report.to_dict(), allow_nan=False)
+
+
+def test_validated_pronunciation_requires_license_and_cleared_rights():
+    with pytest.raises(ValueError, match="source rights"):
+        PronunciationEntry("word", "mos-BF", "phones", "source", "validated", "reviewer")
