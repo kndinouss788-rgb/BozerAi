@@ -322,7 +322,7 @@ def test_silence_audio_metrics_are_json_compatible(tmp_path):
         audio.setnchannels(1)
         audio.setsampwidth(2)
         audio.setframerate(16000)
-        audio.writeframes(b"\\x00\\x00" * 1600)
+        audio.writeframes(b"\x00\x00" * 1600)
     report = analyze_wav_quality(wav_path)
     assert report.peak_dbfs is None
     assert report.rms_dbfs is None
