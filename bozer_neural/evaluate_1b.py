@@ -85,47 +85,51 @@ def evaluate_1b(
                 tokens, loss_mask, batch_size, config.context_length,
                 device=target_device, generator=generator,
             )
-            _, loss = model(x, y, loss_mask=mask)
+            _, loss = model(
+                x, y, loss_mask=mask,
+                active_vocab_size=tokenizer.active_vocab_size,
+            )
             scores.append(float(loss.detach().float().cpu()))
         test_loss = sum(scores) / len(scores)
 
-    records = read_records(test_data_path)
-    selected = []
-    selected_categories = set()
-    for item in records:
-        if item["category"] not in selected_categories:
-            selected.append(item)
-            selected_categories.add(item["category"])
-    for item in records:
-        if item not in selected and len(selected) < samples:
-            selected.append(item)
-    selected = selected[:samples]
-
     examples = []
-    for item in selected:
-        prompt_ids = tokenizer.encode(format_prompt(item))[:-1]
-        prefix = torch.tensor(
-            [prompt_ids[-config.context_length:]], dtype=torch.long,
-            device=target_device,
-        )
-        prefix_length = prefix.shape[1]
-        generated = model.generate(
-            prefix,
-            max_new_tokens=max_new_tokens,
-            temperature=0.8,
-            top_k=40,
-            eos_token_id=EOS,
-            sampling_vocab_size=tokenizer.active_vocab_size,
-        )[0].tolist()
-        completion = generated[prefix_length:]
-        if EOS in completion:
-            completion = completion[:completion.index(EOS)]
-        examples.append({
-            "category": item["category"],
-            "prompt": item["user"],
-            "reference": item["assistant"],
-            "generated": tokenizer.decode(completion),
-        })
+    if Path(test_data_path).suffix.lower() == ".jsonl":
+        records = read_records(test_data_path)
+        selected = []
+        selected_categories = set()
+        for item in records:
+            if item["category"] not in selected_categories:
+                selected.append(item)
+                selected_categories.add(item["category"])
+        for item in records:
+            if item not in selected and len(selected) < samples:
+                selected.append(item)
+        selected = selected[:samples]
+
+        for item in selected:
+            prompt_ids = tokenizer.encode(format_prompt(item))[:-1]
+            prefix = torch.tensor(
+                [prompt_ids[-config.context_length:]], dtype=torch.long,
+                device=target_device,
+            )
+            prefix_length = prefix.shape[1]
+            generated = model.generate(
+                prefix,
+                max_new_tokens=max_new_tokens,
+                temperature=0.8,
+                top_k=40,
+                eos_token_id=EOS,
+                sampling_vocab_size=tokenizer.active_vocab_size,
+            )[0].tolist()
+            completion = generated[prefix_length:]
+            if EOS in completion:
+                completion = completion[:completion.index(EOS)]
+            examples.append({
+                "category": item["category"],
+                "prompt": item["user"],
+                "reference": item["assistant"],
+                "generated": tokenizer.decode(completion),
+            })
 
     return {
         "checkpoint": str(checkpoint_path),
