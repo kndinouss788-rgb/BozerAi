@@ -11,7 +11,7 @@ python -m bozer_neural.learning submit \
   --category dialogue_naturel \
   --user "Bonjour BOZER" \
   --assistant "Bonjour ! Comment puis-je t'aider ?"
-``
+```
 
 Catégories disponibles : `dialogue_naturel`, `comprehension_demande`, `raisonnement_resolution`, `planification_missions`, `utilisation_outils_verification`, `securite_confidentialite_honnetete`.
 
@@ -21,25 +21,64 @@ Les propositions sont conservées dans `data/bozer_learning/pending_feedback.jso
 
 ```bash
 python -m bozer_neural.learning approve \
-  --training data/bozer_neural_v0_4/train_fr.jsonl
-``
+  --training data/bozer_neural_v0_5/train_fr.jsonl
+```
 
 On peut approuver un seul élément avec `--id ID`. Le module refuse les chemins de test et de validation et ignore les doublons. Il ne touche jamais aux fichiers de validation/test.
 
-## 3. Entraîner une nouvelle version à partir d'un checkpoint
+## 3. Premier entraînement de référence — corpus V0.5
 
-Après approbation, lancer un nouvel entraînement en reprenant le checkpoint précédent :
+Le premier entraînement exécutable vise volontairement le petit Transformer de référence, pas le modèle cible 1B :
+
+- 2 blocs, 4 têtes, dimension 64 et contexte de 128 tokens ;
+- tokenizer byte-level BPE appris uniquement sur la partition d'entraînement, jusqu'à 512 identifiants ;
+- embeddings de tokens et de positions, attention causale, MLP GELU et poids d'embedding/sortie liés ;
+- initialisation aléatoire, AdamW, warmup puis décroissance cosinus ;
+- perte calculée uniquement sur la réponse de BOZER et son token EOS ;
+- évaluation séparée par catégorie sur validation, puis une seule évaluation finale sur le test tenu à l'écart.
+
+Le corpus V0.5 contient 263 dialogues d'entraînement, 60 de validation et 60 de test, répartis dans six catégories. Les exemples sont synthétiques et servent à éprouver le pipeline ; ils ne suffisent pas à enseigner le français général à un assistant.
+
+Le workflow **BOZER NEURAL initial baseline training (corpus v0.5)** entraîne depuis des poids aléatoires sur la branche isolée `bozer-neural-v0.1`, puis évalue les 60 exemples de test. Il publie le checkpoint et le rapport sous forme d'artifact GitHub Actions. Il ne publie rien dans l'application Android.
+
+Commande locale équivalente :
+
+```bash
+python -m bozer_neural.validate_corpus \
+  --train data/bozer_neural_v0_5/train_fr.jsonl \
+  --validation data/bozer_neural_v0_5/validation_fr.jsonl \
+  --test data/bozer_neural_v0_5/test_fr.jsonl
+
+python -m bozer_neural.train \
+  --data data/bozer_neural_v0_5/train_fr.jsonl \
+  --validation-data data/bozer_neural_v0_5/validation_fr.jsonl \
+  --steps 600 --batch-size 8 --grad-accum-steps 2 \
+  --eval-interval 25 --eval-batches 4 --warmup-steps 20 \
+  --early-stopping-patience 5 \
+  --output artifacts/bozer-neural-v0.4-corpus-v0.5.pt
+
+python -m bozer_neural.evaluate \
+  --checkpoint artifacts/bozer-neural-v0.4-corpus-v0.5.best.pt \
+  --data data/bozer_neural_v0_5/test_fr.jsonl \
+  --samples 60 --report artifacts/bozer-neural-corpus-v0.5-test-report.json
+```
+
+Le format interne du checkpoint reste `bozer-neural-v0.4` : V0.5 désigne ici la version du corpus, pas une rupture de format des poids.
+
+## 4. Reprendre un entraînement
+
+Après approbation d'exemples supplémentaires, reprendre un checkpoint en gardant le tokenizer appris et les identifiants compatibles :
 
 ```bash
 python -m bozer_neural.train \
-  --data data/bozer_neural_v0_4/train_fr.jsonl \
-  --validation-data data/bozer_neural_v0_4/validation_fr.jsonl \
-  --resume artifacts/bozer-neural-v0.4.pt \
-  --output artifacts/bozer-neural-v0.4-next.pt \
+  --data data/bozer_neural_v0_5/train_fr.jsonl \
+  --validation-data data/bozer_neural_v0_5/validation_fr.jsonl \
+  --resume artifacts/bozer-neural-v0.4-corpus-v0.5.pt \
+  --output artifacts/bozer-neural-v0.4-corpus-v0.5-next.pt \
   --steps 300
-``
+```
 
-Le tokenizer du checkpoint est réutilisé pour garder les identifiants de tokens compatibles avec les poids déjà appris. Le modèle est affiné à partir de ces poids, au lieu de repartir de zéro.
+Le modèle est alors affiné à partir de son checkpoint ; ce n'est plus un nouvel entraînement depuis zéro.
 
 ## Apprentissage conversationnel
 
@@ -58,22 +97,11 @@ Les nouveaux exemples peuvent inclure un champ `history`, une liste ordonnée d'
 
 L'historique sert de contexte. La fonction de perte ne cible que la réponse courante de BOZER et son marqueur de fin. L'évaluateur réutilise le même format de conversation pour éviter un décalage entre entraînement et génération.
 
-Pour lancer l'entraînement complet sur GitHub, utiliser le workflow manuel **BOZER NEURAL V0.4 full training** dans l'onglet Actions de la branche `bozer-neural-v0.1`. Il produit un checkpoint et un rapport de test si l'exécution arrive au bout.
+## 5. Modèle cible BOZER NEURAL 1B
 
-## Limites et précautions
+Le modèle cible est séparé du prototype de référence : `BozerNeural1B` utilise un Transformer causal avec GQA, RoPE, RMSNorm, SwiGLU et embeddings de tokens liés à la sortie. Sa configuration par défaut compte exactement 1 115 785 216 paramètres. Le code initialise des poids aléatoires ; il ne contient aucun poids entraîné.
 
-- L'approbation du corpus et l'entraînement sont deux opérations séparées.
-- Une réponse proposée doit être vérifiée avant approbation ; une erreur approuvée peut enseigner une mauvaise réponse.
-- Les données de validation et de test restent séparées et ne doivent jamais servir à l'entraînement.
-- Une baisse de perte ne prouve pas à elle seule que BOZER sait mieux converser. Il faut aussi vérifier des exemples inédits, la qualité des réponses et les régressions.
-- Ce mécanisme n'est pas encore intégré à l'application Android.
-
-
-## Cerveau cible BOZER NEURAL 1B
-
-Le modèle cible est séparé du prototype v0.4 : `BozerNeural1B` utilise un Transformer causal avec GQA, RoPE, RMSNorm, SwiGLU et embeddings liés. Sa configuration par défaut compte exactement 1 115 785 216 paramètres. Le code initialise des poids aléatoires ; il ne contient aucun poids entraîné.
-
-Le corpus v0.5 rassemble 263 exemples d'entraînement, 60 de validation et 60 de test. Il contient six catégories équilibrées dans les partitions de validation et de test. Ces exemples sont synthétiques et restent beaucoup trop peu nombreux pour apprendre correctement un modèle 1B.
+Le corpus V0.5 est beaucoup trop petit pour apprendre correctement un modèle 1B. Il permet seulement de vérifier le chargeur, la boucle et le format sur des configurations minuscules.
 
 ### Vérifier le corpus et les tests
 
@@ -83,7 +111,9 @@ python -m bozer_neural.validate_corpus \
   --validation data/bozer_neural_v0_5/validation_fr.jsonl \
   --test data/bozer_neural_v0_5/test_fr.jsonl
 
-python -m pytest -q tests/test_bozer_neural_1b.py tests/test_bozer_neural_1b_training.py
+python -m pytest -q tests/test_bozer_neural_1b.py \
+  tests/test_bozer_neural_1b_training.py \
+  tests/test_bozer_neural_1b_evaluation.py
 ```
 
 ### Entraîner le modèle cible
@@ -112,8 +142,10 @@ python -m bozer_neural.evaluate_1b \
 
 L'évaluateur vérifie la séparation des trois partitions, calcule une perte de test par catégorie et affiche des réponses générées sur des exemples gardés à part.
 
-### Avertissement matériel
+## 6. Besoins matériels et limites
 
-Pour 1,1 milliard de paramètres, les poids FP32, les gradients et les deux états AdamW demandent à eux seuls environ 17,85 Go de mémoire. Les activations, buffers et le runtime s'ajoutent. Le script refuse donc par défaut une allocation CPU de grande taille et bloque un GPU dont la mémoire libre est inférieure à ce minimum théorique. Il faut davantage de mémoire en pratique. Aucun entraînement 1B n'est lancé par les tests CI.
+Pour le petit modèle de référence, le nombre de paramètres est de 124 864 avec le vocabulaire byte de base (259 tokens) et au maximum 141 056 avec un vocabulaire BPE de 512 tokens. Les poids FP32, gradients et deux états AdamW représentent environ 2,3 Mo à ce maximum, hors activations, buffers et runtime PyTorch. C'est une taille adaptée à un premier test CPU.
 
-Le dépôt contient maintenant l'architecture et le pipeline ; aucun checkpoint 1B entraîné n'a encore été produit et l'intégration Android reste à faire.
+Pour 1,1 milliard de paramètres, les poids FP32, les gradients et les deux états AdamW demandent à eux seuls 17 852 563 456 octets (environ 17,85 Go décimaux). Les activations, buffers et le runtime s'ajoutent. Le script refuse donc par défaut une allocation CPU de grande taille et bloque un GPU dont la mémoire libre est inférieure à ce minimum théorique. Il faut davantage de mémoire en pratique.
+
+Aucune perte en baisse ne prouve à elle seule que BOZER sait mieux converser. Il faut comparer les réponses générées aux références, noter les erreurs par catégorie et tester des demandes réellement inédites. Aucun entraînement 1B complet n'a été lancé ; le checkpoint 1B n'existe pas encore et l'intégration Android reste à faire.

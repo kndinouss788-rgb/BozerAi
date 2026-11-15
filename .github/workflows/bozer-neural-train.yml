@@ -1,14 +1,27 @@
-name: BOZER NEURAL V0.4 full training
+name: BOZER NEURAL initial baseline training (corpus v0.5)
 
 "on":
+  push:
+    branches:
+      - bozer-neural-v0.1
+    paths:
+      - ".github/workflows/bozer-neural-train.yml"
+      - "bozer_neural/**"
+      - "data/bozer_neural_v0_5/**"
+      - "requirements-neural.txt"
+      - "tests/test_bozer_neural.py"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: bozer-neural-baseline-training-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  train-from-scratch:
-    name: Train, validate and evaluate BOZER NEURAL V0.4
+  train-from-random-initialization:
+    name: Train baseline and evaluate held-out French test set
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -24,39 +37,48 @@ jobs:
           cache-dependency-path: requirements-neural.txt
       - name: Install PyTorch
         run: python -m pip install -r requirements-neural.txt
-      - name: Validate corpus partitions
-        run: python -m bozer_neural.validate_corpus
-      - name: Run all neural unit tests
+      - name: Compile neural modules and tests
+        run: python -m compileall -q bozer_neural tests
+      - name: Validate V0.5 corpus partitions and leakage
+        run: |
+          python -m bozer_neural.validate_corpus \
+            --train data/bozer_neural_v0_5/train_fr.jsonl \
+            --validation data/bozer_neural_v0_5/validation_fr.jsonl \
+            --test data/bozer_neural_v0_5/test_fr.jsonl
+      - name: Run baseline model, data and training tests
         run: python -m unittest discover -s tests -p "test_bozer_neural.py" -v
-      - name: Train from random initialization
+      - name: Train small BOZER baseline from random initialization
         run: |
           python -m bozer_neural.train \
-            --data data/bozer_neural_v0_4/train_fr.jsonl \
-            --validation-data data/bozer_neural_v0_4/validation_fr.jsonl \
+            --data data/bozer_neural_v0_5/train_fr.jsonl \
+            --validation-data data/bozer_neural_v0_5/validation_fr.jsonl \
             --steps 600 \
             --batch-size 8 \
-            --grad-accum-steps 2 \
+            --learning-rate 3e-4 \
             --eval-interval 25 \
             --eval-batches 4 \
+            --tokenizer-vocab-size 512 \
+            --grad-accum-steps 2 \
             --warmup-steps 20 \
             --early-stopping-patience 5 \
-            --output artifacts/bozer-neural-v0.4.pt
-      - name: Evaluate the best checkpoint on the untouched test partition
+            --output artifacts/bozer-neural-v0.4-corpus-v0.5.pt
+      - name: Evaluate all held-out V0.5 test examples
         run: |
           python -m bozer_neural.evaluate \
-            --checkpoint artifacts/bozer-neural-v0.4.best.pt \
-            --data data/bozer_neural_v0_4/test_fr.jsonl \
+            --checkpoint artifacts/bozer-neural-v0.4-corpus-v0.5.best.pt \
+            --data data/bozer_neural_v0_5/test_fr.jsonl \
             --batches 12 \
-            --samples 48 \
+            --samples 60 \
             --max-new-tokens 96 \
-            --report artifacts/bozer-neural-v0.4-test-report.json
-      - name: Upload model and evaluation report
+            --report artifacts/bozer-neural-corpus-v0.5-test-report.json
+      - name: Upload checkpoint and test report
         uses: actions/upload-artifact@v4
         with:
-          name: bozer-neural-v0.4-trained-checkpoint
+          name: bozer-neural-baseline-corpus-v0.5
           path: |
-            artifacts/bozer-neural-v0.4.pt
-            artifacts/bozer-neural-v0.4.json
-            artifacts/bozer-neural-v0.4.best.pt
-            artifacts/bozer-neural-v0.4-test-report.json
+            artifacts/bozer-neural-v0.4-corpus-v0.5.pt
+            artifacts/bozer-neural-v0.4-corpus-v0.5.json
+            artifacts/bozer-neural-v0.4-corpus-v0.5.best.pt
+            artifacts/bozer-neural-corpus-v0.5-test-report.json
           if-no-files-found: error
+          retention-days: 14
