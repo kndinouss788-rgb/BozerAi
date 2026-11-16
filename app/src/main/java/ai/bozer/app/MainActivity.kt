@@ -230,7 +230,7 @@ private fun BozerChat(
             try {
                 withContext(Dispatchers.IO) { piperVoiceOutput.initialize(piperModelManager.modelDirectory()) }
                 piperReady = true
-                voiceTtsStatus = "Voix française locale chargée — profil masculin — hors ligne."
+                voiceTtsStatus = "Voix française locale chargée — profil candidat 55 — hors ligne."
             } catch (error: Exception) {
                 voiceTtsStatus = "Chargement de la voix locale impossible : " + (error.message ?: "erreur inconnue")
             } finally {
@@ -278,7 +278,7 @@ private fun BozerChat(
                 piperModelInstalled = true
                 withContext(Dispatchers.IO) { piperVoiceOutput.initialize(directory) }
                 piperReady = true
-                voiceTtsStatus = "Voix française locale chargée — profil masculin 1 — hors ligne."
+                voiceTtsStatus = "Voix française locale chargée — profil candidat 55 — hors ligne ; timbre à confirmer."
             } catch (error: Exception) {
                 piperModelInstalled = piperModelManager.isInstalled()
                 voiceTtsStatus = "Installation de la voix impossible : " + (error.message ?: "erreur inconnue")
