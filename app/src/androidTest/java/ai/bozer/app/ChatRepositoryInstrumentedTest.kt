@@ -90,6 +90,7 @@ class ChatRepositoryInstrumentedTest {
 
     @Test
     fun explicitSearchUsesInjectedNetworkClientAndMarksResultsUntrusted() = runBlocking {
+        repository.brainMode = BrainMode.AUTO
         repository.internetAvailable = { true }
         val answer = repository.reply(
             listOf(ChatMessage(role = "user", content = "Recherche sur Internet : capitale du Burkina Faso"))
@@ -113,12 +114,28 @@ class ChatRepositoryInstrumentedTest {
 
     @Test
     fun offlineSearchRequestDoesNotClaimThatResearchWasPerformed() = runBlocking {
+        repository.brainMode = BrainMode.AUTO
         repository.internetAvailable = { false }
         val answer = repository.reply(
             listOf(ChatMessage(role = "user", content = "Recherche sur Internet : météo"))
         )
-        assertTrue(search.queries.isEmpty())
-        assertFalse(answer.contains("Sources Internet", ignoreCase = true))
+        assertTrue("Aucun appel réseau ne doit être simulé hors ligne.", search.queries.isEmpty())
+        assertTrue("BOZER doit dire explicitement qu'aucune recherche n'a été faite.",
+            answer.contains("aucune recherche Internet n'a été effectuée", ignoreCase = true))
+        assertTrue("Le modèle ne doit pas inventer une recherche hors ligne.", model.prompts.isEmpty())
+    }
+
+    @Test
+    fun offlineModeNeverStartsNetworkSearchEvenWhenInternetIsAvailable() = runBlocking {
+        repository.brainMode = BrainMode.OFFLINE
+        repository.internetAvailable = { true }
+        val answer = repository.reply(
+            listOf(ChatMessage(role = "user", content = "Recherche sur Internet : météo"))
+        )
+        assertTrue("Le mode Hors ligne ne doit effectuer aucun appel réseau.", search.queries.isEmpty())
+        assertTrue(answer.contains("mode Hors ligne", ignoreCase = true))
+        assertTrue(answer.contains("aucune recherche Internet n'a été effectuée", ignoreCase = true))
+        assertTrue("Le moteur local ne doit pas recevoir une demande de recherche interdite.", model.prompts.isEmpty())
     }
 
     private class RecordingConversationModel : ConversationModel {
