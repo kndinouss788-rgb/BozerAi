@@ -578,6 +578,25 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 )
                                 TextButton(
                                     onClick = {
+                                        voiceOutput.speak(
+                                            "Bonjour, je suis BOZER. Je suis prêt à t'aider.",
+                                            "bozer_voice_preview"
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Écouter un essai de la voix", color = Color(0xFF258DB8))
+                                }
+                                TextButton(
+                                    onClick = {
+                                        voiceOutput.stop()
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Arrêter la voix", color = Color(0xFF7D8A9B))
+                                }
+                                TextButton(
+                                    onClick = {
                                         runCatching {
                                             context.startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
                                         }.onFailure {
