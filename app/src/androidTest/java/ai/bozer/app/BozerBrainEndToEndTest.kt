@@ -181,10 +181,14 @@ class BozerBrainEndToEndTest {
             recallReply.contains("chat", ignoreCase = true))
 
         val (followUpReply, followUpMs) = sendMessage(
-            "Pourquoi les chats ronronnent-ils ? Explique-moi simplement.",
+            "Et pourquoi ronronnent-ils ? Explique-moi simplement.",
             6
         )
         assertTrue("La réponse de suivi est trop courte : $followUpReply", followUpReply.length >= 20)
+        assertTrue(
+            "BOZER n'a pas résolu le pronom du suivi à partir du contexte précédent : $followUpReply",
+            followUpReply.contains("chat", ignoreCase = true)
+        )
 
         val (searchReply, searchMs) = sendMessage(
             "Recherche sur Internet : capitale du Burkina Faso",

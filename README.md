@@ -16,7 +16,7 @@ BOZER is an Android assistant project under active development. The repository n
 ## Privacy and model limits
 
 - By default, chat inference runs locally after the model has been installed.
-- The optional HTTPS BOZER gateway is disabled unless a gateway URL is explicitly configured at build time. No provider key is embedded in the Android app.
+- The optional HTTPS BOZER gateway is used only when a gateway URL is configured at build time **and the user explicitly selects En ligne**. Automatique and Hors ligne keep conversation inference on the phone. No provider key is embedded in the Android app.
 - Selecting online mode sends the conversation context needed for a response to the configured gateway. Do not configure a gateway unless its operator, privacy policy, and cost are understood.
 - Search requests contact Wikipedia only when the user explicitly asks for a search and the device has validated Internet access.
 - The bundled starter model has 0.5 billion parameters. It is a small local model, not a ChatGPT-equivalent model. Latency, answer quality, RAM, CPU use, heat, and battery impact must be measured on the target phone before making performance claims.
@@ -36,7 +36,7 @@ gradle :app:assembleDebug --no-daemon
 gradle :app:connectedDebugAndroidTest --no-daemon
 ```
 
-GitHub Actions runs the Python core tests, native Android APK build, and a dedicated emulator workflow. The emulator workflow downloads and verifies the real GGUF model, installs it into the app's private data directory, runs real local inference and Android network-search tests, and captures logs, a screenshot, memory and CPU diagnostics. It also force-stops and relaunches BOZER to test persistence.
+GitHub Actions runs the Python core tests, native Android APK build, and a dedicated emulator workflow. The emulator workflow downloads and verifies the real GGUF model, installs it into the app's private data directory, runs real local inference and Android network-search tests, and captures logs, a screenshot, memory, CPU and emulator battery diagnostics. It also force-stops and relaunches BOZER to test persistence.
 
 The installable debug APK is published as the **`bozer-debug-apk`** artifact by the **BOZER Android APK build** workflow. Artifacts are retained for 14 days; download them from the matching successful run's **Actions → Artifacts** section. A debug APK is signed with the Android debug key and is intended for testing, not Play Store release.
 
