@@ -7,9 +7,9 @@ Date of review: 2026-11-16.
 The Android branch now includes a local voice path built from:
 
 - Sherpa-ONNX Android runtime, Apache-2.0, fetched during Gradle build from the official v2.0.1 release and verified against its SHA-256.
-- The French `fr_FR-mls-medium` Piper-derived ONNX model and its `tokens.txt`, downloaded once from the Hugging Face Sherpa model repository into BOZER's private app storage.
+- The French `fr_FR-mls-medium` Piper-derived ONNX model and `fr_FR-mls-medium.tokens.txt`, downloaded once from the XODalG Sherpa-converted voice mirror into BOZER's private app storage. The checkpoint metadata describes 125 speakers.
 - A Kotlin model manager that downloads to temporary files, checks minimum file sizes, and only renames complete files into place.
-- A Kotlin speech adapter that initializes the ONNX model locally, selects the configured masculine profile (speaker ID 1 only when the checkpoint exposes exactly the expected two-speaker configuration), generates speech at a restrained 0.97 speed, and plays mono float PCM through Android AudioTrack.
+- A Kotlin speech adapter that initializes the ONNX model locally, selects provisional speaker ID 55 after validating that the checkpoint exposes 125 speakers, generates speech at a restrained 0.97 speed, and plays mono float PCM through Android AudioTrack. The selected profile's gender and timbre still require listening confirmation.
 - Existing Android system TTS remains as a fallback when the offline model is not installed or cannot initialize.
 
 The model is not downloaded as part of the APK. The user installs it from BOZER settings; it is then kept in app-private storage for later offline use. The Sherpa AAR is downloaded by Gradle at build time and is checksum-pinned.
