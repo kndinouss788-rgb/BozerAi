@@ -10,7 +10,7 @@ enum class BozerEvidenceLevel { VERIFIED, SUBMITTED, UNKNOWN }
  * Local safety floor for model-generated Android plans.
  *
  * A model may request confirmation, but it cannot waive confirmation for
- * sensitive actions. Unknown commands fail closed and require approval.
+ * sensitive actions. Unknown commands are never auto-approved.
  */
 internal object BozerActionSafetyPolicy {
     fun requiresConfirmation(action: String): Boolean {
