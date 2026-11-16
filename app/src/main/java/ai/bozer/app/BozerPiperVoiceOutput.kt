@@ -70,8 +70,12 @@ class BozerPiperVoiceOutput(
                 )
             )
             val speakerCount = candidate.numSpeakers()
-            check(speakerCount >= 2) {
-                "Ce fichier vocal ne contient pas le profil masculin attendu."
+            if (speakerCount != EXPECTED_SPEAKER_COUNT) {
+                candidate.release()
+                error(
+                    "Modèle inattendu : " + speakerCount +
+                        " profils au lieu des 2 profils documentés."
+                )
             }
             tts = candidate
         }
@@ -201,6 +205,7 @@ class BozerPiperVoiceOutput(
     }
 
     companion object {
+        private const val EXPECTED_SPEAKER_COUNT = 2
         private const val MALE_SPEAKER_ID = 1
         private const val SPEECH_SPEED = 0.97f
     }
