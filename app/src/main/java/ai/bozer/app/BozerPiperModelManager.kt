@@ -90,12 +90,12 @@ class BozerPiperModelManager(context: Context) {
 
     companion object {
         private const val MODEL_FILE_NAME = "fr_FR-mls-medium.onnx"
-        private const val TOKENS_FILE_NAME = "tokens.txt"
-        private const val MIN_MODEL_BYTES = 20L * 1024L * 1024L
-        private const val MIN_TOKENS_BYTES = 100L
+        private const val TOKENS_FILE_NAME = "fr_FR-mls-medium.tokens.txt"
+        private const val MIN_MODEL_BYTES = 70L * 1024L * 1024L
+        private const val MIN_TOKENS_BYTES = 900L
         private const val MODEL_URL =
-            "https://huggingface.co/csukuangfj/vits-piper-fr_FR-mls-medium/resolve/main/fr_FR-mls-medium.onnx"
+            "https://huggingface.co/XODalG/piper-voices-sherpa/resolve/main/fr/fr_FR/mls/medium/fr_FR-mls-medium.onnx"
         private const val TOKENS_URL =
-            "https://huggingface.co/csukuangfj/vits-piper-fr_FR-mls-medium/resolve/main/tokens.txt"
+            "https://huggingface.co/XODalG/piper-voices-sherpa/resolve/main/fr/fr_FR/mls/medium/fr_FR-mls-medium.tokens.txt"
     }
 }
