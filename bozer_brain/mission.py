@@ -266,6 +266,34 @@ class MissionStore:
                 (mission_id, owner_token)
             )
 
+    def requeue_blocked_steps(self, mission_id: str, available_tools):
+        """Reopen only blocked steps whose registered tool and permission now exist."""
+        ready = set(available_tools)
+        if not ready:
+            return 0
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            rows = db.execute(
+                "SELECT step_id,tool FROM mission_steps WHERE mission_id=? AND status='blocked'",
+                (mission_id,)
+            ).fetchall()
+            eligible = [step_id for step_id, tool_name in rows if tool_name in ready]
+            for step_id in eligible:
+                db.execute("""UPDATE mission_steps SET status='pending',approved=0,last_result=''
+                    WHERE mission_id=? AND step_id=? AND status='blocked'""",
+                    (mission_id, step_id)
+                )
+            if eligible:
+                db.execute(
+                    "UPDATE missions SET status='queued',updated_at=? WHERE mission_id=?",
+                    (time.time(), mission_id)
+                )
+                self._event(
+                    db, mission_id,
+                    "Reprise de " + str(len(eligible)) + " étape(s) après disponibilité des outils/permissions"
+                )
+            return len(eligible)
+
     def recover_interrupted_steps(self, mission_id: str, retry_safe_tools):
         """Reconcile steps left running after an expired runner lease."""
         safe_tools = set(retry_safe_tools)
@@ -376,6 +404,12 @@ class MissionRunner:
         )
         heartbeat.start()
         try:
+            available_tools = {
+                name for name, tool in self.tools.items()
+                if not tool.required_permission
+                or tool.required_permission in self.granted_permissions
+            }
+            self.store.requeue_blocked_steps(mission_id, available_tools)
             self.store.recover_interrupted_steps(
                 mission_id,
                 {name for name, tool in self.tools.items() if tool.retry_safe}

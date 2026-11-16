@@ -54,6 +54,34 @@ class MissionRunnerTests(unittest.TestCase):
         self.assertEqual(second.status, "completed")
         self.assertEqual(calls, ["sent"])
 
+    def test_missing_permission_blocks_then_resumes_after_grant(self):
+        calls = []
+        mission = self.store.create("Action protégée", (MissionStep("a", "Ouvrir", "tool", {}),))
+        first = MissionRunner(self.store, {"tool": MissionTool(
+            lambda _: calls.append("opened") or ToolResult(True, "ok", True),
+            required_permission="CAMERA"
+        )}).run(mission)
+        self.assertEqual(first.status, "failed")
+        self.assertEqual(calls, [])
+        second = MissionRunner(self.store, {"tool": MissionTool(
+            lambda _: calls.append("opened") or ToolResult(True, "ok", True),
+            required_permission="CAMERA"
+        )}, granted_permissions={"CAMERA"}).run(mission)
+        self.assertEqual(second.status, "completed")
+        self.assertEqual(calls, ["opened"])
+
+    def test_cancel_requested_before_run_prevents_tool_execution(self):
+        calls = []
+        mission = self.store.create("Annuler avant départ", (
+            MissionStep("a", "Action", "tool", {}),
+        ))
+        self.store.request_cancel(mission)
+        report = MissionRunner(self.store, {
+            "tool": MissionTool(lambda _: calls.append("run") or ToolResult(True, "ok", True))
+        }).run(mission)
+        self.assertEqual(report.status, "cancelled")
+        self.assertEqual(calls, [])
+
     def test_missing_permission_blocks_tool(self):
         mission = self.store.create("Action protégée", (MissionStep("a", "Ouvrir", "tool", {}),))
         report = MissionRunner(self.store, {"tool": MissionTool(
