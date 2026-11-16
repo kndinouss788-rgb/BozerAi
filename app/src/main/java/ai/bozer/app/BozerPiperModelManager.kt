@@ -59,12 +59,13 @@ class BozerPiperModelManager(context: Context) {
                 "Téléchargement refusé (HTTP " + connection.responseCode + ")."
             }
             val total = connection.contentLengthLong
+            val downloadContext = currentCoroutineContext()
             var downloaded = 0L
             connection.inputStream.use { input ->
                 FileOutputStream(partial).use { output ->
                     val buffer = ByteArray(256 * 1024)
                     while (true) {
-                        currentCoroutineContext().ensureActive()
+                        downloadContext.ensureActive()
                         val count = input.read(buffer)
                         if (count < 0) break
                         output.write(buffer, 0, count)
