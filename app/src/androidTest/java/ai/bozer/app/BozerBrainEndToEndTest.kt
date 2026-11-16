@@ -3,7 +3,7 @@ package ai.bozer.app
 import android.database.sqlite.SQLiteDatabase
 import android.os.SystemClock
 import android.util.Log
-import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -96,7 +96,6 @@ class BozerBrainEndToEndTest {
 
     private fun sendMessage(text: String, turn: Int): Pair<String, Long> {
         val input = composeRule.onNodeWithTag("bozer_input")
-        input.assertExists()
         val previous = assistantCount()
         input.performTextInput(text)
         val started = SystemClock.elapsedRealtime()
@@ -111,8 +110,14 @@ class BozerBrainEndToEndTest {
 
     @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
-        composeRule.onNodeWithTag("bozer_input").assertExists()
-        composeRule.onNodeWithTag("bozer_welcome").assertExists()
+        assertTrue(
+            "Le champ de saisie BOZER est absent",
+            composeRule.onAllNodesWithTag("bozer_input").fetchSemanticsNodes().isNotEmpty()
+        )
+        assertTrue(
+            "L'écran d'accueil BOZER est absent",
+            composeRule.onAllNodesWithTag("bozer_welcome").fetchSemanticsNodes().isNotEmpty()
+        )
         waitForModelReady()
 
         val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 1)
