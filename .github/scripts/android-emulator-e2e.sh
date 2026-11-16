@@ -45,11 +45,25 @@ adb shell appops set "$APP_ID" SYSTEM_ALERT_WINDOW allow
 adb shell appops get "$APP_ID" SYSTEM_ALERT_WINDOW
 
 adb logcat -c
-gradle :app:connectedDebugAndroidTest --no-daemon
 
-# Kill the real app process, then launch a fresh instrumentation process. The
-# second test proves that SQLite history, explicit memory and GGUF loading
-# survive an actual process stop rather than only an Activity recreation.
+# Run the real-model conversation first because it creates the history and
+# explicit memory that the process-restart test must verify.
+gradle :app:connectedDebugAndroidTest --no-daemon \
+  -Pandroid.testInstrumentationRunnerArguments.class=ai.bozer.app.BozerBrainEndToEndTest
+
+# Run independent Android integration suites without relying on JUnit class order.
+for test_class in \
+  ChatDatabaseInstrumentedTest \
+  ChatRepositoryInstrumentedTest \
+  FloatingBubbleServiceInstrumentedTest \
+  PhoneActionInstrumentedTest \
+  VoicePathInstrumentedTest; do
+  gradle :app:connectedDebugAndroidTest --no-daemon \
+    "-Pandroid.testInstrumentationRunnerArguments.class=ai.bozer.app.$test_class"
+done
+
+# Kill the real app process only after the E2E dialogue has populated history
+# and memory, then verify that a fresh process restores them and reloads GGUF.
 adb shell am force-stop "$APP_ID"
 sleep 2
 gradle :app:connectedDebugAndroidTest --no-daemon \

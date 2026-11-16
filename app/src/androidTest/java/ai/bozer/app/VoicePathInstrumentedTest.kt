@@ -80,10 +80,11 @@ class VoicePathInstrumentedTest {
             device.wait(Until.hasObject(By.pkg(resolved.activityInfo.packageName)), 5_000)
             device.pressBack()
         }
+
+        verifyTextToSpeechLifecycle()
     }
 
-    @Test
-    fun androidTextToSpeechInitializesAndShutsDownWithoutLeakingItsEngine() {
+    private fun verifyTextToSpeechLifecycle() {
         val output = BozerVoiceOutput(context)
         val deadline = SystemClock.elapsedRealtime() + 12_000
         while (!output.isReady() && SystemClock.elapsedRealtime() < deadline) {
