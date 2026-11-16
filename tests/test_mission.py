@@ -104,6 +104,10 @@ class MissionRunnerTests(unittest.TestCase):
                 (mission,)
             )
             db.execute("UPDATE missions SET status='running' WHERE mission_id=?", (mission,))
+            db.execute(
+                "INSERT INTO mission_runner_leases(mission_id,owner_token,expires_at) VALUES(?,?,?)",
+                (mission, "dead-runner", time.time() - 60)
+            )
         runner = MissionRunner(self.store, {
             "send": MissionTool(lambda _: calls.append("sent") or ToolResult(True, "vérifié", True))
         })

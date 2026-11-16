@@ -42,9 +42,13 @@ class MissionPlanner:
         if not isinstance(text, str):
             raise MissionPlanningError("La réponse du modèle doit être du texte.")
         raw = text.strip()
-        if raw.startswith("\`\`\`"):
-            raw = re.sub(r"^\`\`\`(?:json)?\s*", "", raw, flags=re.IGNORECASE)
-            raw = re.sub(r"\s*\`\`\`$", "", raw)
+        fence = chr(96) * 3
+        if raw.startswith(fence):
+            raw = raw[len(fence):].lstrip()
+            if raw.lower().startswith("json"):
+                raw = raw[4:].lstrip()
+            if raw.endswith(fence):
+                raw = raw[:-len(fence)].rstrip()
         try:
             value = json.loads(raw)
         except (TypeError, json.JSONDecodeError) as exc:

@@ -82,6 +82,11 @@ class MissionPlannerTests(unittest.TestCase):
         with self.assertRaises(MissionPlanningError):
             MissionPlanner(missing).plan("Do it", self.catalog, enabled=True)
 
+    def test_decode_json_accepts_markdown_fenced_json(self):
+        fence = chr(96) * 3
+        decoded = MissionPlanner._decode_json(fence + 'json\n{"summary":"ok","steps":[]}\n' + fence)
+        self.assertEqual(decoded["summary"], "ok")
+
     def test_model_must_be_explicitly_enabled(self):
         with self.assertRaises(MissionPlanningError):
             MissionPlanner(FakeGateway("{}")).plan("Do it", self.catalog)
