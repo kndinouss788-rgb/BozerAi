@@ -6,6 +6,35 @@ import org.json.JSONObject
 enum class BozerStepStatus { PENDING, WAITING_CONFIRMATION, RUNNING, SUCCEEDED, FAILED, BLOCKED }
 enum class BozerEvidenceLevel { VERIFIED, SUBMITTED, UNKNOWN }
 
+/**
+ * Local safety floor for model-generated Android plans.
+ *
+ * A model may request confirmation, but it cannot waive confirmation for
+ * sensitive actions. Unknown commands fail closed and require approval.
+ */
+internal object BozerActionSafetyPolicy {
+    fun requiresConfirmation(action: String): Boolean {
+        return when (AndroidCommandParser.parse(action)) {
+            is AndroidCommand.OpenApp,
+            is AndroidCommand.OpenUrl,
+            is AndroidCommand.SearchWeb,
+            is AndroidCommand.Navigate,
+            AndroidCommand.OpenSettings -> false
+
+            is AndroidCommand.Dial,
+            is AndroidCommand.ComposeSms,
+            is AndroidCommand.ComposeEmail,
+            is AndroidCommand.SetAlarm,
+            is AndroidCommand.SetRecurringAlarm,
+            is AndroidCommand.SetReminder,
+            is AndroidCommand.SetTimer,
+            is AndroidCommand.CreateCalendarEvent,
+            is AndroidCommand.ShareText,
+            null -> true
+        }
+    }
+}
+
 data class BozerPlanStep(
     val id: String,
     val title: String,
@@ -69,12 +98,14 @@ data class BozerPlan(val goal: String, val steps: List<BozerPlanStep>) {
             val steps = (0 until array.length()).map { index ->
                 val item = array.getJSONObject(index)
                 val dependencies = item.optJSONArray("depends_on") ?: JSONArray()
+                val action = item.getString("action").trim()
                 BozerPlanStep(
                     id = item.getString("id").trim(),
                     title = item.getString("title").trim(),
-                    action = item.getString("action").trim(),
+                    action = action,
                     dependsOn = (0 until dependencies.length()).map { dependencies.getString(it) },
-                    requiresConfirmation = item.optBoolean("requires_confirmation", false)
+                    requiresConfirmation = item.optBoolean("requires_confirmation", false) ||
+                        BozerActionSafetyPolicy.requiresConfirmation(action)
                 )
             }
             return BozerPlan(json.getString("goal").trim(), steps)
@@ -97,21 +128,27 @@ class BozerPlanCoordinator(private val executor: BozerPlanActionExecutor) {
     suspend fun run(plan: BozerPlan, approvedStepIds: Set<String> = emptySet()): BozerPlanReport {
         val results = linkedMapOf<String, BozerStepResult>()
         for (step in plan.orderedSteps()) {
+            val confirmationRequired = step.requiresConfirmation ||
+                BozerActionSafetyPolicy.requiresConfirmation(step.action)
+            val safeStep = if (confirmationRequired && !step.requiresConfirmation) {
+                step.copy(requiresConfirmation = true)
+            } else step
+
             if (step.dependsOn.any { results[it]?.status != BozerStepStatus.SUCCEEDED }) {
-                results[step.id] = BozerStepResult(step, BozerStepStatus.BLOCKED)
+                results[step.id] = BozerStepResult(safeStep, BozerStepStatus.BLOCKED)
                 continue
             }
-            if (step.requiresConfirmation && step.id !in approvedStepIds) {
-                results[step.id] = BozerStepResult(step, BozerStepStatus.WAITING_CONFIRMATION)
+            if (confirmationRequired && step.id !in approvedStepIds) {
+                results[step.id] = BozerStepResult(safeStep, BozerStepStatus.WAITING_CONFIRMATION)
                 continue
             }
-            results[step.id] = BozerStepResult(step, BozerStepStatus.RUNNING)
+            results[step.id] = BozerStepResult(safeStep, BozerStepStatus.RUNNING)
             try {
-                val receipt = executor.execute(step)
+                val receipt = executor.execute(safeStep)
                 val status = if (receipt.evidence == BozerEvidenceLevel.VERIFIED) BozerStepStatus.SUCCEEDED else BozerStepStatus.FAILED
-                results[step.id] = BozerStepResult(step, status, receipt)
+                results[step.id] = BozerStepResult(safeStep, status, receipt)
             } catch (error: Exception) {
-                results[step.id] = BozerStepResult(step, BozerStepStatus.FAILED,
+                results[step.id] = BozerStepResult(safeStep, BozerStepStatus.FAILED,
                     BozerActionReceipt(error.message ?: "Échec sans détail.", BozerEvidenceLevel.UNKNOWN))
             }
         }
