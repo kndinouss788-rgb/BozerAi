@@ -177,11 +177,24 @@ private fun BozerChat(
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", false)) }
-    var voiceTtsStatus by remember { mutableStateOf("Initialisation du moteur vocal Android…") }
+    var voiceTtsStatus by remember { mutableStateOf("Initialisation du moteur vocal…") }
     val voiceOutput = remember(context) {
         BozerVoiceOutput(context) { status -> voiceTtsStatus = status }
     }
-    DisposableEffect(voiceOutput) { onDispose { voiceOutput.release() } }
+    val piperModelManager = remember(context) { BozerPiperModelManager(context) }
+    var piperModelInstalled by remember { mutableStateOf(piperModelManager.isInstalled()) }
+    var piperReady by remember { mutableStateOf(false) }
+    var piperBusy by remember { mutableStateOf(false) }
+    var piperProgress by remember { mutableFloatStateOf(0f) }
+    val piperVoiceOutput = remember(context) {
+        BozerPiperVoiceOutput { status -> voiceTtsStatus = status }
+    }
+    DisposableEffect(voiceOutput, piperVoiceOutput) {
+        onDispose {
+            voiceOutput.release()
+            piperVoiceOutput.release()
+        }
+    }
     var secretaryOpen by remember { mutableStateOf(false) }
     var tiktokOpen by remember { mutableStateOf(false) }
     var tiktokDescription by remember { mutableStateOf("") }
@@ -211,6 +224,21 @@ private fun BozerChat(
         }
     }
 
+    LaunchedEffect(voiceRepliesEnabled, piperModelInstalled) {
+        if (voiceRepliesEnabled && piperModelInstalled && !piperReady && !piperBusy) {
+            piperBusy = true
+            try {
+                withContext(Dispatchers.IO) { piperVoiceOutput.initialize(piperModelManager.modelDirectory()) }
+                piperReady = true
+                voiceTtsStatus = "Voix française locale chargée — profil masculin — hors ligne."
+            } catch (error: Exception) {
+                voiceTtsStatus = "Chargement de la voix locale impossible : " + (error.message ?: "erreur inconnue")
+            } finally {
+                piperBusy = false
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         if (modelManager.verifyInstalled()) {
             modelStatus = "Chargement du modèle local auxiliaire…"
@@ -222,6 +250,41 @@ private fun BozerChat(
             } catch (error: Exception) {
                 modelStatus = "Chargement impossible : ${error.message ?: "erreur inconnue"}"
             } finally { modelBusy = false }
+        }
+    }
+
+    fun installPiperVoice() {
+        if (piperBusy || piperReady) return
+        piperBusy = true
+        piperProgress = 0f
+        voiceTtsStatus = if (piperModelInstalled) {
+            "Chargement de la voix française locale…"
+        } else {
+            "Téléchargement de la voix française locale (environ 77 Mo)…"
+        }
+        scope.launch {
+            try {
+                val directory = if (piperModelManager.isInstalled()) {
+                    piperModelManager.modelDirectory()
+                } else {
+                    piperModelManager.install { downloaded, total ->
+                        scope.launch {
+                            piperProgress = if (total > 0L) {
+                                (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                            } else 0f
+                        }
+                    }
+                }
+                piperModelInstalled = true
+                withContext(Dispatchers.IO) { piperVoiceOutput.initialize(directory) }
+                piperReady = true
+                voiceTtsStatus = "Voix française locale chargée — profil masculin 1 — hors ligne."
+            } catch (error: Exception) {
+                piperModelInstalled = piperModelManager.isInstalled()
+                voiceTtsStatus = "Installation de la voix impossible : " + (error.message ?: "erreur inconnue")
+            } finally {
+                piperBusy = false
+            }
         }
     }
 
@@ -270,7 +333,10 @@ private fun BozerChat(
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
             runCatching { repository.save(assistantMessage) }
-            if (voiceRepliesEnabled) voiceOutput.speak(answer)
+            if (voiceRepliesEnabled) {
+                if (piperReady) piperVoiceOutput.speak(answer)
+                else voiceOutput.speak(answer)
+            }
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
         }
@@ -561,7 +627,10 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                         voiceRepliesEnabled = it
                                         context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
                                             .edit().putBoolean("voice_replies", it).apply()
-                                        if (!it) voiceOutput.stop()
+                                        if (!it) {
+                                            voiceOutput.stop()
+                                            piperVoiceOutput.stop()
+                                        }
                                     })
                                 }
                                 Text(
@@ -571,17 +640,16 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     lineHeight = 15.sp
                                 )
                                 Text(
-                                    "Moteur provisoire Android. La voix originale BOZER reste à entraîner.",
+                                    "Voix locale Sherpa-ONNX prioritaire ; moteur Android utilisé en secours. La voix originale BOZER pourra ensuite être entraînée.",
                                     color = Color(0xFF9AA6B3),
                                     fontSize = 10.sp,
                                     lineHeight = 14.sp
                                 )
                                 TextButton(
                                     onClick = {
-                                        voiceOutput.speak(
-                                            "Bonjour, je suis BOZER. Je suis prêt à t'aider.",
-                                            "bozer_voice_preview"
-                                        )
+                                        val preview = "Bonjour, je suis BOZER. Je suis prêt à t'aider."
+                                        if (piperReady) piperVoiceOutput.speak(preview, "bozer_voice_preview")
+                                        else voiceOutput.speak(preview, "bozer_voice_preview")
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
@@ -590,11 +658,41 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 TextButton(
                                     onClick = {
                                         voiceOutput.stop()
+                                        piperVoiceOutput.stop()
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text("Arrêter la voix", color = Color(0xFF7D8A9B))
                                 }
+                                TextButton(
+                                    onClick = { installPiperVoice() },
+                                    enabled = !piperBusy && !piperReady,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        when {
+                                            piperReady -> "Voix française locale prête"
+                                            piperBusy -> "Préparation de la voix locale…"
+                                            piperModelInstalled -> "Charger la voix française locale"
+                                            else -> "Installer la voix française locale (≈77 Mo)"
+                                        },
+                                        color = Color(0xFF258DB8)
+                                    )
+                                }
+                                if (piperBusy) {
+                                    LinearProgressIndicator(
+                                        progress = { piperProgress },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = Color(0xFF53BFEA),
+                                        trackColor = Color(0xFFE5F5FC)
+                                    )
+                                }
+                                Text(
+                                    "Modèle MLS : attribution CC BY 4.0 indiquée dans les informations BOZER.",
+                                    color = Color(0xFF9AA6B3),
+                                    fontSize = 10.sp,
+                                    lineHeight = 14.sp
+                                )
                                 TextButton(
                                     onClick = {
                                         runCatching {
