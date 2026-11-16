@@ -1,30 +1,16 @@
-name: BOZER Android APK build
+name: BOZER Android APK build — final release only
 
 on:
-  push:
-    branches: [main, feature/remote-ai-quota-router, bozer-neural-v0.1]
-    paths:
-      - "app/**"
-      - "build.gradle.kts"
-      - "settings.gradle.kts"
-      - "gradle.properties"
-      - ".github/workflows/android-native.yml"
-  pull_request:
-    branches: [main, feature/remote-ai-quota-router, bozer-neural-v0.1]
-    paths:
-      - "app/**"
-      - "build.gradle.kts"
-      - "settings.gradle.kts"
-      - "gradle.properties"
-      - ".github/workflows/android-native.yml"
+  # Deliberately manual: no APK builds on ordinary commits or pull requests.
+  # Run only when the project owner declares BOZER feature-complete.
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: bozer-android-${{ github.ref }}
-  cancel-in-progress: true
+  group: bozer-android-final-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   android-apk:
@@ -43,16 +29,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Build debug APK with native llama.cpp
+      - name: Build final debug APK with native llama.cpp
         run: gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
       - name: Verify APK output
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           sha256sum app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload installable debug APK
+      - name: Upload final installable debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: bozer-debug-apk
+          name: bozer-final-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
