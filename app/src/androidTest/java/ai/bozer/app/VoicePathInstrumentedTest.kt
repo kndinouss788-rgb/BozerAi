@@ -64,10 +64,11 @@ class VoicePathInstrumentedTest {
             context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         )
 
-        val recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
-        }
+        val recognizerIntent = composeRule.activity.createSpeechRecognitionIntent()
+        assertTrue(
+            "BOZER doit demander le mode hors ligne au service Android lorsqu'il est disponible.",
+            recognizerIntent.getBooleanExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
+        )
         val resolved = context.packageManager.resolveActivity(
             recognizerIntent,
             PackageManager.MATCH_DEFAULT_ONLY

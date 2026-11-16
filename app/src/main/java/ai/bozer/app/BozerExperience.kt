@@ -414,6 +414,12 @@ internal fun BozerChatExperience(
                                 }
                             )
                         }
+                        Text(
+                            "Le micro utilise le service de reconnaissance vocale Android. BOZER demande le mode hors ligne lorsque disponible ; le fournisseur peut toutefois appliquer ses propres règles réseau.",
+                            color = BozerMuted,
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
+                        )
                         Divider(color = BozerLine)
                         Row(
                             modifier = Modifier.fillMaxWidth(),

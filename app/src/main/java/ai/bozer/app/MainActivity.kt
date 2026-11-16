@@ -181,12 +181,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun launchSpeechRecognition() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+    internal fun createSpeechRecognitionIntent(): Intent =
+        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Parle à BOZER")
+            // Ask the configured Android recognizer to use its offline model when available.
+            // The provider may ignore this preference; BOZER never records audio itself.
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }
+
+    private fun launchSpeechRecognition() {
+        val intent = createSpeechRecognitionIntent()
         try {
             speechRecognitionLauncher.launch(intent)
         } catch (_: Exception) {
