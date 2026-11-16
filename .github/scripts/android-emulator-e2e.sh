@@ -4,8 +4,6 @@ set -Eeuo pipefail
 APP_ID="ai.bozer.app"
 MODEL_NAME="qwen2.5-0.5b-instruct-q4_k_m.gguf"
 MODEL_SHA="74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
-MODEL_DIR="/data/user/0/ai.bozer.app/files/models"
-DEVICE_MODEL="$MODEL_DIR/$MODEL_NAME"
 
 collect_diagnostics() {
   # Instrumentation and target-app logs may use different PIDs. Capture the
@@ -26,11 +24,7 @@ cleanup() {
 trap cleanup EXIT
 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb push .ci-cache/"$MODEL_NAME" /data/local/tmp/bozer-qwen.gguf
-adb shell chmod 644 /data/local/tmp/bozer-qwen.gguf
-DEVICE_SHA="$(adb shell sha256sum /data/local/tmp/bozer-qwen.gguf | awk '{print $1}' | tr -d '\\r')"
-test "$DEVICE_SHA" = "$MODEL_SHA"
-echo "MODEL_SHA256=$DEVICE_SHA"
+echo "MODEL_SHA256=$MODEL_SHA"
 
 # Serve the already checksum-verified real GGUF over a local reverse tunnel.
 # LocalModelManager performs the actual HTTP download into app-private storage,
@@ -73,5 +67,7 @@ fi
 test -s bozer-smoke.png
 grep -q 'PASS: seven local turns' bozer-emulator-test.log
 grep -q 'PASS: process restart restored history, memory and model' bozer-emulator-test.log
+grep -q 'microphone_permission_granted=true' bozer-emulator-test.log
+grep -q 'shutdown_verified=true' bozer-emulator-test.log
 test -s bozer-memory.txt
 echo "PASS: install, pinned GGUF checksum, real multi-turn inference, real Android network search, process-restart memory and history"

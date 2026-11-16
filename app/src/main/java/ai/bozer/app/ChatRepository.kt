@@ -67,7 +67,7 @@ class ChatRepository(
             return@withLock "Le cerveau local n'est pas encore installé ou chargé. Installe-le une première fois pour utiliser le mode Hors ligne."
         }
         if (selectedMode == BrainMode.AUTO && !model.isLoaded) {
-            return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le cerveau local."
+            return@withLock "Le cerveau local n'est pas encore installé ou chargé. Installe-le pour utiliser BOZER en mode Automatique ; aucune conversation ne sera envoyée à une passerelle dans ce mode."
         }
 
         val searchQuery = requestedSearch
