@@ -15,24 +15,35 @@ collect_diagnostics() {
   adb shell dumpsys meminfo "$APP_ID" > bozer-memory.txt 2>&1 || true
   adb shell dumpsys cpuinfo | grep -F "$APP_ID" > bozer-cpu.txt 2>&1 || true
 }
-trap collect_diagnostics EXIT
+MODEL_SERVER_PID=""
+cleanup() {
+  if [[ -n "$MODEL_SERVER_PID" ]]; then
+    kill "$MODEL_SERVER_PID" 2>/dev/null || true
+    wait "$MODEL_SERVER_PID" 2>/dev/null || true
+  fi
+  collect_diagnostics
+}
+trap cleanup EXIT
 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell run-as "$APP_ID" mkdir -p "$MODEL_DIR"
 adb push .ci-cache/"$MODEL_NAME" /data/local/tmp/bozer-qwen.gguf
 adb shell chmod 644 /data/local/tmp/bozer-qwen.gguf
-adb shell run-as "$APP_ID" cp /data/local/tmp/bozer-qwen.gguf "$DEVICE_MODEL"
-DEVICE_SHA="$(adb shell run-as "$APP_ID" sha256sum "$DEVICE_MODEL" | awk '{print $1}' | tr -d '\\r')"
+DEVICE_SHA="$(adb shell sha256sum /data/local/tmp/bozer-qwen.gguf | awk '{print $1}' | tr -d '\\r')"
 test "$DEVICE_SHA" = "$MODEL_SHA"
-adb shell run-as "$APP_ID" test -s "$DEVICE_MODEL"
-# The test runner independently verified the full GGUF checksum. Push the
-# marker to shared temporary storage, then copy it as the app UID. This avoids
-# adb shell parsing the redirection outside run-as (which caused EACCES).
-printf '%s' "$MODEL_SHA" > .ci-cache/model.sha256
-adb push .ci-cache/model.sha256 /data/local/tmp/bozer-model.sha256
-adb shell run-as "$APP_ID" cp /data/local/tmp/bozer-model.sha256 "$MODEL_DIR/$MODEL_NAME.sha256"
-adb shell run-as "$APP_ID" test -s "$MODEL_DIR/$MODEL_NAME.sha256"
 echo "MODEL_SHA256=$DEVICE_SHA"
+
+# Serve the already checksum-verified real GGUF over a local reverse tunnel.
+# LocalModelManager performs the actual HTTP download into app-private storage,
+# verifies the SHA-256 itself, and only then allows llama.cpp to load it.
+MODEL_HTTP_PORT=8765
+python3 -m http.server "$MODEL_HTTP_PORT" --directory .ci-cache --bind 127.0.0.1 > bozer-model-http.log 2>&1 &
+MODEL_SERVER_PID=$!
+for attempt in $(seq 1 30); do
+  if curl -fsSI "http://127.0.0.1:$MODEL_HTTP_PORT/$MODEL_NAME" >/dev/null; then break; fi
+  sleep 1
+done
+curl -fsSI "http://127.0.0.1:$MODEL_HTTP_PORT/$MODEL_NAME" >/dev/null
+adb reverse "tcp:$MODEL_HTTP_PORT" "tcp:$MODEL_HTTP_PORT"
 
 # Grant the emulator's test package the same special overlay permission that
 # the user must explicitly enable in Android Settings on a physical device.

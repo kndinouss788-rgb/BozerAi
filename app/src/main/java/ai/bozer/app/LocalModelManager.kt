@@ -11,7 +11,7 @@ import java.security.MessageDigest
 import kotlin.coroutines.coroutineContext
 
 /** Downloads the pinned Qwen GGUF into BOZER's private internal storage. */
-class LocalModelManager(context: Context) {
+class LocalModelManager(context: Context, private val modelUrl: String = MODEL_URL) {
     private val modelDir = File(context.filesDir, "models").apply { mkdirs() }
     private val modelFile = File(modelDir, MODEL_FILENAME)
     private val partialFile = File(modelDir, "$MODEL_FILENAME.part")
@@ -37,7 +37,7 @@ class LocalModelManager(context: Context) {
             }
             partialFile.delete()
 
-            val connection = (URL(MODEL_URL).openConnection() as HttpURLConnection).apply {
+            val connection = (URL(modelUrl).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 20_000
                 readTimeout = 60_000
                 instanceFollowRedirects = true

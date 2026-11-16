@@ -17,6 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
 class BozerBrainEndToEndTest {
@@ -66,7 +67,16 @@ class BozerBrainEndToEndTest {
 
     private fun waitForModelReady() {
         composeRule.onNodeWithTag("bozer_settings").performClick()
-        composeRule.waitUntil(timeoutMillis = 180_000) {
+        val readyBeforeInstall = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
+            .fetchSemanticsNodes().isNotEmpty()
+        if (!readyBeforeInstall) {
+            val installButtonVisible = composeRule.onAllNodesWithText("Installer le cerveau local")
+                .fetchSemanticsNodes().isNotEmpty()
+            if (installButtonVisible) {
+                composeRule.onNodeWithText("Installer le cerveau local").performClick()
+            }
+        }
+        composeRule.waitUntil(timeoutMillis = 300_000) {
             val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
                 .fetchSemanticsNodes().isNotEmpty()
             val failed = listOf("Chargement impossible", "Installation impossible").any { label ->
@@ -110,6 +120,24 @@ class BozerBrainEndToEndTest {
 
     @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
+        val manager = LocalModelManager(
+            context,
+            "http://127.0.0.1:8765/${LocalModelManager.MODEL_FILENAME}"
+        )
+        var downloadedBytes = 0L
+        runBlocking {
+            manager.download { downloaded, _ -> downloadedBytes = downloaded }
+            assertTrue("Le modèle téléchargé n'a pas passé la vérification SHA-256.", manager.verifyInstalled())
+        }
+        assertTrue(
+            "Le téléchargement réel du GGUF n'a pas atteint sa taille attendue.",
+            downloadedBytes == LocalModelManager.MODEL_BYTES
+        )
+        Log.i(
+            "BOZER_MODEL",
+            "downloaded_bytes=$downloadedBytes; sha256=${LocalModelManager.MODEL_SHA256}; verified=true"
+        )
+
         assertTrue(
             "Le champ de saisie BOZER est absent",
             composeRule.onAllNodesWithTag("bozer_input").fetchSemanticsNodes().isNotEmpty()
