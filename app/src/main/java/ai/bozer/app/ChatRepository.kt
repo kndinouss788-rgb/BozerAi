@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 enum class BrainMode(val label: String, val description: String) {
-    AUTO("Automatique", "Utilise une passerelle seulement si elle est explicitement configurée ; sinon le cerveau local."),
+    AUTO("Automatique", "Garde les conversations sur le téléphone ; une passerelle distante n’est utilisée qu’en mode En ligne."),
     ONLINE("En ligne", "Utilise uniquement les serveurs distants."),
     OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
 
@@ -21,7 +21,7 @@ class ChatRepository(
     private val database: ChatDatabase,
     private val model: ConversationModel,
     private val internetSearch: PublicSearchClient = AndroidPublicSearch(),
-    private val remoteBrain: RemoteBrainClient? = null
+    private val remoteBrain: RemoteConversationClient? = null
 ) {
     private val inferenceLock = Mutex()
     @Volatile var brainMode: BrainMode = BrainMode.AUTO
@@ -66,7 +66,7 @@ class ChatRepository(
         if (selectedMode == BrainMode.OFFLINE && !model.isLoaded) {
             return@withLock "Le cerveau local n'est pas encore installé ou chargé. Installe-le une première fois pour utiliser le mode Hors ligne."
         }
-        if (selectedMode == BrainMode.AUTO && !onlineAvailable && !model.isLoaded) {
+        if (selectedMode == BrainMode.AUTO && !model.isLoaded) {
             return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le cerveau local."
         }
 
@@ -104,22 +104,13 @@ class ChatRepository(
             }
         }
         try {
-            val useRemote = when (selectedMode) {
-                BrainMode.AUTO -> onlineAvailable && remoteBrain?.isConfigured == true
-                BrainMode.ONLINE -> remoteBrain?.isConfigured == true
-                BrainMode.OFFLINE -> false
-            }
-            val answer = if (useRemote) {
+            val answer = if (selectedMode == BrainMode.ONLINE) {
                 try {
                     remoteBrain!!.reply(history, extraContext)
                 } catch (remoteError: Exception) {
-                    if (selectedMode == BrainMode.AUTO && model.isLoaded) {
-                        model.generate(prompt)
-                    } else {
-                        "Le cerveau distant n'est pas joignable : " +
-                            (remoteError.message ?: "erreur réseau") +
-                            if (selectedMode == BrainMode.AUTO) ". Réessaie quand la connexion sera rétablie." else ". Vérifie Internet ou passe en Automatique."
-                    }
+                    "Le cerveau distant n'est pas joignable : " +
+                        (remoteError.message ?: "erreur réseau") +
+                        ". Vérifie Internet ou repasse en Automatique pour utiliser le cerveau local."
                 }
             } else {
                 model.generate(prompt)

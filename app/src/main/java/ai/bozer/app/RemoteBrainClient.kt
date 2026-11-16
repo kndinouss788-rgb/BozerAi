@@ -11,12 +11,21 @@ import kotlinx.coroutines.withContext
  * Calls BOZER's own gateway. Provider keys stay on the server and are never
  * packaged in the Android APK.
  */
+interface RemoteConversationClient {
+    val isConfigured: Boolean
+    suspend fun reply(history: List<ChatMessage>, extraContext: String = ""): String
+}
+
+/**
+ * Calls BOZER's own gateway. Provider keys stay on the server and are never
+ * packaged in the Android APK.
+ */
 class RemoteBrainClient(
     private val endpoint: String
-) {
-    val isConfigured: Boolean get() = endpoint.startsWith("https://")
+) : RemoteConversationClient {
+    override val isConfigured: Boolean get() = endpoint.startsWith("https://")
 
-    suspend fun reply(history: List<ChatMessage>, extraContext: String = ""): String = withContext(Dispatchers.IO) {
+    override suspend fun reply(history: List<ChatMessage>, extraContext: String): String = withContext(Dispatchers.IO) {
         check(isConfigured) { "La passerelle IA distante de BOZER n'est pas configurée." }
         val systemContent = (BOZER_PERSONALITY_PROMPT +
             if (extraContext.isBlank()) "" else "\n\nContexte complémentaire :\n$extraContext").take(5_000)

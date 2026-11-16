@@ -104,6 +104,40 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
+    fun automaticModeKeepsConversationLocalEvenWhenGatewayIsConfigured() = runBlocking {
+        val remote = RecordingRemoteClient()
+        val localRepository = ChatRepository(database, model, search, remote).apply {
+            brainMode = BrainMode.AUTO
+            internetAvailable = { true }
+        }
+
+        val answer = localRepository.reply(
+            listOf(ChatMessage(role = "user", content = "Explique-moi la gravité simplement."))
+        )
+
+        assertEquals("Réponse produite par le moteur de test.", answer)
+        assertEquals("Le mode Automatique ne doit pas transmettre le chat à la passerelle.", 0, remote.calls)
+        assertEquals("Le modèle local doit générer la réponse.", 1, model.prompts.size)
+    }
+
+    @Test
+    fun explicitOnlineModeUsesConfiguredGatewayInsteadOfLocalModel() = runBlocking {
+        val remote = RecordingRemoteClient()
+        val onlineRepository = ChatRepository(database, model, search, remote).apply {
+            brainMode = BrainMode.ONLINE
+            internetAvailable = { true }
+        }
+
+        val answer = onlineRepository.reply(
+            listOf(ChatMessage(role = "user", content = "Explique-moi la gravité simplement."))
+        )
+
+        assertEquals("Réponse distante de test.", answer)
+        assertEquals("La passerelle doit être appelée après le choix explicite du mode En ligne.", 1, remote.calls)
+        assertTrue("Le modèle local ne doit pas être appelé en mode En ligne.", model.prompts.isEmpty())
+    }
+
+    @Test
     fun ordinaryConversationNeverStartsAnInternetSearch() = runBlocking {
         repository.internetAvailable = { true }
         repository.reply(
@@ -136,6 +170,16 @@ class ChatRepositoryInstrumentedTest {
         assertTrue(answer.contains("mode Hors ligne", ignoreCase = true))
         assertTrue(answer.contains("aucune recherche Internet n'a été effectuée", ignoreCase = true))
         assertTrue("Le moteur local ne doit pas recevoir une demande de recherche interdite.", model.prompts.isEmpty())
+    }
+
+    private class RecordingRemoteClient : RemoteConversationClient {
+        override val isConfigured: Boolean = true
+        var calls: Int = 0
+
+        override suspend fun reply(history: List<ChatMessage>, extraContext: String): String {
+            calls += 1
+            return "Réponse distante de test."
+        }
     }
 
     private class RecordingConversationModel : ConversationModel {
