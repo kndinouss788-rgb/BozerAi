@@ -61,7 +61,7 @@ class MissionPlannerTests(unittest.TestCase):
         with self.assertRaises(MissionPlanningError):
             MissionPlanner(gateway).plan("Do it", self.catalog, enabled=True)
 
-    def test_invalid_json_and_cycles_are_rejected(self):
+    def test_invalid_json_cycles_duplicates_and_bad_dependencies_are_rejected(self):
         with self.assertRaises(MissionPlanningError):
             MissionPlanner(FakeGateway("not json")).plan("Do it", self.catalog, enabled=True)
         cycle = FakeGateway(json.dumps({"summary": "cycle", "steps": [
@@ -70,10 +70,27 @@ class MissionPlannerTests(unittest.TestCase):
         ]}))
         with self.assertRaises(MissionPlanningError):
             MissionPlanner(cycle).plan("Do it", self.catalog, enabled=True)
+        duplicate = FakeGateway(json.dumps({"summary": "duplicate", "steps": [
+            {"step_id": "a", "title": "A1", "tool": "research"},
+            {"step_id": "a", "title": "A2", "tool": "write_report"},
+        ]}))
+        with self.assertRaises(MissionPlanningError):
+            MissionPlanner(duplicate).plan("Do it", self.catalog, enabled=True)
+        missing = FakeGateway(json.dumps({"summary": "missing", "steps": [
+            {"step_id": "a", "title": "A", "tool": "research", "depends_on": ["ghost"]},
+        ]}))
+        with self.assertRaises(MissionPlanningError):
+            MissionPlanner(missing).plan("Do it", self.catalog, enabled=True)
 
     def test_model_must_be_explicitly_enabled(self):
         with self.assertRaises(MissionPlanningError):
             MissionPlanner(FakeGateway("{}")).plan("Do it", self.catalog)
+
+    def test_rejects_non_text_objective_and_malformed_catalog(self):
+        with self.assertRaises(MissionPlanningError):
+            MissionPlanner(FakeGateway("{}")).plan(123, self.catalog, enabled=True)
+        with self.assertRaises(MissionPlanningError):
+            MissionPlanner(FakeGateway("{}")).plan("Do it", {"tool": {"requires_confirmation": "yes"}}, enabled=True)
 
     def test_service_creates_and_executes_registered_mission_tools(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -99,6 +116,16 @@ class MissionPlannerTests(unittest.TestCase):
             store = MissionStore(os.path.join(directory, "missions.sqlite3"))
             with self.assertRaises(ValueError):
                 MissionService(store, FakeGateway("{}"), {}, self.catalog)
+
+    def test_tool_security_metadata_must_match_trusted_handler(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = MissionStore(os.path.join(directory, "missions.sqlite3"))
+            with self.assertRaises(ValueError):
+                MissionService(
+                    store, FakeGateway("{}"),
+                    {"publish": MissionTool(lambda _: ToolResult(True, "ok", True), requires_confirmation=False)},
+                    {"publish": {"description": "Publish", "requires_confirmation": True}},
+                )
 
 
 if __name__ == "__main__":

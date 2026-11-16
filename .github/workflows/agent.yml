@@ -3,7 +3,7 @@ name: BOZER Mission Engine Checks
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/remote-ai-quota-router]
+    branches: [main, feature/remote-ai-quota-router, bozer-neural-v0.1]
     paths:
       - "bozer_brain/mission.py"
       - "bozer_brain/mission_planner.py"
