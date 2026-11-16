@@ -12,6 +12,7 @@ collect_diagnostics() {
   adb exec-out screencap -p > bozer-smoke.png 2>/dev/null || true
   adb shell dumpsys meminfo "$APP_ID" > bozer-memory.txt 2>&1 || true
   adb shell dumpsys cpuinfo | grep -F "$APP_ID" > bozer-cpu.txt 2>&1 || true
+  adb shell dumpsys batterystats "$APP_ID" > bozer-battery.txt 2>&1 || true
 }
 MODEL_SERVER_PID=""
 cleanup() {
@@ -45,6 +46,7 @@ adb shell appops set "$APP_ID" SYSTEM_ALERT_WINDOW allow
 adb shell appops get "$APP_ID" SYSTEM_ALERT_WINDOW
 
 adb logcat -c
+adb shell dumpsys batterystats --reset || true
 
 # Run the real-model conversation first because it creates the history and
 # explicit memory that the process-restart test must verify.
@@ -84,4 +86,5 @@ grep -q 'PASS: process restart restored history, memory and model' bozer-emulato
 grep -q 'microphone_permission_granted=true' bozer-emulator-test.log
 grep -q 'shutdown_verified=true' bozer-emulator-test.log
 test -s bozer-memory.txt
-echo "PASS: install, pinned GGUF checksum, real multi-turn inference, real Android network search, process-restart memory and history"
+test -s bozer-battery.txt
+echo "PASS: install, pinned GGUF checksum, real multi-turn inference, real Android network search, process-restart memory/history, RAM/CPU/battery diagnostics"

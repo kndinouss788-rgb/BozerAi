@@ -84,6 +84,7 @@ jobs:
             bozer-emulator-test.log
             bozer-memory.txt
             bozer-cpu.txt
+            bozer-battery.txt
             app/build/outputs/androidTest-results/connected/
             app/build/reports/androidTests/connected/
           if-no-files-found: ignore
