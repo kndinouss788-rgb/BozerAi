@@ -61,7 +61,7 @@ android {
     ndkVersion = "27.2.12479018"
 
     defaultConfig {
-        buildConfigField("String", "BOZER_GATEWAY_URL", "\"" + gatewayUrl.replace("\"", "\\\\\"") + "\"")
+        buildConfigField("String", "BOZER_GATEWAY_URL", "\"" + gatewayUrl.replace("\"", "\\\"") + "\"")
         applicationId = "ai.bozer.app"
         minSdk = 26
         targetSdk = 35
