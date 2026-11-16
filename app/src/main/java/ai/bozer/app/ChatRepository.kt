@@ -24,7 +24,7 @@ class ChatRepository(
     private val remoteBrain: RemoteBrainClient? = null
 ) {
     private val inferenceLock = Mutex()
-    @Volatile var brainMode: BrainMode = BrainMode.OFFLINE
+    @Volatile var brainMode: BrainMode = BrainMode.AUTO
     @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
@@ -50,6 +50,13 @@ class ChatRepository(
 
         val onlineAvailable = internetAvailable()
         val selectedMode = brainMode
+        val requestedSearch = extractSearchQuery(latestUserText)
+        if (requestedSearch != null && selectedMode == BrainMode.OFFLINE) {
+            return@withLock "Le mode Hors ligne est activé : aucune recherche Internet n'a été effectuée. Passe en Automatique ou En ligne pour autoriser une recherche réseau."
+        }
+        if (requestedSearch != null && !onlineAvailable) {
+            return@withLock "Aucune recherche Internet n'a été effectuée : la connexion n'est pas disponible. Rétablis Internet puis réessaie."
+        }
         if (selectedMode == BrainMode.ONLINE && !onlineAvailable) {
             return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
         }
@@ -63,7 +70,7 @@ class ChatRepository(
             return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le cerveau local."
         }
 
-        val searchQuery = if (!onlineAvailable) null else extractSearchQuery(latestUserText)
+        val searchQuery = requestedSearch
         val searchResults = if (searchQuery != null) {
             try {
                 internetSearch.search(searchQuery)
