@@ -779,7 +779,7 @@ private fun BozerComposer(
             keyboardActions = KeyboardActions(onSend = { onSend() }),
             maxLines = 4
         )
-        BozerRoundButton(kind = "mic", onClick = onMic, compact = true)
+        BozerRoundButton(kind = "mic", onClick = onMic, compact = true, modifier = Modifier.testTag("bozer_mic"))
         Spacer(Modifier.width(5.dp))
         Box(
             modifier = Modifier.size(43.dp)
