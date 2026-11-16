@@ -1,52 +1,56 @@
-# BOZER TTS — runtime decision and completion gates
+# BOZER TTS — runtime and completion gates
 
-Date of review: 2026-11-15.
+Date of review: 2026-11-16.
 
-## Implemented Android fallback
+## Integrated offline French TTS path
 
-The Android app now has a more complete provisional speech-output path using the device's installed `TextToSpeech` engine:
+The Android branch now includes a local voice path built from:
 
-- French voice selection, prioritizing offline voices and then voices whose Android metadata explicitly signals a masculine profile.
-- Transparent status text: selected voice name, whether it needs a network connection, and whether masculine metadata is actually available.
-- Speech-rate and restrained pitch preferences; pitch is not treated as evidence of gender.
-- Long answers are split into bounded utterances and queued in order instead of being silently truncated.
-- New speech replaces the previous queue, and stop/release cancel active or pending output.
-- Settings expose Android's voice-data installation/management screen.
+- Sherpa-ONNX Android runtime, Apache-2.0, fetched during Gradle build from the official v2.0.1 release and verified against its SHA-256.
+- The French `fr_FR-mls-medium` Piper-derived ONNX model and its `tokens.txt`, downloaded once from the Hugging Face Sherpa model repository into BOZER's private app storage.
+- A Kotlin model manager that downloads to temporary files, checks minimum file sizes, and only renames complete files into place.
+- A Kotlin speech adapter that initializes the ONNX model locally, selects the configured masculine profile (speaker ID 1 only when the checkpoint exposes exactly the expected two-speaker configuration), generates speech at a restrained 0.97 speed, and plays mono float PCM through Android AudioTrack.
+- Existing Android system TTS remains as a fallback when the offline model is not installed or cannot initialize.
 
-This is a working fallback layer, not a BOZER voice model. The installed speech engine and audio assets remain supplied by Android or the phone manufacturer. Availability, pronunciation, voice gender, quality and offline behavior vary by device and installed data.
+The model is not downloaded as part of the APK. The user installs it from BOZER settings; it is then kept in app-private storage for later offline use. The Sherpa AAR is downloaded by Gradle at build time and is checksum-pinned.
 
-## Candidate local runtime: sherpa-onnx
+The app integrates and configures an existing pretrained voice. It does not fine-tune the weights, create a new speaker identity, or make the output indistinguishable from a human. Naturalness, pronunciation, CPU cost, RAM, latency, and playback stability still require listening and measurement on physical Android devices.
 
-The upstream sherpa-onnx project is Apache-2.0 licensed, includes local text-to-speech, documents Android support, and provides Kotlin/Java APIs. It remains a candidate for a later self-contained BOZER runtime, not a dependency in the current APK.
+## Model attribution and licensing
 
-Official references:
-- https://github.com/k2-fsa/sherpa-onnx
-- https://github.com/k2-fsa/sherpa-onnx/blob/master/android/README.md
-- https://github.com/k2-fsa/sherpa/blob/master/docs/source/onnx/android/build-sherpa-onnx.rst
+The Piper French MLS model card identifies the Multilingual LibriSpeech (MLS) corpus, OpenSLR 94, and CC-BY 4.0, and says the model was trained from scratch. The source attribution is recorded in `docs/BOZER_TTS_ATTRIBUTION.md`.
 
-A runtime's license does not automatically grant rights to its voice checkpoints or training data. Each candidate checkpoint needs its own review for commercial use, modification, and redistribution. Some French model cards use CC-BY datasets or disclose fine-tuning from unrelated base voices; these facts must be resolved for the exact weights before BOZER packages them.
+The runtime and model weights have distinct licensing terms. Preserve the Sherpa-ONNX Apache-2.0 notice and the MLS CC-BY 4.0 attribution when distributing BOZER. The exact converted checkpoint should still be checked against its own repository card before a commercial release.
 
-## Original BOZER voice — still blocked by source material
+## Android system TTS fallback
 
-The intended voice remains an original adult masculine French voice: warm mid-low register, clear and present, conversational and expressive, with restrained futuristic-assistant character. It must not imitate JARVIS, an actor, or a fictional character.
+The existing `BozerVoiceOutput` adapter uses speech assets installed by Android:
 
-The repository has a voice design profile and a dataset validator, but **contains no consenting speaker recordings and no trained BOZER TTS checkpoint**. This prevents an honest claim that the original voice is finished. Required external inputs:
+- It selects a French voice, preferring offline voices and then a voice whose Android metadata explicitly signals a masculine profile.
+- It reports the selected voice name, network requirement, and whether masculine metadata is actually available.
+- It chunks long answers and supports queue replacement, stop, and release.
 
-1. A consistent adult speaker who explicitly agrees to TTS training, commercial BOZER use, and derivative synthetic speech.
-2. Recorded French speech with exact transcripts, clean WAV audio, and separate train/validation/test recording sessions.
-3. Pronunciation review and evaluation on held-out utterances.
-4. A licensed training/inference route and a trained checkpoint.
-5. Device measurements for naturalness, intelligibility, latency, RAM, battery, and offline use.
+This remains a fallback; the installed engine and voice assets are supplied by Android or the phone manufacturer.
 
-The existing `validate_voice_corpus.py` checks the manifest and WAV format; it cannot create recordings, authenticate consent, train a speaker, or certify naturalness.
+## Original BOZER voice — still requires consented recordings
 
-## Release rule
+The desired original voice remains an adult masculine French voice: warm mid-low register, clear and present, conversational and expressive, with a restrained futuristic-assistant character. It must not imitate JARVIS, an actor, or a fictional character.
 
-Do not label BOZER TTS "complete" until an original checkpoint exists, the dataset rights are documented, tests pass, and actual Android playback has been heard and measured. Until then the Android adapter must be labelled as a provisional system voice.
+A genuinely original BOZER voice still requires:
+1. An adult speaker who explicitly agrees to TTS training, commercial BOZER use, and derivative synthetic speech.
+2. Clean, transcribed recordings with separate training and evaluation sessions.
+3. A licensed fine-tuning/training path and a trained BOZER checkpoint.
+4. Pronunciation and naturalness review on held-out recordings.
+5. Measurements on supported phones for latency, RAM, battery, and offline stability.
 
-## Automated coverage added
+## Release gate
 
-- Kotlin unit tests cover long-answer segmentation, sentence-boundary behavior, empty text, and oversized tokens.
-- Python tests cover punctuation normalization, French/Mooré diacritic preservation, and bounded text segments.
-- The Android workflow runs both debug unit tests and APK assembly. A successful CI build still does not replace hearing the voice on a physical phone.
+Do not label BOZER TTS complete until:
+- Gradle and Kotlin compilation succeed with the new Sherpa dependency.
+- Android unit tests and APK assembly succeed.
+- The local model downloads and initializes on a supported phone.
+- The masculine profile is actually heard and verified by the project owner.
+- French pronunciation, pauses, and long replies are tested in real use.
+- The model, runtime, and attribution notices are included in the release package.
 
+A successful CI build is not a substitute for listening to the voice on a physical phone.
