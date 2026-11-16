@@ -21,7 +21,8 @@ import kotlin.math.max
 
 /**
  * Local French BOZER speech output. It uses the Sherpa-ONNX runtime and the
- * two-speaker MLS voice checkpoint; speaker 1 is the masculine profile.
+ * 125-speaker MLS voice checkpoint. Speaker 55 is the current masculine
+ * candidate, pending confirmation by listening to the synthesized output.
  *
  * This is a BOZER-integrated voice profile, not an original speaker clone.
  */
@@ -70,16 +71,16 @@ class BozerPiperVoiceOutput(
                 )
             )
             val speakerCount = candidate.numSpeakers()
-            if (speakerCount != EXPECTED_SPEAKER_COUNT) {
+            if (speakerCount != EXPECTED_SPEAKER_COUNT || MALE_SPEAKER_ID !in 0 until speakerCount) {
                 candidate.release()
                 error(
                     "Modèle inattendu : " + speakerCount +
-                        " profils au lieu des 2 profils documentés."
+                        " profils ; le modèle MLS attendu en expose 125."
                 )
             }
             tts = candidate
         }
-        publishStatus("Voix française locale chargée — profil masculin 1 — hors ligne.")
+        publishStatus("Voix française locale chargée — profil candidat 55 — hors ligne ; timbre à confirmer par écoute.")
     }
 
     override fun speak(text: String, utteranceId: String) {
@@ -205,8 +206,8 @@ class BozerPiperVoiceOutput(
     }
 
     companion object {
-        private const val EXPECTED_SPEAKER_COUNT = 2
-        private const val MALE_SPEAKER_ID = 1
+        private const val EXPECTED_SPEAKER_COUNT = 125
+        private const val MALE_SPEAKER_ID = 55
         private const val SPEECH_SPEED = 0.97f
     }
 }
