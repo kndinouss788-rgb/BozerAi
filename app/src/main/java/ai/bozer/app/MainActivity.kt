@@ -171,6 +171,7 @@ private fun BozerChat(
     var draft by remember { mutableStateOf("") }
     LaunchedEffect(voiceText.value) { voiceText.value?.let { draft = it; voiceText.value = null } }
     var sending by remember { mutableStateOf(false) }
+    var pendingAndroidAction by remember { mutableStateOf<String?>(null) }
     var modelReady by remember { mutableStateOf(false) }
     var modelBusy by remember { mutableStateOf(false) }
     var modelStatus by remember { mutableStateOf("BOZER NEURAL original est en construction. Le modèle local auxiliaire n'est pas installé.") }
@@ -314,9 +315,45 @@ private fun BozerChat(
         }
     }
 
+    fun appendActionResult(answer: String) {
+        val assistantMessage = ChatMessage(role = "assistant", content = answer)
+        messages.add(assistantMessage)
+        runCatching { repository.save(assistantMessage) }
+        if (voiceRepliesEnabled) {
+            if (piperReady) piperVoiceOutput.speak(answer)
+            else voiceOutput.speak(answer)
+        }
+        scope.launch { listState.animateScrollToItem(messages.lastIndex) }
+    }
+
+    fun cancelPendingAction() {
+        if (pendingAndroidAction == null) return
+        pendingAndroidAction = null
+        appendActionResult("D'accord, je n'ai rien exécuté.")
+    }
+
+    fun confirmPendingAction() {
+        val command = pendingAndroidAction ?: return
+        pendingAndroidAction = null
+        val answer = runCatching { actionExecutor.execute(command) }
+            .getOrNull() ?: "Je n'ai pas pu préparer cette action."
+        appendActionResult(answer)
+    }
+
     fun send() {
         val text = draft.trim()
         if (text.isEmpty() || sending) return
+
+        if (actionExecutor.requiresUserConfirmation(text)) {
+            draft = ""
+            val userMessage = ChatMessage(role = "user", content = text)
+            messages.add(userMessage)
+            runCatching { repository.save(userMessage) }
+            pendingAndroidAction = text
+            scope.launch { listState.animateScrollToItem(messages.lastIndex) }
+            return
+        }
+
         val actionReply = secretaryCommands.execute(text) ?: actionExecutor.execute(text)
         if (actionReply == null && !modelReady && !repository.remoteConfigured) return
         draft = ""
@@ -584,6 +621,27 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                     }
                 }
             }
+        }
+
+        if (pendingAndroidAction != null) {
+            val actionToConfirm = pendingAndroidAction!!
+            AlertDialog(
+                onDismissRequest = { cancelPendingAction() },
+                containerColor = Color(0xFFF9FCFF),
+                shape = RoundedCornerShape(26.dp),
+                title = { Text("Confirmer l'action BOZER ?", color = DeepBlue) },
+                text = { Text(actionExecutor.confirmationSummary(actionToConfirm), color = Muted) },
+                confirmButton = {
+                    TextButton(onClick = { confirmPendingAction() }) {
+                        Text("Confirmer", color = Color(0xFF258DB8))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { cancelPendingAction() }) {
+                        Text("Annuler", color = DeepBlue)
+                    }
+                }
+            )
         }
 
         if (settingsOpen) {
