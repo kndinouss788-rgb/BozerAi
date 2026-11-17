@@ -274,7 +274,7 @@ def train_1b(
     if previous and not objective_changed and previous.get("optimizer_state_dict"):
         optimizer.load_state_dict(previous["optimizer_state_dict"])
 
-    scaler = torch.cuda.amp.GradScaler(enabled=use_scaler)
+    scaler = torch.amp.GradScaler("cuda", enabled=use_scaler)
     global_step = (
         0 if objective_changed else int(training_state.get("global_step", 0))
     )
