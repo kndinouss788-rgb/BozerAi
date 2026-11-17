@@ -20,12 +20,22 @@ class DictionaryHit:
     pronunciation: str | None = None
     tone_notes: str | None = None
     source_reference: str | None = None
+    source: str | None = None
+    source_license: str | None = None
+    rights_status: str | None = None
+    note: str | None = None
+    reviewed_by: str | None = None
+    reviewed_at: str | None = None
+
+    @property
+    def provisional(self) -> bool:
+        return self.status == "candidate"
 
 
 class MooreFrenchDictionary:
-    """Exact and substring lookup; candidate entries are opt-in, never defaults."""
+    """Exact and substring lookup; candidate records stay visibly provisional."""
 
-    def __init__(self, entries: Iterable[dict], *, include_candidates: bool = False):
+    def __init__(self, entries: Iterable[dict], *, include_candidates: bool = True):
         self._entries: list[dict] = []
         seen_ids: set[str] = set()
         for entry in entries:
@@ -68,6 +78,12 @@ class MooreFrenchDictionary:
             pronunciation=entry.get("pronunciation"),
             tone_notes=entry.get("tone_notes"),
             source_reference=entry.get("source_reference") or entry.get("source"),
+            source=entry.get("source"),
+            source_license=entry.get("source_license"),
+            rights_status=entry.get("rights_status"),
+            note=entry.get("note"),
+            reviewed_by=entry.get("reviewed_by"),
+            reviewed_at=entry.get("reviewed_at"),
         )
 
     def exact(self, text: str, language: str) -> tuple[DictionaryHit, ...]:
@@ -103,8 +119,9 @@ class MooreFrenchDictionary:
         return tuple(hits)
 
 
-def load_default_dictionary(*, include_candidates: bool = False,
+def load_default_dictionary(*, include_candidates: bool = True,
                             lexicon_path: str | Path | None = None) -> MooreFrenchDictionary:
+    """Load the working dictionary; set include_candidates=False for strict lookup."""
     if lexicon_path is None:
         lexicon_path = Path(__file__).resolve().parents[2] / "data" / "moore_french" / "lexicon.json"
     path = Path(lexicon_path)
@@ -125,12 +142,27 @@ def load_default_dictionary(*, include_candidates: bool = False,
                         row = json.loads(line)
                     except json.JSONDecodeError as exc:
                         raise ValueError(f"invalid candidate JSON at line {line_number}") from exc
+                    source_ids = row.get("source_ids", [])
+                    if isinstance(source_ids, list):
+                        source_reference = ", ".join(str(item) for item in source_ids)
+                    else:
+                        source_reference = str(source_ids) if source_ids else None
                     entries.append({
                         "id": row["id"], "french": row["french"],
                         "moore": row["moore"], "status": "candidate",
                         "source": "MALM Data — progressio-media/malm-data",
-                        "source_reference": ", ".join(row.get("source_ids", [])),
+                        "source_reference": source_reference,
+                        "source_license": (
+                            "MIT declared by progressio-media/malm-data; preserve its "
+                            "copyright and license notice."
+                        ),
+                        "rights_status": (
+                            "upstream_dataset_MIT_license_declared; source IDs preserved"
+                        ),
                         "category": row.get("category", "word"),
-                        "note": "Candidate only: rights and native-speaker review pending.",
+                        "note": (
+                            "Imported MALM dictionary candidate. The source reference is "
+                            "retained; spelling, sense and usage have not been natively reviewed."
+                        ),
                     })
     return MooreFrenchDictionary(entries, include_candidates=include_candidates)
