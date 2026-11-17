@@ -5,6 +5,7 @@ from bozer_neural.language.moore_french import (
     load_default_translator,
     normalize_text,
 )
+from bozer_neural.language import TranslationPipeline, TranslationRequest
 
 
 class MooreFrenchTranslatorTests(unittest.TestCase):
@@ -48,6 +49,18 @@ class MooreFrenchTranslatorTests(unittest.TestCase):
         self.assertIn("LEX-", result.source_reference)
         self.assertEqual(result.rights_status, "pending_underlying_source_confirmation")
         self.assertEqual(result.native_review_status, "pending")
+
+    def test_pipeline_handles_both_directions_and_marks_candidates_for_review(self):
+        pipeline = TranslationPipeline(load_default_translator())
+        fr_to_mo = pipeline.translate(TranslationRequest("chien", "fr", "mos"))
+        self.assertEqual(fr_to_mo.result.translated_text, "baaga¹")
+        self.assertEqual(fr_to_mo.result.status, "candidate")
+        self.assertTrue(fr_to_mo.requires_human_review)
+        self.assertFalse(fr_to_mo.sentence_level_supported)
+
+        mo_to_fr = pipeline.translate(TranslationRequest("baaga¹", "mos", "fr"))
+        self.assertEqual(mo_to_fr.result.translated_text, "chien")
+        self.assertTrue(mo_to_fr.requires_human_review)
 
     def test_strict_mode_does_not_use_bulk_malm_candidates(self):
         strict = load_default_translator(allow_candidates=False)
