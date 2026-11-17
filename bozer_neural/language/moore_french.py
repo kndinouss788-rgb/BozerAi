@@ -1,8 +1,8 @@
-"""Conservative Mooré <-> French phrase translator.
+"""Conservative Mooré <-> French translator backed by a provenance-aware lexicon.
 
-Only entries marked "validated" are returned by default. Candidate entries are
-visible only when explicitly requested. Multiple meanings never resolve to an
-arbitrary translation.
+Candidate entries are available by default as provisional lookup results. They are
+never mislabeled as reviewed translations. Set allow_candidates=False for a
+strict, reviewed-only mode.
 """
 from __future__ import annotations
 
@@ -25,23 +25,33 @@ class TranslationResult:
     entry_id: str | None = None
     note: str | None = None
     alternatives: tuple[str, ...] = ()
+    source: str | None = None
+    source_reference: str | None = None
+    source_license: str | None = None
+    rights_status: str | None = None
+    reviewed_by: str | None = None
+    reviewed_at: str | None = None
 
     @property
     def found(self) -> bool:
         return self.translated_text is not None
 
+    @property
+    def provisional(self) -> bool:
+        return self.status == "candidate"
+
 
 def normalize_text(value: str) -> str:
     """Normalize spacing and punctuation while preserving Mooré diacritics."""
     value = unicodedata.normalize("NFC", value).casefold().strip()
-    value = re.sub(r"^[\W_]+|[\W_]+$", "", value, flags=re.UNICODE)
-    return re.sub(r"\s+", " ", value)
+    value = re.sub(r"^[\\W_]+|[\\W_]+$", "", value, flags=re.UNICODE)
+    return re.sub(r"\\s+", " ", value)
 
 
 class MooreFrenchTranslator:
     SUPPORTED = {"fr", "mos"}
 
-    def __init__(self, entries: Iterable[dict], *, allow_candidates: bool = False):
+    def __init__(self, entries: Iterable[dict], *, allow_candidates: bool = True):
         self.allow_candidates = allow_candidates
         self._index: dict[tuple[str, str, str], list[dict]] = {}
         for entry in entries:
@@ -59,6 +69,12 @@ class MooreFrenchTranslator:
                     "id": entry["id"],
                     "status": status,
                     "note": entry.get("note"),
+                    "source": entry.get("source"),
+                    "source_reference": entry.get("source_reference"),
+                    "source_license": entry.get("source_license"),
+                    "rights_status": entry.get("rights_status"),
+                    "reviewed_by": entry.get("reviewed_by"),
+                    "reviewed_at": entry.get("reviewed_at"),
                 })
 
     @staticmethod
@@ -96,8 +112,8 @@ class MooreFrenchTranslator:
                 text, None, source_language, target_language,
                 "not_found", "none",
                 note=(
-                    "No exact reviewed phrase is available. Do not guess; "
-                    "request a native-speaker translation or add a reviewed lexicon entry."
+                    "No exact dictionary entry is available. Try a shorter expression "
+                    "or a different spelling; BOZER does not invent a sentence."
                 ),
             )
         targets = tuple(dict.fromkeys(record["target"] for record in records))
@@ -105,20 +121,42 @@ class MooreFrenchTranslator:
             return TranslationResult(
                 text, None, source_language, target_language,
                 "ambiguous", "none",
-                note="Several candidate translations or senses match this exact form; no guess was selected.",
+                note="Several senses or Mooré forms match; select the intended meaning.",
                 alternatives=targets,
             )
-        # Prefer a validated record when several sources support the same target.
+        # Prefer a reviewed record when several sources support the same target.
         selected = next((r for r in records if r["status"] == "validated"), records[0])
+        status = selected["status"]
+        note = selected.get("note")
+        if status == "candidate":
+            note = (
+                (note + " ") if note else ""
+            ) + "Provisional dictionary result: native-speaker review has not been recorded."
         return TranslationResult(
-            text, selected["target"], source_language, target_language,
-            selected["status"], "lexicon_exact", selected["id"], selected.get("note")
+            source_text=text,
+            translated_text=selected["target"],
+            source_language=source_language,
+            target_language=target_language,
+            status=status,
+            confidence="reviewed_exact" if status == "validated" else "provisional_exact",
+            entry_id=selected["id"],
+            note=note,
+            source=selected.get("source"),
+            source_reference=selected.get("source_reference"),
+            source_license=selected.get("source_license"),
+            rights_status=selected.get("rights_status"),
+            reviewed_by=selected.get("reviewed_by"),
+            reviewed_at=selected.get("reviewed_at"),
         )
 
 
 def load_default_translator(
-    *, allow_candidates: bool = False, lexicon_path: str | Path | None = None
+    *, allow_candidates: bool = True, lexicon_path: str | Path | None = None
 ) -> MooreFrenchTranslator:
+    """Load the full working lexicon; candidate results are visibly provisional.
+
+    Set allow_candidates=False to restrict the translator to reviewed entries.
+    """
     if lexicon_path is None:
         lexicon_path = (
             Path(__file__).resolve().parents[2]
@@ -145,23 +183,28 @@ def load_default_translator(
                         raise ValueError(
                             f"invalid MALM candidate JSON at line {line_number}"
                         ) from exc
+                    source_ids = row.get("source_ids", [])
+                    if isinstance(source_ids, list):
+                        source_reference = ", ".join(str(item) for item in source_ids)
+                    else:
+                        source_reference = str(source_ids) if source_ids else None
                     entries.append({
                         "id": row["id"],
                         "french": row["french"],
                         "moore": row["moore"],
                         "status": "candidate",
                         "source": "MALM Data — progressio-media/malm-data",
-                        "source_reference": (
-                            "MALM lexicon.json; "
-                            + ", ".join(row.get("source_ids", []))
-                        ),
+                        "source_reference": source_reference,
                         "source_license": (
-                            "MIT declared by upstream repository; underlying "
-                            "third-party source rights are not independently confirmed."
+                            "MIT declared by progressio-media/malm-data; preserve its "
+                            "copyright and license notice."
+                        ),
+                        "rights_status": (
+                            "upstream_dataset_MIT_license_declared; source IDs preserved"
                         ),
                         "note": (
-                            "Bulk-imported candidate only; native-speaker review "
-                            "and source-level rights review are still required."
+                            "Imported MALM dictionary candidate. The source reference is "
+                            "retained; spelling, sense and usage have not been natively reviewed."
                         ),
                     })
     return MooreFrenchTranslator(entries, allow_candidates=allow_candidates)
