@@ -54,3 +54,40 @@ Before calling the brain trained or connecting its checkpoint to the app, requir
 5. latency and memory benchmarks on the intended target device.
 
 The 1B architecture needs its own memory-aware trainer/checkpoint path before it can be trained; do not pass it to the current small-model trainer.
+
+
+## Separate 1B trainer (verified in repository)
+
+The repository also contains `bozer_neural/train_1b.py`, a trainer specifically for `BozerNeural1B`. It is separate from the small-model trainer and supports:
+
+- dialogue fine-tuning (loss only on BOZER answer tokens and EOS);
+- plain-text next-token pretraining;
+- separate validation data and train/validation leakage checks;
+- BPE tokenizer saved inside the checkpoint, with reserved vocabulary rows masked;
+- gradient accumulation, gradient checkpointing, CUDA mixed precision (auto/bf16/fp16), AdamW, warmup/cosine learning-rate schedule and early stopping;
+- resumable versioned checkpoints and best-validation checkpoint;
+- a hardware guard that refuses large CPU training by default and checks a lower-bound CUDA memory estimate.
+
+The default 1B configuration has **1,115,785,216 parameters**. The trainer estimates a minimum of **17,852,563,456 bytes (about 16.6 GiB)** just for FP32 weights, gradients and AdamW moments, before activations, temporary buffers and runtime overhead. This is not a recommended GPU size; actual training needs more free memory. The full model should not be launched on an ordinary phone or a low-memory machine.
+
+### Small pipeline smoke test
+
+The 1B trainer has unit tests using a tiny configuration, including a one-step supervised run, a one-step plain-text pretraining run, and a resume from pretraining into dialogue fine-tuning. Those tests validate the training pipeline, not the quality of a trained 1B model.
+
+### Full 1B commands (only after preparing a substantial licensed corpus)
+
+Plain-text pretraining:
+```bash
+python -m bozer_neural.train_1b --data data/bozer_pretraining/train.txt --validation-data data/bozer_pretraining/validation.txt --output artifacts/bozer-neural-1b-pretrain.pt --steps 1000 --batch-size 1 --grad-accum-steps 16
+```
+
+Dialogue fine-tuning, resuming the pretraining checkpoint:
+```bash
+python -m bozer_neural.train_1b --data data/bozer_dialogue/train_fr.jsonl --validation-data data/bozer_dialogue/validation_fr.jsonl --output artifacts/bozer-neural-1b-dialogue.pt --resume artifacts/bozer-neural-1b-pretrain.pt --steps 500
+```
+
+Do not use the current 204/48/48 synthetic dialogue split as the final training corpus. It is useful for smoke tests and early pipeline checks only. Build and review a much larger corpus with documented redistribution/commercial rights, balanced domains, deduplication, and an untouched test split before a meaningful training run.
+
+### Current integration boundary
+
+Even a successfully trained 1B checkpoint will not automatically power Android chat. A separate loader/runtime adapter, model conversion/quantization plan, Android-compatible inference integration, and measured device performance are still required. No full 1B training run or production checkpoint is claimed by this document.
