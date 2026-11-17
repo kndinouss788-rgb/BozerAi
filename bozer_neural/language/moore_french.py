@@ -44,7 +44,7 @@ class TranslationResult:
 def normalize_text(value: str) -> str:
     """Normalize spacing and punctuation while preserving Mooré diacritics."""
     value = unicodedata.normalize("NFC", value).casefold().strip()
-    value = re.sub(r"^[\\W_]+|[\\W_]+$", "", value, flags=re.UNICODE)
+    value = re.sub(r"^[\W_]+|[\W_]+$", "", value, flags=re.UNICODE)
     return re.sub(r"\\s+", " ", value)
 
 
