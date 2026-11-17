@@ -23,6 +23,8 @@ class DictionaryHit:
     source: str | None = None
     source_license: str | None = None
     rights_status: str | None = None
+    source_type: str | None = None
+    native_review_status: str | None = None
     note: str | None = None
     reviewed_by: str | None = None
     reviewed_at: str | None = None
@@ -81,6 +83,8 @@ class MooreFrenchDictionary:
             source=entry.get("source"),
             source_license=entry.get("source_license"),
             rights_status=entry.get("rights_status"),
+            source_type=entry.get("source_type"),
+            native_review_status=entry.get("native_review_status"),
             note=entry.get("note"),
             reviewed_by=entry.get("reviewed_by"),
             reviewed_at=entry.get("reviewed_at"),
@@ -142,11 +146,14 @@ def load_default_dictionary(*, include_candidates: bool = True,
                         row = json.loads(line)
                     except json.JSONDecodeError as exc:
                         raise ValueError(f"invalid candidate JSON at line {line_number}") from exc
-                    source_ids = row.get("source_ids", [])
-                    if isinstance(source_ids, list):
-                        source_reference = ", ".join(str(item) for item in source_ids)
-                    else:
-                        source_reference = str(source_ids) if source_ids else None
+                    source_refs = []
+                    for field in ("sources", "source_ids"):
+                        values = row.get(field, [])
+                        if isinstance(values, list):
+                            source_refs.extend(str(item) for item in values if item)
+                        elif values:
+                            source_refs.append(str(values))
+                    source_reference = row.get("source_reference") or ", ".join(dict.fromkeys(source_refs))
                     entries.append({
                         "id": row["id"], "french": row["french"],
                         "moore": row["moore"], "status": "candidate",
@@ -156,9 +163,11 @@ def load_default_dictionary(*, include_candidates: bool = True,
                             "MIT declared by progressio-media/malm-data; preserve its "
                             "copyright and license notice."
                         ),
-                        "rights_status": (
-                            "upstream_dataset_MIT_license_declared; source IDs preserved"
+                        "rights_status": row.get(
+                            "rights_status", "upstream_dataset_MIT_license_declared"
                         ),
+                        "source_type": row.get("source_type"),
+                        "native_review_status": row.get("native_review_status", "pending"),
                         "category": row.get("category", "word"),
                         "note": (
                             "Imported MALM dictionary candidate. The source reference is "
