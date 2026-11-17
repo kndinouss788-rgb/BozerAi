@@ -102,7 +102,9 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
-    if (needed <= 0 || needed > 896) {
+    // Reserve the full 192-token generation budget inside the 1,024-token context.
+    constexpr int32_t max_prompt_tokens = 832;
+    if (needed <= 0 || needed > max_prompt_tokens) {
         throw_java(env, "La conversation est trop longue pour le contexte local. Raccourcis le dernier message.");
         return nullptr;
     }
