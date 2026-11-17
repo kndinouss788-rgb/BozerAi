@@ -254,7 +254,7 @@ private fun BozerChat(
             try {
                 withContext(Dispatchers.IO) { engine.load(modelManager.installedModel()!!.absolutePath) }
                 modelReady = true
-                modelStatus = "Cerveau local prêt — hors ligne."
+                modelStatus = "Cerveau local prêt sur ce téléphone."
             } catch (error: Exception) {
                 modelStatus = "Chargement impossible : " + (error.message ?: "erreur inconnue")
             } finally {
@@ -285,7 +285,7 @@ private fun BozerChat(
                 modelStatus = "Modèle vérifié. Chargement du cerveau…"
                 withContext(Dispatchers.IO) { engine.load(file.absolutePath) }
                 modelReady = true
-                modelStatus = "Cerveau local prêt — tes messages sont traités sur ce téléphone."
+                modelStatus = "Cerveau local prêt sur ce téléphone."
             } catch (error: Exception) {
                 modelStatus = "Installation impossible : " + (error.message ?: "erreur inconnue")
             } finally {
