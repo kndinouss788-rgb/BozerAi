@@ -81,7 +81,10 @@ def collect_oasst(path,limit):
         if str(tree) not in best or score>best[str(tree)][0]: best[str(tree)]=(score,rec)
     values=[v[1] for v in best.values()]
     values.sort(key=lambda x:hashlib.sha256(x["source_group_id"].encode()).hexdigest())
-    return values[:limit]
+    unique={}
+    for item in values:
+        unique.setdefault(norm(item["user"]),item)
+    return list(unique.values())[:limit]
 
 def iter_ultra(limit,seen,revision):
     from datasets import load_dataset
