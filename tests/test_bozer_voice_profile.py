@@ -6,7 +6,7 @@ def test_bozer_voice_profile_is_original_masculine_french_first_design_not_a_mod
     profile_path = Path("bozer_neural/voice/voice_profile.json")
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
 
-    assert profile["status"] == "design_specification_not_a_trained_voice"
+    assert profile["status"] == "design_specification_and_android_system_fallback_not_a_trained_bozer_voice"
     assert profile["language_priority"] == ["fr-FR"]
     assert profile["voice_identity"]["presentation"] == "masculine"
     assert profile["voice_identity"]["science_fiction_inspiration"].endswith(
