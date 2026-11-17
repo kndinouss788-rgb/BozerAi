@@ -47,3 +47,34 @@ print(fr_to_mo.translated_text, fr_to_mo.status, fr_to_mo.source_reference)
 ## Scope
 
 This release is a real bilingual dictionary and exact word/phrase translator, not yet a fluent open-ended neural MT system. Full-sentence translation requires a reviewed parallel corpus, grammar-aware decoding, and evaluation by native Mooré speakers. The existing pipeline deliberately does not turn arbitrary word-by-word matches into a sentence.
+
+
+## Neural sentence backend
+
+The pipeline now accepts an optional local NLLB-compatible backend. It uses
+dictionary exact matches first; unknown full sentences are sent to the configured
+backend and returned as `status="model"`, `confidence="model_generated"`.
+Model output is never marked validated and always requires native-speaker review.
+
+No checkpoint is bundled or selected by default. Load a locally available,
+commercially cleared checkpoint explicitly:
+
+```python
+from bozer_neural.language import load_default_translator
+from bozer_neural.language.translation_pipeline import TranslationPipeline
+from bozer_neural.language.nllb_backend import TransformersNllbBackend
+
+backend = TransformersNllbBackend.from_pretrained(
+    "YOUR_CLEARED_CHECKPOINT",
+    license_id="YOUR-COMMERCIAL-LICENSE",
+    commercial_use_allowed=True,
+)
+pipeline = TranslationPipeline(load_default_translator(), backend)
+```
+
+Install `transformers` in the deployment environment to load a compatible
+checkpoint. The adapter refuses silent truncation above its token limit. The
+Mooré LoRA checkpoints currently identified during research are marked
+CC-BY-NC-4.0 and are therefore not selected for BOZER's commercial product.
+A model checkpoint with verified commercial rights and native-speaker evaluation
+is still required before this feature can be called production-complete.
