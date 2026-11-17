@@ -86,6 +86,15 @@ class BozerPlanEngineTest {
     }
 
     @Test
+    fun directChatConfirmationGateOnlyStopsRecognizedSensitiveActions() {
+        assertTrue(BozerActionSafetyPolicy.requiresUserConfirmation("appelle 70000000"))
+        assertTrue(BozerActionSafetyPolicy.requiresUserConfirmation("annule toutes les alarmes BOZER"))
+        assertTrue(BozerActionSafetyPolicy.requiresUserConfirmation("annule mon prochain réveil"))
+        assertFalse(BozerActionSafetyPolicy.requiresUserConfirmation("ouvre WhatsApp"))
+        assertFalse(BozerActionSafetyPolicy.requiresUserConfirmation("Explique-moi comment fonctionne une batterie."))
+    }
+
+    @Test
     fun unknownActionsFailClosedAndRequireConfirmation() {
         val plan = BozerPlan.fromJson(
             """{"goal":"Action non reconnue","steps":[{"id":"step_1","title":"Action","action":"run_unknown_tool","depends_on":[],"requires_confirmation":false}]}"""
