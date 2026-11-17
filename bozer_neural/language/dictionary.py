@@ -35,7 +35,7 @@ class DictionaryHit:
 class MooreFrenchDictionary:
     """Exact and substring lookup; candidate records stay visibly provisional."""
 
-    def __init__(self, entries: Iterable[dict], *, include_candidates: bool = True):
+    def __init__(self, entries: Iterable[dict], *, include_candidates: bool = False):
         self._entries: list[dict] = []
         seen_ids: set[str] = set()
         for entry in entries:
