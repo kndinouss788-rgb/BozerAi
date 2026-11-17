@@ -552,7 +552,7 @@ private fun BozerChat(
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Accent)
                             ) {
-                                Text(if (modelBusy) "Préparation en cours…" else "Installer le cerveau")
+                                Text(if (modelBusy) "Préparation en cours…" else "Installer le cerveau local")
                             }
                         }
                         Text("Version 0.2.0 · Interface liquide", color = Muted, fontSize = 12.sp)
