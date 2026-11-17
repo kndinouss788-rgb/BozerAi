@@ -13,7 +13,7 @@ class MooreFrenchDictionaryTests(unittest.TestCase):
         self.assertTrue(hits[0].provisional)
         self.assertIn("MALM Data", hits[0].source)
         self.assertIn("MIT", hits[0].source_license)
-        self.assertIn("SRC-", hits[0].source_reference)
+        self.assertIn("LEX-", hits[0].source_reference)
 
     def test_dictionary_works_in_reverse_direction(self):
         dictionary = load_default_dictionary()
