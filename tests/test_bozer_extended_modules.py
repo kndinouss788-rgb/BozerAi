@@ -183,10 +183,10 @@ def test_speech_controller_can_cancel_streamed_output():
         next(stream)
 
 
-def test_default_dictionary_loader_uses_only_owned_reviewed_lexicon():
-    dictionary = load_default_dictionary()
+def test_default_dictionary_loader_can_restrict_to_reviewed_lexicon():
+    dictionary = load_default_dictionary(include_candidates=False)
     assert dictionary.exact("bonjour (le matin)", "fr") == ()
-    candidates = load_default_dictionary(include_candidates=True)
+    candidates = load_default_dictionary()
     assert candidates.exact("bonjour (le matin)", "fr")
     assert all(hit.status == "candidate" for hit in candidates.exact("bonjour (le matin)", "fr"))
 
