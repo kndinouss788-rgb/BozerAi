@@ -1,0 +1,54 @@
+name: BOZER NEURAL - assemble and validate 100k corpus
+
+"on":
+  push:
+    branches: [bozer-neural-v0.1]
+    paths:
+      - ".github/workflows/bozer-neural-100k-corpus.yml"
+      - "bozer_neural/prepare_100k_corpus.py"
+      - "bozer_neural/data.py"
+      - "bozer_neural/validate_corpus.py"
+      - "bozer_neural/train_1b.py"
+      - "bozer_neural/evaluate_1b.py"
+      - "tests/test_bozer_100k_corpus.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bozer-neural-100k-corpus
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bozer-neural-v0.1
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-neural.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-neural.txt
+          python -m pip install "datasets==3.3.2" "huggingface_hub==0.29.3"
+      - name: Test corpus tooling
+        run: python -m unittest discover -s tests -p "test_bozer_100k_corpus.py" -v
+      - name: Build exactly 100,000 examples
+        run: python -m bozer_neural.prepare_100k_corpus --output-dir data/bozer_neural_100k --target 100000 --max-oasst 10000
+      - name: Validate all partitions and leakage
+        run: python -m bozer_neural.validate_corpus --train data/bozer_neural_100k/train --validation data/bozer_neural_100k/validation --test data/bozer_neural_100k/test
+      - name: Commit generated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/bozer_neural_100k/
+          git commit -m "Add 100k filtered dialogue corpus"
+          git push origin HEAD:bozer-neural-v0.1
