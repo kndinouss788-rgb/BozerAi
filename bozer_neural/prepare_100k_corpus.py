@@ -30,7 +30,7 @@ def category(user, answer):
     ("raisonnement_resolution",("solve","reason","logic","calculate","equation","proof","compare","analyze","analyse","deduce","puzzle","math","résoudre","raisonnement","logique","calcul","équation","comparer","déduire","problème","therefore")),
     ("comprehension_demande",("explain","define","what is","why does","how does","describe","summarize","summary","translate","difference between","explique","définis","qu'est-ce","pourquoi","comment fonctionne","décris","résume","traduire","différence entre")))
     for name, words in rules:
-        if any(w in t for w in words): return name
+        if any(re.search(r"(?<!\\w)"+re.escape(w)+r"(?!\\w)",t) for w in words): return name
     return "dialogue_naturel"
 
 def label(labels,name):
