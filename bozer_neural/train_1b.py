@@ -19,6 +19,7 @@ from .data import (
     load_supervised_corpus,
     load_supervised_corpus_by_category,
     read_corpus_text,
+    is_dialogue_path,
 )
 from .model_1b import BozerNeural1B
 from .tokenizer import BozerByteBPETokenizer
@@ -153,8 +154,8 @@ def train_1b(
         raise ValueError("early_stopping_patience cannot be negative")
     if validation_data_path is None:
         raise ValueError("a separate validation_data_path is required for 1B training")
-    is_text_pretraining = Path(data_path).suffix.lower() != ".jsonl"
-    if is_text_pretraining != (Path(validation_data_path).suffix.lower() != ".jsonl"):
+    is_text_pretraining = not is_dialogue_path(data_path)
+    if is_text_pretraining != (not is_dialogue_path(validation_data_path)):
         raise ValueError("training and validation must both be JSONL dialogues or both be plain text")
     training_objective = (
         "next_token_prediction_all_text_tokens"

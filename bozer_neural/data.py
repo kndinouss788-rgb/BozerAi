@@ -1,4 +1,5 @@
 """Dialogue loading, assistant-only targets and balanced language-model batches."""
+import gzip
 import json
 import unicodedata
 from pathlib import Path
@@ -6,40 +7,79 @@ import torch
 from .tokenizer import BOS, EOS, BozerByteTokenizer
 
 
-def read_records(path):
-    """Read validated dialogue records from JSONL without losing example boundaries."""
+def is_dialogue_path(path):
+    """Return True for JSONL, compressed JSONL, or a directory of dialogue shards."""
     path = Path(path)
+    return path.is_dir() or path.name.lower().endswith((".jsonl", ".jsonl.gz"))
+
+
+def _dialogue_files(path):
+    path = Path(path)
+    if path.is_dir():
+        files = sorted(path.glob("*.jsonl")) + sorted(path.glob("*.jsonl.gz"))
+        if not files:
+            raise ValueError(f"no JSONL dialogue shards found in {path}")
+        return files
+    if not is_dialogue_path(path):
+        raise ValueError(f"expected JSONL dialogue data: {path}")
+    return [path]
+
+
+def _open_dialogue_text(path):
+    path = Path(path)
+    if path.name.lower().endswith(".jsonl.gz"):
+        return gzip.open(path, "rt", encoding="utf-8")
+    return path.open("r", encoding="utf-8")
+
+
+def read_records(path):
+    """Read validated dialogue records from JSONL, gzip JSONL, or a shard directory."""
     records = []
-    for number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        if not raw.strip():
-            continue
-        try:
-            item = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"invalid JSONL at {path}:{number}: {exc}") from exc
-        if not isinstance(item, dict):
-            raise ValueError(f"record at {path}:{number} must be an object")
-        for key in ("category", "user", "assistant"):
-            if not isinstance(item.get(key), str) or not item[key].strip():
-                raise ValueError(f"record at {path}:{number} needs non-empty {key}")
-        history = item.get("history", [])
-        if not isinstance(history, list):
-            raise ValueError(f"record at {path}:{number} history must be a list")
-        clean_history = []
-        for turn_index, turn in enumerate(history, 1):
-            if not isinstance(turn, dict):
-                raise ValueError(f"record at {path}:{number} history turn {turn_index} must be an object")
-            for key in ("user", "assistant"):
-                if not isinstance(turn.get(key), str) or not turn[key].strip():
-                    raise ValueError(f"record at {path}:{number} history turn {turn_index} needs non-empty {key}")
-            clean_history.append({"user": turn["user"].strip(), "assistant": turn["assistant"].strip()})
-        records.append({
-            **item,
-            "category": item["category"].strip(),
-            "user": item["user"].strip(),
-            "assistant": item["assistant"].strip(),
-            "history": clean_history,
-        })
+    for source_path in _dialogue_files(path):
+        with _open_dialogue_text(source_path) as handle:
+            for number, raw in enumerate(handle, 1):
+                if not raw.strip():
+                    continue
+                try:
+                    item = json.loads(raw)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(
+                        f"invalid JSONL at {source_path}:{number}: {exc}"
+                    ) from exc
+                if not isinstance(item, dict):
+                    raise ValueError(f"record at {source_path}:{number} must be an object")
+                for key in ("category", "user", "assistant"):
+                    if not isinstance(item.get(key), str) or not item[key].strip():
+                        raise ValueError(
+                            f"record at {source_path}:{number} needs non-empty {key}"
+                        )
+                history = item.get("history", [])
+                if not isinstance(history, list):
+                    raise ValueError(
+                        f"record at {source_path}:{number} history must be a list"
+                    )
+                clean_history = []
+                for turn_index, turn in enumerate(history, 1):
+                    if not isinstance(turn, dict):
+                        raise ValueError(
+                            f"record at {source_path}:{number} history turn {turn_index} must be an object"
+                        )
+                    for key in ("user", "assistant"):
+                        if not isinstance(turn.get(key), str) or not turn[key].strip():
+                            raise ValueError(
+                                f"record at {source_path}:{number} history turn {turn_index} needs non-empty {key}"
+                            )
+                    clean_history.append({
+                        "user": turn["user"].strip(),
+                        "assistant": turn["assistant"].strip(),
+                    })
+                records.append({
+                    **item,
+                    "category": item["category"].strip(),
+                    "user": item["user"].strip(),
+                    "assistant": item["assistant"].strip(),
+                    "history": clean_history,
+                })
     if not records:
         raise ValueError(f"corpus is empty: {path}")
     return records
@@ -55,8 +95,8 @@ def ensure_disjoint_prompts(training_path, validation_path):
     def normalize(value):
         return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
 
-    if training_path.suffix.lower() != ".jsonl" or validation_path.suffix.lower() != ".jsonl":
-        if training_path.suffix.lower() == ".jsonl" or validation_path.suffix.lower() == ".jsonl":
+    if not is_dialogue_path(training_path) or not is_dialogue_path(validation_path):
+        if is_dialogue_path(training_path) or is_dialogue_path(validation_path):
             raise ValueError("training and validation must both be JSONL dialogues or both be plain text")
         def collect_units(path):
             text = path.read_text(encoding="utf-8")
@@ -116,7 +156,7 @@ def format_record(item):
 def read_corpus_text(path):
     """Text view used only to learn BPE merges from the training split."""
     path = Path(path)
-    if path.suffix.lower() != ".jsonl":
+    if not is_dialogue_path(path):
         text = path.read_text(encoding="utf-8")
         if not text.strip():
             raise ValueError(f"corpus is empty: {path}")
@@ -141,7 +181,7 @@ def load_supervised_corpus(path, tokenizer=None):
     path = Path(path)
     tokenizer = tokenizer or BozerByteTokenizer()
     all_tokens, all_masks = [], []
-    if path.suffix.lower() == ".jsonl":
+    if is_dialogue_path(path):
         for item in read_records(path):
             tokens, mask = _encode_supervised_record(item, tokenizer)
             all_tokens.extend(tokens)
@@ -164,7 +204,7 @@ def load_supervised_corpus(path, tokenizer=None):
 def load_supervised_corpus_by_category(path, tokenizer=None):
     """Build category-isolated streams with assistant-only target masks."""
     path = Path(path)
-    if path.suffix.lower() != ".jsonl":
+    if not is_dialogue_path(path):
         return None
     tokenizer = tokenizer or BozerByteTokenizer()
     buckets = {}

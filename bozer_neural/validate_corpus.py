@@ -1,5 +1,6 @@
 """Validate categorized JSONL data, duplicates and optional scenario leakage."""
 import argparse
+import gzip
 import json
 import re
 import unicodedata
@@ -13,6 +14,23 @@ CATEGORIES = {
 }
 
 
+def is_dialogue_path(path):
+    path = Path(path)
+    return path.is_dir() or path.name.lower().endswith((".jsonl", ".jsonl.gz"))
+
+
+def _dialogue_files(path):
+    path = Path(path)
+    if path.is_dir():
+        files = sorted(path.glob("*.jsonl")) + sorted(path.glob("*.jsonl.gz"))
+        if not files:
+            raise ValueError(f"{path}: no JSONL dialogue shards found")
+        return files
+    if not is_dialogue_path(path):
+        raise ValueError(f"{path}: expected JSONL dialogue data")
+    return [path]
+
+
 def normalize_prompt(value):
     normalized = unicodedata.normalize("NFKC", value).casefold()
     return re.sub(r"\s+", " ", normalized).strip()
@@ -20,39 +38,52 @@ def normalize_prompt(value):
 
 def read_records(path):
     records = []
-    for line_number, raw in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
-        if not raw.strip():
-            continue
-        try:
-            item = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"{path}:{line_number}: invalid JSON: {exc}") from exc
-        if not isinstance(item, dict):
-            raise ValueError(f"{path}:{line_number}: expected object")
-        for key in ("category", "user", "assistant"):
-            if not isinstance(item.get(key), str) or not item[key].strip():
-                raise ValueError(f"{path}:{line_number}: missing/invalid {key}")
-        if item["category"] not in CATEGORIES:
-            raise ValueError(f"{path}:{line_number}: unknown category {item['category']}")
-        history = item.get("history", [])
-        if not isinstance(history, list):
-            raise ValueError(f"{path}:{line_number}: history must be a list")
-        for turn_number, turn in enumerate(history, 1):
-            if not isinstance(turn, dict):
-                raise ValueError(
-                    f"{path}:{line_number}: history turn {turn_number} must be an object"
-                )
-            for key in ("user", "assistant"):
-                if not isinstance(turn.get(key), str) or not turn[key].strip():
+    for source_path in _dialogue_files(path):
+        opener = gzip.open if source_path.name.lower().endswith(".jsonl.gz") else open
+        with opener(source_path, "rt", encoding="utf-8") as handle:
+            for line_number, raw in enumerate(handle, 1):
+                if not raw.strip():
+                    continue
+                try:
+                    item = json.loads(raw)
+                except json.JSONDecodeError as exc:
                     raise ValueError(
-                        f"{path}:{line_number}: history turn {turn_number} needs non-empty {key}"
+                        f"{source_path}:{line_number}: invalid JSON: {exc}"
+                    ) from exc
+                if not isinstance(item, dict):
+                    raise ValueError(f"{source_path}:{line_number}: expected object")
+                for key in ("category", "user", "assistant"):
+                    if not isinstance(item.get(key), str) or not item[key].strip():
+                        raise ValueError(
+                            f"{source_path}:{line_number}: missing/invalid {key}"
+                        )
+                if item["category"] not in CATEGORIES:
+                    raise ValueError(
+                        f"{source_path}:{line_number}: unknown category {item['category']}"
                     )
-        scenario_id = item.get("scenario_id")
-        if scenario_id is not None and (
-            not isinstance(scenario_id, str) or not scenario_id.strip()
-        ):
-            raise ValueError(f"{path}:{line_number}: scenario_id must be a non-empty string")
-        records.append(item)
+                history = item.get("history", [])
+                if not isinstance(history, list):
+                    raise ValueError(
+                        f"{source_path}:{line_number}: history must be a list"
+                    )
+                for turn_number, turn in enumerate(history, 1):
+                    if not isinstance(turn, dict):
+                        raise ValueError(
+                            f"{source_path}:{line_number}: history turn {turn_number} must be an object"
+                        )
+                    for key in ("user", "assistant"):
+                        if not isinstance(turn.get(key), str) or not turn[key].strip():
+                            raise ValueError(
+                                f"{source_path}:{line_number}: history turn {turn_number} needs non-empty {key}"
+                            )
+                scenario_id = item.get("scenario_id")
+                if scenario_id is not None and (
+                    not isinstance(scenario_id, str) or not scenario_id.strip()
+                ):
+                    raise ValueError(
+                        f"{source_path}:{line_number}: scenario_id must be a non-empty string"
+                    )
+                records.append(item)
     if not records:
         raise ValueError(f"{path}: no records")
     return records
@@ -64,9 +95,9 @@ def validate_splits(train_path, validation_path, test_path):
         "validation": Path(validation_path),
         "test": Path(test_path),
     }
-    suffixes = {path.suffix.lower() for path in paths.values()}
-    if suffixes != {".jsonl"}:
-        if ".jsonl" in suffixes:
+    dialogue_modes = {is_dialogue_path(path) for path in paths.values()}
+    if dialogue_modes != {True}:
+        if True in dialogue_modes:
             raise ValueError("all pretraining partitions must be plain text, not a mix of JSONL and text")
         resolved = [path.resolve() for path in paths.values()]
         if len(set(resolved)) != 3:

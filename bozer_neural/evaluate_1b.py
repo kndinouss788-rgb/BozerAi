@@ -12,6 +12,7 @@ from .data import (
     load_supervised_corpus,
     load_supervised_corpus_by_category,
     read_records,
+    is_dialogue_path,
 )
 from .model_1b import BozerNeural1B
 from .tokenizer import BozerByteBPETokenizer, EOS
@@ -93,7 +94,7 @@ def evaluate_1b(
         test_loss = sum(scores) / len(scores)
 
     examples = []
-    if Path(test_data_path).suffix.lower() == ".jsonl":
+    if is_dialogue_path(test_data_path):
         records = read_records(test_data_path)
         selected = []
         selected_categories = set()
