@@ -2,6 +2,8 @@ package ai.bozer.app
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.Normalizer
+import java.util.Locale
 
 enum class BozerStepStatus { PENDING, WAITING_CONFIRMATION, RUNNING, SUCCEEDED, FAILED, BLOCKED }
 enum class BozerEvidenceLevel { VERIFIED, SUBMITTED, UNKNOWN }
@@ -33,6 +35,32 @@ internal object BozerActionSafetyPolicy {
             null -> true
         }
     }
+
+    /**
+     * Confirmation gate for commands typed directly in the chat.
+     * Non-command chat text must remain ordinary conversation, while every
+     * recognized sensitive command and alarm cancellation requires approval.
+     */
+    fun requiresUserConfirmation(action: String): Boolean {
+        val normalized = normalize(action)
+        if (normalized in setOf(
+                "annule la prochaine alarme",
+                "annule la prochaine alarme bozer",
+                "annule mon prochain reveil",
+                "annule toutes les alarmes bozer",
+                "supprime toutes les alarmes bozer"
+            )
+        ) return true
+
+        if (AndroidCommandParser.parse(action) == null) return false
+        return requiresConfirmation(action)
+    }
+
+    private fun normalize(value: String): String =
+        Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
 }
 
 data class BozerPlanStep(
