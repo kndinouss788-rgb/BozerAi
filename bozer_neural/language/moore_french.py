@@ -29,6 +29,8 @@ class TranslationResult:
     source_reference: str | None = None
     source_license: str | None = None
     rights_status: str | None = None
+    source_type: str | None = None
+    native_review_status: str | None = None
     reviewed_by: str | None = None
     reviewed_at: str | None = None
 
@@ -45,7 +47,7 @@ def normalize_text(value: str) -> str:
     """Normalize spacing and punctuation while preserving Mooré diacritics."""
     value = unicodedata.normalize("NFC", value).casefold().strip()
     value = re.sub(r"^[\W_]+|[\W_]+$", "", value, flags=re.UNICODE)
-    return re.sub(r"\\s+", " ", value)
+    return re.sub(r"\s+", " ", value)
 
 
 class MooreFrenchTranslator:
@@ -73,6 +75,8 @@ class MooreFrenchTranslator:
                     "source_reference": entry.get("source_reference"),
                     "source_license": entry.get("source_license"),
                     "rights_status": entry.get("rights_status"),
+                    "source_type": entry.get("source_type"),
+                    "native_review_status": entry.get("native_review_status"),
                     "reviewed_by": entry.get("reviewed_by"),
                     "reviewed_at": entry.get("reviewed_at"),
                 })
@@ -145,6 +149,8 @@ class MooreFrenchTranslator:
             source_reference=selected.get("source_reference"),
             source_license=selected.get("source_license"),
             rights_status=selected.get("rights_status"),
+            source_type=selected.get("source_type"),
+            native_review_status=selected.get("native_review_status"),
             reviewed_by=selected.get("reviewed_by"),
             reviewed_at=selected.get("reviewed_at"),
         )
@@ -183,11 +189,14 @@ def load_default_translator(
                         raise ValueError(
                             f"invalid MALM candidate JSON at line {line_number}"
                         ) from exc
-                    source_ids = row.get("source_ids", [])
-                    if isinstance(source_ids, list):
-                        source_reference = ", ".join(str(item) for item in source_ids)
-                    else:
-                        source_reference = str(source_ids) if source_ids else None
+                    source_refs = []
+                    for field in ("sources", "source_ids"):
+                        values = row.get(field, [])
+                        if isinstance(values, list):
+                            source_refs.extend(str(item) for item in values if item)
+                        elif values:
+                            source_refs.append(str(values))
+                    source_reference = row.get("source_reference") or ", ".join(dict.fromkeys(source_refs))
                     entries.append({
                         "id": row["id"],
                         "french": row["french"],
@@ -199,9 +208,11 @@ def load_default_translator(
                             "MIT declared by progressio-media/malm-data; preserve its "
                             "copyright and license notice."
                         ),
-                        "rights_status": (
-                            "upstream_dataset_MIT_license_declared; source IDs preserved"
+                        "rights_status": row.get(
+                            "rights_status", "upstream_dataset_MIT_license_declared"
                         ),
+                        "source_type": row.get("source_type"),
+                        "native_review_status": row.get("native_review_status", "pending"),
                         "note": (
                             "Imported MALM dictionary candidate. The source reference is "
                             "retained; spelling, sense and usage have not been natively reviewed."
