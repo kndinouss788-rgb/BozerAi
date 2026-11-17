@@ -28,7 +28,8 @@ jobs:
       - name: Verify feedback-learning command
         run: python -m bozer_neural.learning --help
       - name: Verify baseline architecture
-        run: python -c "from bozer_neural import BozerTransformer, BozerConfig; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print(f'Baseline parameters: {n}'); assert n == BozerConfig().parameter_count() == 124864"
+        run: >-
+          python -c "from bozer_neural import BozerTransformer, BozerConfig; m=BozerTransformer(); n=sum(p.numel() for p in m.parameters() if p.requires_grad); print('Baseline parameters:', n); assert n == BozerConfig().parameter_count() == 124864"
       - name: Run a short real training smoke test
         run: python -m bozer_neural.train --steps 10 --batch-size 2 --grad-accum-steps 1 --eval-interval 5 --eval-batches 1 --warmup-steps 2 --early-stopping-patience 0 --output artifacts/bozer-neural-ci.pt
       - name: Evaluate the best smoke checkpoint on the untouched test split
