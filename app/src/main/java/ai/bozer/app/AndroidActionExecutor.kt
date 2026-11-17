@@ -18,6 +18,51 @@ import java.util.Calendar
  * action there. BOZER never silently sends messages or places calls.
  */
 class AndroidActionExecutor(private val activity: Activity) {
+    fun requiresUserConfirmation(command: String): Boolean =
+        BozerActionSafetyPolicy.requiresUserConfirmation(command)
+
+    fun confirmationSummary(command: String): String {
+        val normalized = normalize(command)
+        return when (val parsed = AndroidCommandParser.parse(command)) {
+            is AndroidCommand.Dial ->
+                "Ouvrir le composeur avec le numéro ${parsed.number}. Aucun appel ne sera lancé automatiquement."
+            is AndroidCommand.ComposeSms ->
+                "Préparer un SMS pour ${parsed.number} avec le texte : « ${parsed.body} ». Tu devras vérifier puis appuyer toi-même sur Envoyer."
+            is AndroidCommand.ComposeEmail ->
+                "Préparer un e-mail pour ${parsed.address}, avec l'objet « ${parsed.subject} ». Tu pourras le relire avant l'envoi."
+            is AndroidCommand.SetAlarm ->
+                "Programmer une alarme BOZER à %02d:%02d, intitulée « ${parsed.label} ».".format(parsed.hour, parsed.minute)
+            is AndroidCommand.SetRecurringAlarm ->
+                "Programmer une alarme BOZER récurrente à %02d:%02d, intitulée « ${parsed.label} ».".format(parsed.hour, parsed.minute)
+            is AndroidCommand.SetReminder ->
+                "Créer un rappel BOZER dans ${parsed.delaySeconds} seconde(s), intitulé « ${parsed.label} »."
+            is AndroidCommand.SetTimer ->
+                "Ouvrir l'horloge Android pour un minuteur de ${parsed.seconds} seconde(s)."
+            is AndroidCommand.CreateCalendarEvent ->
+                "Ouvrir le calendrier pour préparer l'événement « ${parsed.title} ». Tu pourras vérifier puis l'enregistrer."
+            is AndroidCommand.ShareText ->
+                "Ouvrir le menu de partage Android avec ce texte : « ${parsed.text} »."
+            is AndroidCommand.OpenApp ->
+                "Ouvrir l'application « ${parsed.name} »."
+            is AndroidCommand.OpenUrl ->
+                "Ouvrir la page ${parsed.url}."
+            is AndroidCommand.SearchWeb ->
+                "Lancer une recherche sur le Web pour « ${parsed.query} »."
+            is AndroidCommand.Navigate ->
+                "Ouvrir l'itinéraire vers « ${parsed.destination} »."
+            AndroidCommand.OpenSettings ->
+                "Ouvrir les paramètres du téléphone."
+            null -> when (normalized) {
+                "annule la prochaine alarme",
+                "annule la prochaine alarme bozer",
+                "annule mon prochain reveil" -> "Annuler la prochaine alarme BOZER ?"
+                "annule toutes les alarmes bozer",
+                "supprime toutes les alarmes bozer" -> "Annuler toutes les alarmes BOZER ?"
+                else -> "Confirmer cette action : $command"
+            }
+        }
+    }
+
     fun execute(command: String): String? {
         val normalizedCommand = normalize(command)
         if (normalizedCommand in setOf("annule la prochaine alarme", "annule la prochaine alarme bozer", "annule mon prochain reveil")) {
