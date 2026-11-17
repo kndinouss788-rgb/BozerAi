@@ -44,7 +44,10 @@ class MooreFrenchTranslatorTests(unittest.TestCase):
         self.assertEqual(result.confidence, "provisional_exact")
         self.assertIn("MALM Data", result.source)
         self.assertIn("MIT", result.source_license)
+        self.assertIn("SRC-", result.source_reference)
         self.assertIn("LEX-", result.source_reference)
+        self.assertEqual(result.rights_status, "pending_underlying_source_confirmation")
+        self.assertEqual(result.native_review_status, "pending")
 
     def test_strict_mode_does_not_use_bulk_malm_candidates(self):
         strict = load_default_translator(allow_candidates=False)
