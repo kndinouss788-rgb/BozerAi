@@ -8,7 +8,7 @@ MODEL_SHA="74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
 collect_diagnostics() {
   # Instrumentation and target-app logs may use different PIDs. Capture the
   # required BOZER tags globally so E2E assertions are not hidden by --pid.
-  adb logcat -d -v threadtime -s BOZER_E2E:I BOZER_PERF:I BOZER_SEARCH:I BOZER_MODEL:I BOZER_VOICE:I AndroidRuntime:E > bozer-emulator-test.log 2>&1 || true
+  adb logcat -d -v threadtime -s BOZER_E2E:I BOZER_PERF:I BOZER_NATIVE:I BOZER_SEARCH:I BOZER_MODEL:I BOZER_VOICE:I AndroidRuntime:E > bozer-emulator-test.log 2>&1 || true
   adb exec-out screencap -p > bozer-smoke.png 2>/dev/null || true
   adb shell dumpsys meminfo "$APP_ID" > bozer-memory.txt 2>&1 || true
   adb shell dumpsys cpuinfo | grep -F "$APP_ID" > bozer-cpu.txt 2>&1 || true
@@ -71,6 +71,8 @@ if grep -Eq 'FATAL EXCEPTION|Process: ai[.]bozer[.]app|Fatal signal' bozer-emula
 fi
 
 test -s bozer-smoke.png
+grep -q 'model_ready=true' bozer-emulator-test.log
+grep -q 'generation_ms=' bozer-emulator-test.log
 grep -q 'PASS: seven local turns' bozer-emulator-test.log
 grep -q 'PASS: process restart restored history, memory and model' bozer-emulator-test.log
 grep -q 'microphone_permission_granted=true' bozer-emulator-test.log
