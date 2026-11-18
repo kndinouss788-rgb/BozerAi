@@ -48,21 +48,11 @@ adb shell appops get "$APP_ID" SYSTEM_ALERT_WINDOW
 adb logcat -c
 adb shell dumpsys batterystats --reset || true
 
-# Run the real-model conversation first because it creates the history and
-# explicit memory that the process-restart test must verify.
+# Run the real-model conversation first, followed by all independent Android
+# integration suites in one Gradle invocation to avoid repeated emulator/test
+# runner startup overhead. The JUnit suite declares the required order.
 gradle :app:connectedDebugAndroidTest --no-daemon \
-  -Pandroid.testInstrumentationRunnerArguments.class=ai.bozer.app.BozerBrainEndToEndTest
-
-# Run independent Android integration suites without relying on JUnit class order.
-for test_class in \
-  ChatDatabaseInstrumentedTest \
-  ChatRepositoryInstrumentedTest \
-  FloatingBubbleServiceInstrumentedTest \
-  PhoneActionInstrumentedTest \
-  VoicePathInstrumentedTest; do
-  gradle :app:connectedDebugAndroidTest --no-daemon \
-    "-Pandroid.testInstrumentationRunnerArguments.class=ai.bozer.app.$test_class"
-done
+  -Pandroid.testInstrumentationRunnerArguments.class=ai.bozer.app.PreRestartInstrumentedSuite
 
 # Kill the real app process only after the E2E dialogue has populated history
 # and memory, then verify that a fresh process restores them and reloads GGUF.
