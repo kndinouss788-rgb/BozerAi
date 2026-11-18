@@ -47,6 +47,8 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
         backend_initialized = true;
     }
 
+    const auto load_started = std::chrono::steady_clock::now();
+    __android_log_print(ANDROID_LOG_INFO, "BOZER_NATIVE", "model_load_started");
     llama_model_params params = llama_model_default_params();
     params.n_gpu_layers = 0;
     model = llama_model_load_from_file(model_path.c_str(), params);
@@ -54,6 +56,12 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
         throw_java(env, "llama.cpp n'a pas pu ouvrir le fichier GGUF.");
         return JNI_FALSE;
     }
+
+    const auto weights_loaded_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - load_started).count();
+    __android_log_print(ANDROID_LOG_INFO, "BOZER_NATIVE",
+        "model_weights_loaded_ms=%lld",
+        static_cast<long long>(weights_loaded_ms));
 
     // Reuse one inference context for the whole session. The full conversation
     // is rebuilt into the prompt on each turn, so the KV cache can be cleared.
@@ -70,6 +78,11 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
         throw_java(env, "Mémoire insuffisante pour préparer le contexte du modèle.");
         return JNI_FALSE;
     }
+    const auto total_load_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - load_started).count();
+    __android_log_print(ANDROID_LOG_INFO, "BOZER_NATIVE",
+        "model_ready=true; model_load_ms=%lld; threads=%d; context_tokens=%d",
+        static_cast<long long>(total_load_ms), threads, context_params.n_ctx);
     return JNI_TRUE;
 }
 
@@ -99,6 +112,9 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
             "<|im_start|>assistant\n";
     }
 
+    __android_log_print(ANDROID_LOG_INFO, "BOZER_NATIVE",
+        "generation_started; prompt_chars=%zu; max_tokens=%d",
+        prompt.size(), std::min(static_cast<int>(max_tokens), 64));
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
@@ -132,8 +148,15 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     llama_batch batch = llama_batch_get_one(tokens.data(), token_count);
     int32_t generated = 0;
     llama_token next_token = 0;
-    while (generated < std::min(static_cast<int>(max_tokens), 192)) {
-        if (llama_decode(context, batch) != 0) break;
+    const int32_t generation_limit = std::min(static_cast<int>(max_tokens), 64);
+    while (generated < generation_limit) {
+        const int decode_status = llama_decode(context, batch);
+        if (decode_status != 0) {
+            __android_log_print(ANDROID_LOG_ERROR, "BOZER_NATIVE",
+                "decode_failed; status=%d; generated_tokens=%d",
+                decode_status, generated);
+            break;
+        }
         next_token = llama_sampler_sample(sampler, context, -1);
         if (llama_vocab_is_eog(vocab, next_token)) break;
 
@@ -142,6 +165,13 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
         if (length > 0) output.append(piece, static_cast<size_t>(length));
         batch = llama_batch_get_one(&next_token, 1);
         ++generated;
+        if (generated % 8 == 0) {
+            const auto progress_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - generation_started).count();
+            __android_log_print(ANDROID_LOG_INFO, "BOZER_NATIVE",
+                "generation_progress; tokens=%d; elapsed_ms=%lld",
+                generated, static_cast<long long>(progress_ms));
+        }
     }
 
     llama_sampler_free(sampler);
