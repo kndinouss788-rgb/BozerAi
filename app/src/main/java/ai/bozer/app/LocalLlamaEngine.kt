@@ -36,9 +36,10 @@ class LocalLlamaEngine : ConversationModel {
     @Synchronized
     override fun generate(prompt: String): String {
         check(loaded) { "Le modèle BOZER n'est pas chargé." }
-        // Allow fuller conversational answers instead of cutting every reply
-        // at an overly restrictive 96-token limit.
-        return nativeGenerate(prompt, 192).trim().also {
+        // Keep the local model responsive on entry-level Android CPUs. The
+        // generation loop also has a native hard cap, so a malformed caller
+        // cannot request an unbounded inference session.
+        return nativeGenerate(prompt, 64).trim().also {
             check(it.isNotBlank()) { "Le modèle a renvoyé une réponse vide." }
         }
     }
