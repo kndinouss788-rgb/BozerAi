@@ -118,7 +118,7 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
-    // Reserve the full 192-token generation budget inside the 1,024-token context.
+    // Keep enough room for the native 64-token response cap inside the 1,024-token context.
     constexpr int32_t max_prompt_tokens = 832;
     if (needed <= 0 || needed > max_prompt_tokens) {
         throw_java(env, "La conversation est trop longue pour le contexte local. Raccourcis le dernier message.");
@@ -148,9 +148,18 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     llama_batch batch = llama_batch_get_one(tokens.data(), token_count);
     int32_t generated = 0;
     llama_token next_token = 0;
+    bool prompt_prefill_logged = false;
     const int32_t generation_limit = std::min(static_cast<int>(max_tokens), 64);
     while (generated < generation_limit) {
         const int decode_status = llama_decode(context, batch);
+        if (!prompt_prefill_logged && decode_status == 0) {
+            const auto prefill_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - generation_started).count();
+            __android_log_print(ANDROID_LOG_INFO, "BOZER_NATIVE",
+                "prompt_prefill_ms=%lld; prompt_tokens=%d",
+                static_cast<long long>(prefill_ms), token_count);
+            prompt_prefill_logged = true;
+        }
         if (decode_status != 0) {
             __android_log_print(ANDROID_LOG_ERROR, "BOZER_NATIVE",
                 "decode_failed; status=%d; generated_tokens=%d",
