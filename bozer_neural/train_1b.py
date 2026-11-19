@@ -447,6 +447,8 @@ def train_1b(
                 "train_tokens": int(train_tokens.numel()),
                 "validation_tokens": int(validation_tokens.numel()),
                 "training_objective": training_objective,
+                "optimizer_type": optimizer_type,
+                "optimizer_changed_on_resume": optimizer_changed,
                 "previous_training_objective": previous_objective,
                 "objective_changed_on_resume": objective_changed,
                 "precision": precision,
