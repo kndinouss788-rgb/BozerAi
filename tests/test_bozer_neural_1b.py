@@ -5,6 +5,7 @@ import torch
 from bozer_neural.config_1b import Bozer1BConfig
 from bozer_neural.model_1b import BozerNeural1B, apply_rope
 from bozer_neural.tokenizer import BozerByteBPETokenizer
+from bozer_neural.generation import GenerationConfig, generate
 
 
 def tiny_config():
@@ -117,6 +118,29 @@ def test_incremental_kv_cache_matches_full_causal_forward():
     torch.testing.assert_close(final_logits, full_logits[:, 5:6], rtol=1e-5, atol=1e-6)
     assert cache[0][0].shape == (1, 2, 6, 8)
     assert cache[0][1].shape == (1, 2, 6, 8)
+
+
+def test_cached_generation_rolls_over_context_window_safely():
+    torch.manual_seed(29)
+    model = BozerNeural1B(tiny_config()).eval()
+    prompt = torch.tensor([[1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]])
+
+    generated = generate(
+        model,
+        prompt,
+        GenerationConfig(
+            max_new_tokens=4,
+            temperature=0,
+            top_k=None,
+            top_p=1.0,
+            repetition_penalty=1.0,
+            active_vocab_size=300,
+            eos_token_id=None,
+        ),
+    )
+
+    assert generated.shape == (1, prompt.shape[1] + 4)
+    assert generated.dtype == torch.long
 
 
 def test_rope_preserves_tensor_shape_and_dtype():
