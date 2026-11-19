@@ -6,6 +6,13 @@ from bozer_neural.config_1b import Bozer1BConfig
 from bozer_neural.model_1b import BozerNeural1B, apply_rope
 from bozer_neural.tokenizer import BozerByteBPETokenizer
 from bozer_neural.generation import GenerationConfig, generate
+from bozer_neural.quantization import (
+    _dequantize_tensor,
+    _quantize_tensor,
+    export_quantized_checkpoint,
+    load_quantized_state_dict,
+)
+from bozer_neural.train_1b import CHECKPOINT_FORMAT
 
 
 def tiny_config():
@@ -199,3 +206,78 @@ def test_active_vocabulary_rejects_reserved_input_tokens():
 
     with pytest.raises(ValueError, match="inactive token"):
         model(input_ids, active_vocab_size=270)
+
+@pytest.mark.parametrize("bits", [4, 8])
+def test_quantized_tensor_round_trip_is_bounded_and_preserves_shape(bits):
+    torch.manual_seed(37)
+    source = torch.randn(3, 5)
+    record = _quantize_tensor(source, bits)
+    restored = _dequantize_tensor(record)
+
+    assert restored.shape == source.shape
+    assert restored.dtype == torch.float32
+    max_error = float((source - restored).abs().max())
+    assert max_error <= float(source.abs().max()) / (2 ** (bits - 1) - 1) + 1e-6
+
+
+def test_int4_quantization_packs_two_values_per_byte():
+    source = torch.tensor([-1.0, -0.5, 0.0, 0.5, 1.0])
+    record = _quantize_tensor(source, 4)
+    assert record["payload"].numel() == 3
+    assert record["numel"] == 5
+    assert _dequantize_tensor(record).shape == source.shape
+
+
+@pytest.mark.parametrize("bits", [4, 8])
+def test_export_quantized_checkpoint_requires_trained_checkpoint(tmp_path, bits):
+    model = BozerNeural1B(tiny_config())
+    tokenizer = BozerByteBPETokenizer.train(
+        "bonjour bozer assistant réponse",
+        vocab_size=300,
+        pad_to_vocab_size=300,
+    )
+    source_path = tmp_path / "trained.pt"
+    output_path = tmp_path / f"bozer-int{bits}.pt"
+    torch.save({
+        "format": CHECKPOINT_FORMAT,
+        "config": tiny_config().to_dict(),
+        "tokenizer": tokenizer.to_dict(),
+        "model_state_dict": model.state_dict(),
+        "training": {
+            "global_step": 2,
+            "training_objective": "assistant_answer_tokens_and_eos_only",
+            "best_validation_loss": 2.5,
+        },
+    }, source_path)
+
+    report = export_quantized_checkpoint(source_path, output_path, bits=bits)
+    artifact = torch.load(output_path, map_location="cpu", weights_only=True)
+    restored = load_quantized_state_dict(artifact)
+
+    assert report["bits"] == bits
+    assert report["tensor_count"] == len(model.state_dict())
+    assert output_path.exists()
+    assert set(restored) == set(model.state_dict())
+    for name, original in model.state_dict().items():
+        assert restored[name].shape == original.shape
+        assert torch.isfinite(restored[name]).all()
+
+
+def test_export_rejects_initial_untrained_checkpoint(tmp_path):
+    model = BozerNeural1B(tiny_config())
+    tokenizer = BozerByteBPETokenizer.train(
+        "bonjour bozer assistant réponse",
+        vocab_size=300,
+        pad_to_vocab_size=300,
+    )
+    source_path = tmp_path / "initial.pt"
+    torch.save({
+        "format": CHECKPOINT_FORMAT,
+        "config": tiny_config().to_dict(),
+        "tokenizer": tokenizer.to_dict(),
+        "model_state_dict": model.state_dict(),
+        "training": {"global_step": 0},
+    }, source_path)
+
+    with pytest.raises(ValueError, match="untrained"):
+        export_quantized_checkpoint(source_path, tmp_path / "bad.pt", bits=8)
