@@ -1,6 +1,7 @@
 package ai.bozer.app
 
 import android.app.ActivityManager
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
@@ -33,8 +34,12 @@ class FloatingBubbleServiceInstrumentedTest {
         )
 
         assertTrue(
-            "The foreground notification must be active while the bubble is enabled.",
+            "The floating service must remain running while the bubble is enabled.",
             isServiceRunning()
+        )
+        assertTrue(
+            "The foreground-service notification must be visible while the bubble is enabled.",
+            hasFloatingNotification()
         )
 
         context.stopService(intent)
@@ -43,6 +48,17 @@ class FloatingBubbleServiceInstrumentedTest {
             waitForServiceState(expectedRunning = false, timeoutMs = 8_000)
         )
         assertFalse(isServiceRunning())
+        assertFalse(
+            "Stopping the bubble must remove its foreground-service notification.",
+            hasFloatingNotification()
+        )
+    }
+
+    private fun hasFloatingNotification(): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        return manager.activeNotifications.any {
+            it.notification.channelId == "bozer_floating_bubble"
+        }
     }
 
     private fun waitForServiceState(expectedRunning: Boolean, timeoutMs: Long): Boolean {
