@@ -1,8 +1,7 @@
-"""Controlled autoregressive decoding for the BOZER NEURAL 1B model.
+"""Controlled autoregressive decoding with incremental KV-cache support.
 
-This reference decoder uses full-context recomputation. It is correct but does
-not implement a KV cache; Android/production inference should use an optimized
-runtime after checkpoint parity tests.
+Models exposing forward_with_cache use incremental decoding; other compatible
+models retain the full-context reference path.
 """
 from __future__ import annotations
 from dataclasses import dataclass
