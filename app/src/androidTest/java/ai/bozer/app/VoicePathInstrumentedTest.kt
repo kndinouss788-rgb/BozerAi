@@ -16,6 +16,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +28,11 @@ class VoicePathInstrumentedTest {
 
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
+
+    @Before
+    fun pauseContinuousUiAnimationsForDeterministicInput() {
+        composeRule.mainClock.autoAdvance = false
+    }
     private val device get() = UiDevice.getInstance(instrumentation)
 
     @Test
