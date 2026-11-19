@@ -25,6 +25,7 @@ def write_record(path, user, assistant):
 def test_one_billion_parameter_training_memory_floor():
     config = Bozer1BConfig()
     assert minimum_training_memory_bytes(config) == 17_852_563_456
+    assert minimum_training_memory_bytes(config, "adafactor") == 8_926_281_728
 
 
 def test_training_learning_rate_schedule():
@@ -90,6 +91,7 @@ def test_one_step_training_creates_a_versioned_checkpoint(tmp_path):
     assert saved["config"]["vocab_size"] == 270
     assert saved["training"]["gradient_checkpointing"] is True
     assert saved["training"]["training_objective"] == "assistant_answer_tokens_and_eos_only"
+    assert saved["training"]["optimizer_type"] == "adafactor"
 
 
 
@@ -184,5 +186,6 @@ def test_switching_from_text_pretraining_to_dialogue_tuning_resets_stage_state(t
     saved = torch.load(dialogue_checkpoint, map_location="cpu", weights_only=False)
     assert result["global_step"] == 1
     assert saved["training"]["objective_changed_on_resume"] is True
+    assert saved["training"]["optimizer_type"] == "adafactor"
     assert saved["training"]["previous_training_objective"] == "next_token_prediction_all_text_tokens"
     assert saved["training"]["training_objective"] == "assistant_answer_tokens_and_eos_only"
