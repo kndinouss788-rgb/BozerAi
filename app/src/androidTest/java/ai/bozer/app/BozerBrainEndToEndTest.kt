@@ -14,6 +14,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +26,13 @@ class BozerBrainEndToEndTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Before
+    fun pauseContinuousUiAnimationsForDeterministicInput() {
+        // The chat orb uses an intentional infinite transition. Freeze the
+        // Compose test clock so Espresso does not wait forever for UI idleness.
+        composeRule.mainClock.autoAdvance = false
+    }
 
     private fun assistantCount(): Int {
         val dbFile = context.getDatabasePath("bozer_chat.db")
