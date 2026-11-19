@@ -69,6 +69,7 @@ jobs:
           python -m bozer_neural.evaluate_retrieval \
             --train data/bozer_neural_100k/train \
             --test data/bozer_neural_100k/test \
+            --limit 1000 \\
             --report artifacts/bozer-retrieval-100k-report.json
       - name: Train small BOZER baseline from random initialization
         run: |
