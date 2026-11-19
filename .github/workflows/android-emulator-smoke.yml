@@ -24,7 +24,9 @@ on:
 
 concurrency:
   group: bozer-android-emulator-${{ github.ref }}
-  cancel-in-progress: true
+  # The real-GGUF emulator suite can take a long time; never cancel it just because
+  # another useful commit lands on main. Queue the newest run instead.
+  cancel-in-progress: false
 
 permissions:
   contents: read
