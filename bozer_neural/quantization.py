@@ -24,9 +24,15 @@ def _quantize_tensor(tensor: torch.Tensor, bits: int) -> dict:
     if not torch.isfinite(source).all():
         raise ValueError("model weights must contain only finite values")
     qmin, qmax = (-(2 ** (bits - 1)), (2 ** (bits - 1)) - 1)
-    scale = source.abs().max() / qmax
-    if not bool(scale > 0):
-        scale = torch.tensor(1.0, dtype=torch.float32)
+    # Per-output-channel scales reduce error on matrices whose rows have
+    # different ranges; vectors retain a single scalar scale.
+    if source.ndim >= 2:
+        reduce_dims = tuple(range(1, source.ndim))
+        scale = source.abs().amax(dim=reduce_dims, keepdim=True) / qmax
+    else:
+        scale = source.abs().max().reshape(())
+        scale = scale / qmax
+    scale = torch.where(scale > 0, scale, torch.ones_like(scale))
     quantized = torch.round(source / scale).clamp(qmin, qmax).to(torch.int8)
     flat = quantized.reshape(-1)
     if bits == 8:
@@ -54,8 +60,8 @@ def _dequantize_tensor(record: dict) -> torch.Tensor:
     scale = record.get("scale")
     if bits not in (4, 8) or not isinstance(payload, torch.Tensor):
         raise ValueError("invalid quantized tensor record")
-    if not isinstance(scale, torch.Tensor) or scale.numel() != 1:
-        raise ValueError("quantized tensor is missing its scalar scale")
+    if not isinstance(scale, torch.Tensor):
+        raise ValueError("quantized tensor is missing its scale tensor")
     if not isinstance(shape, (tuple, list)) or not isinstance(numel, int):
         raise ValueError("quantized tensor shape metadata is invalid")
     if any(not isinstance(dim, int) or dim < 0 for dim in shape):
@@ -65,6 +71,11 @@ def _dequantize_tensor(record: dict) -> torch.Tensor:
         expected *= dim
     if expected != numel:
         raise ValueError("quantized tensor element count does not match shape")
+    expected_scale_shape = (
+        (shape[0],) + (1,) * (len(shape) - 1) if len(shape) >= 2 else ()
+    )
+    if tuple(scale.shape) != expected_scale_shape:
+        raise ValueError("quantized tensor scale shape does not match weight shape")
     if bits == 8:
         values = payload.to(torch.int8).reshape(-1)
     else:
@@ -75,7 +86,7 @@ def _dequantize_tensor(record: dict) -> torch.Tensor:
         values = torch.where(values >= 8, values - 16, values).to(torch.int8)
     if values.numel() < numel:
         raise ValueError("quantized payload is shorter than its declared shape")
-    return (values[:numel].to(torch.float32) * scale.to(torch.float32)).reshape(tuple(shape))
+    return (values[:numel].to(torch.float32).reshape(tuple(shape)) * scale.to(torch.float32)).reshape(tuple(shape))
 
 
 def export_quantized_checkpoint(
