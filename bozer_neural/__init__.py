@@ -4,6 +4,7 @@ from .model import BozerTransformer
 from .config_1b import Bozer1BConfig
 from .model_1b import BozerNeural1B
 from .tokenizer import BozerByteBPETokenizer, BozerByteTokenizer
+from .retrieval import BozerRetrievalMemory
 
 __all__ = [
     "BozerConfig",
@@ -12,4 +13,5 @@ __all__ = [
     "BozerNeural1B",
     "BozerByteTokenizer",
     "BozerByteBPETokenizer",
+    "BozerRetrievalMemory",
 ]
