@@ -6,7 +6,7 @@ from bozer_neural.evaluate_retrieval import evaluate_retrieval
 
 def _write(path, rows):
     path.write_text(
-        "".join(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows),
+        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
         encoding="utf-8",
     )
 
