@@ -100,9 +100,20 @@ def _atomic_save(payload, destination):
     temporary.replace(destination)
 
 
-def minimum_training_memory_bytes(config):
-    """Lower-bound memory for FP32 weights, gradients and AdamW moments."""
-    return config.parameter_count() * 16
+def minimum_training_memory_bytes(config, optimizer_type="adamw"):
+    """Lower-bound training memory, excluding activations and temporary buffers.
+
+    AdamW stores two full-size FP32 moments (16 bytes/parameter including
+    weights and gradients). Factored Adafactor stores row/column statistics,
+    so its dominant floor is FP32 weights plus gradients (8 bytes/parameter).
+    """
+    if optimizer_type == "adamw":
+        bytes_per_parameter = 16
+    elif optimizer_type == "adafactor":
+        bytes_per_parameter = 8
+    else:
+        raise ValueError("optimizer_type must be adafactor or adamw")
+    return config.parameter_count() * bytes_per_parameter
 
 
 def _precision_dtype(precision, device):
@@ -144,6 +155,7 @@ def train_1b(
     config=None,
     allow_cpu_large_model=False,
     gradient_checkpointing=True,
+    optimizer_type="adafactor",
 ):
     """Train BOZER 1B on train/validation JSONL files without test-set access."""
     if steps < 1 or batch_size < 1 or eval_interval < 1 or eval_batches < 1:
@@ -202,7 +214,7 @@ def train_1b(
         )
     model_config = requested_config
     trainable_parameters = model_config.parameter_count()
-    minimum_memory = minimum_training_memory_bytes(model_config)
+    minimum_memory = minimum_training_memory_bytes(model_config, optimizer_type)
     if target_device.type == "cpu" and trainable_parameters > 50_000_000:
         if not allow_cpu_large_model:
             raise RuntimeError(
@@ -215,8 +227,8 @@ def train_1b(
         if free_memory < minimum_memory:
             raise RuntimeError(
                 "Not enough free CUDA memory for the minimum training state: "
-                f"need at least {minimum_memory} bytes for FP32 weights, gradients "
-                "and AdamW moments, before activations and temporary buffers."
+                f"need at least {minimum_memory} bytes for the {optimizer_type} "
+                "training state, before activations and temporary buffers."
             )
     if previous and previous.get("config") != model_config.to_dict():
         raise ValueError("resume checkpoint architecture differs from requested config")
@@ -262,17 +274,31 @@ def train_1b(
     if previous:
         model.load_state_dict(previous["model_state_dict"])
 
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=learning_rate, betas=(0.9, 0.95), weight_decay=0.1
-    )
+    if optimizer_type == "adafactor":
+        if not hasattr(torch.optim, "Adafactor"):
+            raise RuntimeError(
+                "This PyTorch version does not provide torch.optim.Adafactor; "
+                "install the project neural requirements (PyTorch >= 2.5)."
+            )
+        optimizer = torch.optim.Adafactor(
+            model.parameters(), lr=learning_rate, weight_decay=0.01
+        )
+    elif optimizer_type == "adamw":
+        optimizer = torch.optim.AdamW(
+            model.parameters(), lr=learning_rate, betas=(0.9, 0.95), weight_decay=0.1
+        )
+    else:
+        raise ValueError("optimizer_type must be adafactor or adamw")
     training_state = previous.get("training", {}) if previous else {}
     previous_objective = training_state.get("training_objective")
+    previous_optimizer_type = training_state.get("optimizer_type", "adamw")
+    optimizer_changed = bool(previous and previous_optimizer_type != optimizer_type)
     objective_changed = bool(
         previous and previous_objective != training_objective
     )
     # Keep learned weights, but reset optimizer momentum and stage schedule
     # when moving between raw-text pretraining and dialogue tuning.
-    if previous and not objective_changed and previous.get("optimizer_state_dict"):
+    if previous and not objective_changed and not optimizer_changed and previous.get("optimizer_state_dict"):
         optimizer.load_state_dict(previous["optimizer_state_dict"])
 
     scaler = torch.amp.GradScaler("cuda", enabled=use_scaler)
@@ -322,6 +348,8 @@ def train_1b(
                 "train_tokens": int(train_tokens.numel()),
                 "validation_tokens": int(validation_tokens.numel()),
                 "training_objective": training_objective,
+                "optimizer_type": optimizer_type,
+                "optimizer_changed_on_resume": optimizer_changed,
                 "previous_training_objective": previous_objective,
                 "objective_changed_on_resume": objective_changed,
                 "precision": precision,
@@ -476,6 +504,10 @@ def main():
         "--precision", choices=("auto", "fp32", "bf16", "fp16"), default="auto"
     )
     parser.add_argument(
+        "--optimizer", dest="optimizer_type", choices=("adafactor", "adamw"),
+        default="adafactor", help="Adafactor reduces optimizer-state memory for 1B training",
+    )
+    parser.add_argument(
         "--no-gradient-checkpointing", action="store_true",
         help="disable activation checkpointing (uses more memory)",
     )
@@ -510,6 +542,7 @@ def main():
         config=config,
         allow_cpu_large_model=args.allow_cpu_large_model,
         gradient_checkpointing=not args.no_gradient_checkpointing,
+        optimizer_type=args.optimizer_type,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
