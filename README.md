@@ -125,3 +125,27 @@ Android 12+ may require the user to grant BOZER exact-alarm access. Without it, 
 ## BOZER completion tracking
 
 See [`BOZER_COMPLETION_PLAN.md`](BOZER_COMPLETION_PLAN.md) for the master feature inventory, acceptance criteria, known blockers, and execution order. Features are not considered complete until the required tests and device/backend validation are recorded.
+
+## BOZER NEURAL quantized checkpoint export
+
+After a real BOZER 1B training run has produced a checkpoint with at least one
+completed optimizer step, create a smaller packed weight artifact:
+
+```bash
+python -m bozer_neural.quantization \
+  --checkpoint artifacts/bozer-neural-1b.pt \
+  --output artifacts/bozer-neural-int8.pt \
+  --bits 8
+```
+
+Use `--bits 4` for packed INT4. The exporter stores two signed 4-bit weights
+per byte (or one INT8 weight per byte), with per-tensor scales, and preserves
+the model config and tokenizer. It refuses initial/untrained checkpoints.
+The report includes source and exported file sizes.
+
+The Python reference loader is
+`BozerNeuralRuntime.from_quantized_checkpoint(path)`. It dequantizes weights
+back to FP32 for correctness testing. Therefore this export reduces storage,
+but does **not** yet provide integer-operator speedups or low-RAM Android
+inference. Native mobile quantized kernels, conversion/runtime integration,
+and real-device speed and quality measurements remain separate work.
