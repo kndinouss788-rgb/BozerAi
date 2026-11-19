@@ -69,3 +69,24 @@ def test_runtime_rejects_empty_prompt_after_checkpoint_load(tmp_path):
 
     with pytest.raises(ValueError, match="prompt must not be empty"):
         runtime.complete("   ")
+
+
+
+def test_runtime_uses_grounded_retrieval_before_untrained_generation(tmp_path):
+    checkpoint = tmp_path / "tiny-bozer.pt"
+    corpus = tmp_path / "train.jsonl"
+    make_tiny_checkpoint(checkpoint)
+    corpus.write_text(
+        '{"category":"dialogue_naturel","user":"Comment vas-tu BOZER ?",'
+        '"assistant":"Je vais bien, merci."}\n',
+        encoding="utf-8",
+    )
+
+    runtime = BozerNeuralRuntime.from_checkpoint(
+        checkpoint, device="cpu", retrieval_corpus=corpus
+    )
+    answer = runtime.complete(
+        "Utilisateur : COMMENT VAS-TU BOZER !\nBOZER : "
+    )
+
+    assert answer == "Je vais bien, merci."
