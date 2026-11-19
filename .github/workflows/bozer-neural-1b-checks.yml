@@ -64,6 +64,12 @@ jobs:
         run: python -m unittest discover -s tests -p "test_bozer_neural.py" -v
       - name: Run 1B architecture, training, language and dictionary tests
         run: python -m pytest -q tests/test_bozer_neural_1b.py tests/test_bozer_neural_1b_training.py tests/test_bozer_neural_1b_evaluation.py tests/test_bozer_neural_runtime.py tests/test_bozer_neural_retrieval.py tests/test_bozer_pretraining_corpus.py tests/test_bozer_tts_corpus.py tests/test_bozer_voice_profile.py tests/test_moore_french_translator.py tests/test_malm_lexicon_import.py tests/test_moore_lexicon_validation.py tests/test_malm_quality_audit.py
+      - name: Benchmark grounded retrieval on held-out 100k corpus
+        run: |
+          python -m bozer_neural.evaluate_retrieval \
+            --train data/bozer_neural_100k/train \
+            --test data/bozer_neural_100k/test \
+            --report artifacts/bozer-retrieval-100k-report.json
       - name: Train small BOZER baseline from random initialization
         run: |
           python -m bozer_neural.train \
