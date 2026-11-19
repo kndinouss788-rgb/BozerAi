@@ -39,8 +39,9 @@ def _cosine(left: Counter, right: Counter) -> float:
     return dot / (left_norm * right_norm)
 
 
-def _similarity(left: str, right: str) -> float:
-    left_words, right_words = set(left.split()), set(right.split())
+def _similarity(left: str, right: str, *, right_words=None) -> float:
+    left_words = set(left.split())
+    right_words = right_words if right_words is not None else set(right.split())
     if not left_words or not right_words:
         return 0.0
     word_dice = 2 * len(left_words & right_words) / (len(left_words) + len(right_words))
@@ -72,6 +73,15 @@ class BozerRetrievalMemory:
             raise ValueError("retrieval corpus contains no usable question/answer pairs")
         self._entries = []
         self._exact = {}
+        self._word_index = defaultdict(set)
+        stopwords = {
+            "le", "la", "les", "de", "du", "des", "un", "une", "et", "ou",
+            "a", "au", "aux", "en", "dans", "pour", "avec", "est", "je",
+            "tu", "il", "elle", "on", "nous", "vous", "ils", "elles",
+            "me", "te", "se", "que", "qui", "quoi", "mon", "ma", "mes",
+            "ton", "ta", "tes",
+        }
+        self._stopwords = stopwords
         for question, answers in grouped.items():
             answer, count = answers.most_common(1)[0]
             confidence = count / sum(answers.values())
@@ -82,8 +92,12 @@ class BozerRetrievalMemory:
                 "consensus": confidence,
                 "ambiguous": len(answers) > 1 and confidence < 0.8,
             }
+            entry["words"] = set(question.split())
+            entry_index = len(self._entries)
             self._entries.append(entry)
             self._exact[question] = entry
+            for word in entry["words"] - stopwords:
+                self._word_index[word].add(entry_index)
 
     @classmethod
     def from_corpus(cls, path, **kwargs):
@@ -108,11 +122,21 @@ class BozerRetrievalMemory:
                 "match_type": "exact",
             }
 
+        # Inverted word index avoids rescoring every item in a 100k-example corpus.
+        candidate_ids = set()
+        for word in set(normalized.split()) - self._stopwords:
+            candidate_ids.update(self._word_index.get(word, ()))
+        if not candidate_ids:
+            return None
+
         ranked = []
-        for entry in self._entries:
+        for entry_index in candidate_ids:
+            entry = self._entries[entry_index]
             if entry["ambiguous"]:
                 continue
-            score = _similarity(normalized, entry["question"]) * entry["consensus"]
+            score = _similarity(
+                normalized, entry["question"], right_words=entry["words"]
+            ) * entry["consensus"]
             ranked.append((score, entry))
         if not ranked:
             return None
