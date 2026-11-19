@@ -27,6 +27,27 @@ def test_default_architecture_has_exact_target_parameter_count():
     assert config.parameter_count() == 1_115_785_216
 
 
+def test_default_model_storage_estimates_match_parameter_count():
+    config = Bozer1BConfig()
+    params = config.parameter_count()
+
+    assert config.weight_storage_bytes(32) == params * 4
+    assert config.weight_storage_bytes(16) == params * 2
+    assert config.weight_storage_bytes(8) == params
+    assert config.weight_storage_bytes(4) == (params + 1) // 2
+    assert config.kv_cache_bytes() == 100_663_296
+    estimates = config.inference_storage_estimates()
+    assert estimates["weights_int4_raw_bytes"] == (params + 1) // 2
+
+
+def test_storage_estimates_reject_invalid_precision_and_context():
+    config = tiny_config()
+    with pytest.raises(ValueError, match="bits_per_parameter"):
+        config.weight_storage_bytes(3)
+    with pytest.raises(ValueError, match="context_length"):
+        config.kv_cache_bytes(context_length=17)
+
+
 def test_invalid_grouped_query_head_configuration_is_rejected():
     with pytest.raises(ValueError, match="divisible"):
         Bozer1BConfig(
