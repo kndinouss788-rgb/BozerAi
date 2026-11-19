@@ -13,6 +13,7 @@ from bozer_neural.quantization import (
     load_quantized_state_dict,
 )
 from bozer_neural.train_1b import CHECKPOINT_FORMAT
+from bozer_neural.runtime import BozerNeuralRuntime
 
 
 def tiny_config():
@@ -281,3 +282,28 @@ def test_export_rejects_initial_untrained_checkpoint(tmp_path):
 
     with pytest.raises(ValueError, match="untrained"):
         export_quantized_checkpoint(source_path, tmp_path / "bad.pt", bits=8)
+
+def test_runtime_loads_packed_int8_checkpoint(tmp_path):
+    model = BozerNeural1B(tiny_config())
+    tokenizer = BozerByteBPETokenizer.train(
+        "bonjour bozer assistant réponse",
+        vocab_size=300,
+        pad_to_vocab_size=300,
+    )
+    source_path = tmp_path / "trained.pt"
+    output_path = tmp_path / "bozer-int8.pt"
+    torch.save({
+        "format": CHECKPOINT_FORMAT,
+        "config": tiny_config().to_dict(),
+        "tokenizer": tokenizer.to_dict(),
+        "model_state_dict": model.state_dict(),
+        "training": {"global_step": 2},
+    }, source_path)
+    export_quantized_checkpoint(source_path, output_path, bits=8)
+
+    runtime = BozerNeuralRuntime.from_quantized_checkpoint(output_path)
+    assert runtime.model.config == tiny_config()
+    assert runtime.tokenizer.vocab_size == 300
+    for name, tensor in runtime.model.state_dict().items():
+        assert torch.isfinite(tensor).all(), name
+
