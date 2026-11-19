@@ -46,7 +46,7 @@ def _quantize_tensor(tensor: torch.Tensor, bits: int) -> dict:
     return {
         "bits": bits,
         "shape": tuple(source.shape),
-        "scale": scale.reshape(()),
+        "scale": scale.contiguous(),
         "payload": payload.contiguous(),
         "numel": source.numel(),
     }
