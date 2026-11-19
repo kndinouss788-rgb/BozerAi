@@ -103,5 +103,6 @@ jobs:
             artifacts/bozer-neural-v0.4-corpus-v0.5.json
             artifacts/bozer-neural-v0.4-corpus-v0.5.best.pt
             artifacts/bozer-neural-corpus-v0.5-test-report.json
+            artifacts/bozer-retrieval-100k-report.json
           if-no-files-found: error
           retention-days: 14
