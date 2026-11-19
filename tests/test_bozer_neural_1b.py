@@ -97,6 +97,28 @@ def test_causal_attention_does_not_change_earlier_logits_when_future_changes():
     torch.testing.assert_close(logits_a[:, :4], logits_b[:, :4])
 
 
+def test_incremental_kv_cache_matches_full_causal_forward():
+    torch.manual_seed(23)
+    model = BozerNeural1B(tiny_config()).eval()
+    tokens = torch.tensor([[1, 12, 18, 24, 31, 42]], dtype=torch.long)
+
+    with torch.inference_mode():
+        full_logits, _ = model(tokens)
+        cached_logits, cache = model.forward_with_cache(tokens[:, :4])
+        next_logits, cache = model.forward_with_cache(
+            tokens[:, 4:5], past_key_values=cache
+        )
+        final_logits, cache = model.forward_with_cache(
+            tokens[:, 5:6], past_key_values=cache
+        )
+
+    torch.testing.assert_close(cached_logits, full_logits[:, :4], rtol=1e-5, atol=1e-6)
+    torch.testing.assert_close(next_logits, full_logits[:, 4:5], rtol=1e-5, atol=1e-6)
+    torch.testing.assert_close(final_logits, full_logits[:, 5:6], rtol=1e-5, atol=1e-6)
+    assert cache[0][0].shape == (1, 2, 6, 8)
+    assert cache[0][1].shape == (1, 2, 6, 8)
+
+
 def test_rope_preserves_tensor_shape_and_dtype():
     value = torch.randn(2, 4, 7, 8, dtype=torch.float32)
     result = apply_rope(value)
