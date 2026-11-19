@@ -83,7 +83,8 @@ class GroupedQueryAttention(nn.Module):
             config.n_query_heads * config.head_dim, config.d_model, bias=False
         )
 
-    def forward(self, x):
+    def forward(self, x, past_key_value=None, position_offset=0,
+                use_cache=False):
         batch, length, _ = x.shape
         q = self.q_proj(x).view(
             batch, length, self.n_query_heads, self.head_dim
@@ -95,40 +96,61 @@ class GroupedQueryAttention(nn.Module):
             batch, length, self.n_kv_heads, self.head_dim
         ).transpose(1, 2)
 
-        q = apply_rope(q, self.rope_theta)
-        k = apply_rope(k, self.rope_theta)
+        q = apply_rope(q, self.rope_theta, position_offset)
+        k = apply_rope(k, self.rope_theta, position_offset)
+        past_length = 0
+        if past_key_value is not None:
+            past_k, past_v = past_key_value
+            past_length = past_k.shape[2]
+            k = torch.cat((past_k, k), dim=2)
+            v = torch.cat((past_v, v), dim=2)
+        present = (k, v) if use_cache else None
 
-        # Expand each KV head across its query-head group. This keeps the
-        # checkpoint layout faithful to GQA and works on older PyTorch builds.
+        # Expand KV heads only for attention; cache remains compact GQA.
+        expanded_k, expanded_v = k, v
         if self.groups > 1:
-            k = k.repeat_interleave(self.groups, dim=1)
-            v = v.repeat_interleave(self.groups, dim=1)
+            expanded_k = k.repeat_interleave(self.groups, dim=1)
+            expanded_v = v.repeat_interleave(self.groups, dim=1)
+
+        attention_mask = None
+        causal = past_key_value is None
+        if past_key_value is not None:
+            query_positions = torch.arange(
+                past_length, past_length + length, device=x.device
+            )
+            key_positions = torch.arange(k.shape[2], device=x.device)
+            attention_mask = key_positions[None, :] <= query_positions[:, None]
+            causal = False
 
         if hasattr(F, "scaled_dot_product_attention"):
             attended = F.scaled_dot_product_attention(
-                q,
-                k,
-                v,
-                attn_mask=None,
+                q, expanded_k, expanded_v,
+                attn_mask=attention_mask,
                 dropout_p=self.dropout_p if self.training else 0.0,
-                is_causal=True,
+                is_causal=causal,
             )
         else:
-            scores = (q @ k.transpose(-2, -1)) * (self.head_dim ** -0.5)
-            causal_mask = torch.triu(
-                torch.ones(length, length, device=x.device, dtype=torch.bool),
-                diagonal=1,
+            scores = (q @ expanded_k.transpose(-2, -1)) * (self.head_dim ** -0.5)
+            if attention_mask is None:
+                query_positions = torch.arange(
+                    length, device=x.device
+                )
+                key_positions = torch.arange(expanded_k.shape[2], device=x.device)
+                attention_mask = key_positions[None, :] <= query_positions[:, None]
+            scores = scores.masked_fill(
+                ~attention_mask[None, None, :, :],
+                torch.finfo(scores.dtype).min,
             )
-            scores = scores.masked_fill(causal_mask, torch.finfo(scores.dtype).min)
             weights = torch.softmax(scores.float(), dim=-1).to(dtype=scores.dtype)
             if self.training and self.dropout_p:
                 weights = F.dropout(weights, p=self.dropout_p)
-            attended = weights @ v
+            attended = weights @ expanded_v
 
         attended = attended.transpose(1, 2).contiguous().view(
             batch, length, self.n_query_heads * self.head_dim
         )
-        return self.o_proj(attended)
+        output = self.o_proj(attended)
+        return (output, present) if use_cache else output
 
 
 class SwiGLU(nn.Module):
@@ -160,6 +182,16 @@ class Bozer1BBlock(nn.Module):
         x = x + self.attention(self.attention_norm(x))
         return x + self.mlp(self.mlp_norm(x))
 
+    def forward_with_cache(self, x, past_key_value=None, position_offset=0):
+        attention_output, present = self.attention(
+            self.attention_norm(x),
+            past_key_value=past_key_value,
+            position_offset=position_offset,
+            use_cache=True,
+        )
+        x = x + attention_output
+        return x + self.mlp(self.mlp_norm(x)), present
+
 
 class BozerNeural1B(nn.Module):
     """Random-init BOZER NEURAL 1B model; not a pretrained or trained checkpoint."""
@@ -189,6 +221,37 @@ class BozerNeural1B(nn.Module):
 
     def parameter_count(self):
         return sum(parameter.numel() for parameter in self.parameters())
+
+    @torch.inference_mode()
+    def forward_with_cache(self, input_ids, past_key_values=None):
+        """Incremental inference returning compact per-layer GQA key/value caches."""
+        if input_ids.ndim != 2 or input_ids.dtype != torch.long:
+            raise ValueError("input_ids must be a rank-2 torch.long tensor")
+        if input_ids.shape[1] < 1:
+            raise ValueError("input_ids must contain at least one token")
+        if input_ids.numel() and (
+            int(input_ids.min()) < 0
+            or int(input_ids.max()) >= self.config.vocab_size
+        ):
+            raise ValueError("input_ids contain a token outside the model vocabulary")
+        if past_key_values is not None and len(past_key_values) != len(self.blocks):
+            raise ValueError("past_key_values must contain one cache per Transformer block")
+        past_length = (
+            past_key_values[0][0].shape[2] if past_key_values is not None else 0
+        )
+        if past_length + input_ids.shape[1] > self.config.context_length:
+            raise ValueError("cached sequence exceeds model context length")
+
+        x = self.token_embedding(input_ids)
+        next_cache = []
+        for index, block in enumerate(self.blocks):
+            past = past_key_values[index] if past_key_values is not None else None
+            x, present = block.forward_with_cache(
+                x, past_key_value=past, position_offset=past_length
+            )
+            next_cache.append(present)
+        logits = F.linear(self.final_norm(x), self.token_embedding.weight)
+        return logits, tuple(next_cache)
 
     def forward(self, input_ids, targets=None, loss_mask=None,
                 active_vocab_size=None):
