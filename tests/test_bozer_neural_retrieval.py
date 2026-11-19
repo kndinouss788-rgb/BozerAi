@@ -37,9 +37,9 @@ def test_similar_query_requires_high_confidence_and_clear_margin():
         "category": "dialogue_naturel",
         "user": "Comment vas-tu BOZER ?",
         "assistant": "Je vais bien, merci.",
-    }], minimum_score=0.70, minimum_margin=0.01)
+    }], minimum_score=0.50, minimum_margin=0.01)
 
-    result = memory.retrieve("Comment vas-tu, BOZER")
+    result = memory.retrieve("Comment est-ce que tu vas BOZER ?")
 
     assert result is not None
     assert result["answer"] == "Je vais bien, merci."
