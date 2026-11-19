@@ -151,9 +151,23 @@ def generate(model, input_ids: torch.Tensor, config: GenerationConfig | None = N
         generator.manual_seed(config.seed)
 
     try:
+        cached_inference = callable(getattr(model, "forward_with_cache", None))
+        past_key_values = None
+        next_logits = None
+        if cached_inference:
+            prefill_logits, past_key_values = model.forward_with_cache(generated)
+            next_logits = prefill_logits[:, -1, :]
+
         for step in range(config.max_new_tokens):
-            context = generated[:, -model.config.context_length:]
-            logits, _ = model(context, active_vocab_size=config.active_vocab_size)
+            if cached_inference:
+                logits_for_step = next_logits
+            else:
+                context = generated[:, -model.config.context_length:]
+                logits, _ = model(
+                    context, active_vocab_size=config.active_vocab_size
+                )
+                logits_for_step = logits[:, -1, :]
+
             next_tokens = []
             for row in range(generated.shape[0]):
                 if bool(finished[row]):
@@ -164,7 +178,7 @@ def generate(model, input_ids: torch.Tensor, config: GenerationConfig | None = N
                     continue
                 history = generated[row].tolist()
                 token = sample_next_token(
-                    logits[row, -1], history, config,
+                    logits_for_step[row], history, config,
                     generated_count=step, generator=generator,
                 )
                 next_tokens.append(token.reshape(1))
@@ -174,6 +188,18 @@ def generate(model, input_ids: torch.Tensor, config: GenerationConfig | None = N
                 finished |= next_token_batch[:, 0].eq(config.eos_token_id)
                 if bool(finished.all()):
                     break
+
+            if cached_inference and step + 1 < config.max_new_tokens:
+                cached_length = past_key_values[0][0].shape[2]
+                if cached_length + 1 >= model.config.context_length:
+                    context = generated[:, -model.config.context_length:]
+                    update_logits, past_key_values = model.forward_with_cache(context)
+                else:
+                    update_logits, past_key_values = model.forward_with_cache(
+                        next_token_batch, past_key_values=past_key_values
+                    )
+                next_logits = update_logits[:, -1, :]
+
         return generated
     finally:
         model.train(was_training)
