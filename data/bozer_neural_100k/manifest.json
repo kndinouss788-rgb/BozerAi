@@ -1,7 +1,7 @@
 {
   "name": "BOZER NEURAL dialogue corpus 100k",
   "version": "1.0.0",
-  "created": "2026-11-17",
+  "created": "2026-11-19",
   "total_examples": 100000,
   "split_sizes": {
     "train": 90000,
