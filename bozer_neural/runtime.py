@@ -54,6 +54,32 @@ class BozerNeuralRuntime:
                   if retrieval_corpus is not None else None)
         return cls(model, tokenizer, device=device, retrieval_memory=memory)
 
+    @classmethod
+    def from_quantized_checkpoint(cls, checkpoint_path: str | Path, *, device="cpu",
+                                  retrieval_corpus: str | Path | None = None):
+        """Load a packed INT8/INT4 artifact, dequantizing weights for reference inference."""
+        from .quantization import (
+            QUANTIZED_CHECKPOINT_FORMAT,
+            load_quantized_state_dict,
+        )
+
+        artifact = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+        if not isinstance(artifact, dict) or artifact.get("format") != QUANTIZED_CHECKPOINT_FORMAT:
+            raise ValueError("unsupported BOZER quantized checkpoint format")
+        config_payload = artifact.get("config")
+        tokenizer_payload = artifact.get("tokenizer")
+        if not isinstance(config_payload, dict) or not isinstance(tokenizer_payload, dict):
+            raise ValueError("quantized checkpoint is missing config or tokenizer")
+        config = Bozer1BConfig.from_dict(config_payload)
+        tokenizer = BozerByteBPETokenizer.from_dict(tokenizer_payload)
+        if tokenizer.vocab_size != config.vocab_size:
+            raise ValueError("quantized checkpoint model/tokenizer vocabulary mismatch")
+        model = BozerNeural1B(config)
+        model.load_state_dict(load_quantized_state_dict(artifact), strict=True)
+        memory = (BozerRetrievalMemory.from_corpus(retrieval_corpus)
+                  if retrieval_corpus is not None else None)
+        return cls(model, tokenizer, device=device, retrieval_memory=memory)
+
     @torch.inference_mode()
     def complete(self, prompt: str, config: GenerationConfig | None = None) -> str:
         if not isinstance(prompt, str) or not prompt.strip():
