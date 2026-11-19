@@ -829,16 +829,22 @@ private fun BozerRoundButton(
 
 @Composable
 private fun BozerOrb(size: androidx.compose.ui.unit.Dp, active: Boolean) {
-    val transition = rememberInfiniteTransition(label = "bozer-pearl-orb")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (active) 2200 else 6200),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "orb-drift"
-    )
+    // Only the live "thinking" orb animates. Message/header orbs remain static
+    // so a long conversation does not keep dozens of perpetual animations alive.
+    val phase = if (active) {
+        val transition = rememberInfiniteTransition(label = "bozer-pearl-orb")
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2200),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "orb-drift"
+        ).value
+    } else {
+        0f
+    }
     Canvas(Modifier.size(size)) {
         val side = this.size.minDimension
         val center = Offset(this.size.width / 2f, this.size.height / 2f)
