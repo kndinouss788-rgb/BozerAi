@@ -69,6 +69,38 @@ class Bozer1BConfig:
             attention + swiglu + block_norms
         ) + final_norm
 
+    def weight_storage_bytes(self, bits_per_parameter=16):
+        """Raw model-weight size estimate; excludes quantization metadata and file overhead."""
+        if bits_per_parameter not in (4, 8, 16, 32):
+            raise ValueError("bits_per_parameter must be one of 4, 8, 16 or 32")
+        return (self.parameter_count() * bits_per_parameter + 7) // 8
+
+    def kv_cache_bytes(self, batch_size=1, context_length=None,
+                       bytes_per_element=2):
+        """KV-cache estimate for inference, assuming the configured GQA layout."""
+        length = self.context_length if context_length is None else context_length
+        if batch_size < 1 or length < 1 or length > self.context_length:
+            raise ValueError("batch_size and context_length must be within valid limits")
+        if bytes_per_element not in (2, 4):
+            raise ValueError("bytes_per_element must be 2 (FP16/BF16) or 4 (FP32)")
+        return (
+            batch_size * 2 * self.n_layers * self.n_kv_heads
+            * self.head_dim * length * bytes_per_element
+        )
+
+    def inference_storage_estimates(self, context_length=None):
+        """Return raw weight and KV-cache estimates, not measured runtime memory."""
+        return {
+            "parameters": self.parameter_count(),
+            "weights_fp32_bytes": self.weight_storage_bytes(32),
+            "weights_fp16_bytes": self.weight_storage_bytes(16),
+            "weights_int8_bytes": self.weight_storage_bytes(8),
+            "weights_int4_raw_bytes": self.weight_storage_bytes(4),
+            "kv_cache_fp16_bytes": self.kv_cache_bytes(
+                context_length=context_length, bytes_per_element=2
+            ),
+        }
+
     @classmethod
     def from_dict(cls, payload):
         if not isinstance(payload, dict):
