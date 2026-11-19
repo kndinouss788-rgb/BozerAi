@@ -5,6 +5,7 @@ from .config_1b import Bozer1BConfig
 from .model_1b import BozerNeural1B
 from .tokenizer import BozerByteBPETokenizer, BozerByteTokenizer
 from .retrieval import BozerRetrievalMemory
+from .quantization import export_quantized_checkpoint, load_quantized_state_dict
 
 __all__ = [
     "BozerConfig",
@@ -14,4 +15,6 @@ __all__ = [
     "BozerByteTokenizer",
     "BozerByteBPETokenizer",
     "BozerRetrievalMemory",
+    "export_quantized_checkpoint",
+    "load_quantized_state_dict",
 ]
