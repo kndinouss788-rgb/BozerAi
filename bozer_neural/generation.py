@@ -191,7 +191,7 @@ def generate(model, input_ids: torch.Tensor, config: GenerationConfig | None = N
 
             if cached_inference and step + 1 < config.max_new_tokens:
                 cached_length = past_key_values[0][0].shape[2]
-                if cached_length + 1 >= model.config.context_length:
+                if cached_length + 1 > model.config.context_length:
                     context = generated[:, -model.config.context_length:]
                     update_logits, past_key_values = model.forward_with_cache(context)
                 else:
