@@ -40,10 +40,13 @@ done
 curl -fsSI "http://127.0.0.1:$MODEL_HTTP_PORT/$MODEL_NAME" >/dev/null
 adb reverse "tcp:$MODEL_HTTP_PORT" "tcp:$MODEL_HTTP_PORT"
 
-# Grant the emulator's test package the same special overlay permission that
-# the user must explicitly enable in Android Settings on a physical device.
+# Grant the emulator the same special overlay permission that the user
+# must explicitly enable in Android Settings on a physical device. Also grant
+# Android 13's notification runtime permission so the test can inspect the
+# actual foreground-service notification rather than infer it from service state.
 adb shell appops set "$APP_ID" SYSTEM_ALERT_WINDOW allow
 adb shell appops get "$APP_ID" SYSTEM_ALERT_WINDOW
+adb shell pm grant "$APP_ID" android.permission.POST_NOTIFICATIONS
 
 adb logcat -c
 adb shell dumpsys batterystats --reset || true
