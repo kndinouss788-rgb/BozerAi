@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.os.SystemClock
+import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertFalse
@@ -37,9 +40,16 @@ class FloatingBubbleServiceInstrumentedTest {
             "The floating service must remain running while the bubble is enabled.",
             isServiceRunning()
         )
+        if (Build.VERSION.SDK_INT >= 33) {
+            assertTrue(
+                "The emulator must grant POST_NOTIFICATIONS before checking the foreground notification.",
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            )
+        }
         assertTrue(
-            "The foreground-service notification must be visible while the bubble is enabled.",
-            hasFloatingNotification()
+            "The foreground-service notification must become visible while the bubble is enabled. Active notifications: " +
+                activeNotificationSummary(),
+            waitForFloatingNotification(timeoutMs = 8_000)
         )
 
         context.stopService(intent)
@@ -59,6 +69,19 @@ class FloatingBubbleServiceInstrumentedTest {
         return manager.activeNotifications.any {
             it.notification.channelId == "bozer_floating_bubble"
         }
+    }
+
+    private fun activeNotificationSummary(): String =
+        context.getSystemService(NotificationManager::class.java).activeNotifications
+            .joinToString { "id=${it.id}, channel=${it.notification.channelId}" }
+
+    private fun waitForFloatingNotification(timeoutMs: Long): Boolean {
+        val deadline = SystemClock.elapsedRealtime() + timeoutMs
+        while (SystemClock.elapsedRealtime() < deadline) {
+            if (hasFloatingNotification()) return true
+            SystemClock.sleep(200)
+        }
+        return hasFloatingNotification()
     }
 
     private fun waitForServiceState(expectedRunning: Boolean, timeoutMs: Long): Boolean {
