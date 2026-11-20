@@ -73,29 +73,54 @@ class BozerBrainEndToEndTest {
         throw AssertionError("BOZER n'a pas enregistré de réponse dans le délai imparti.")
     }
 
+    private fun waitForUiCondition(timeoutMs: Long, condition: () -> Boolean): Boolean {
+        val deadline = SystemClock.elapsedRealtime() + timeoutMs
+        while (SystemClock.elapsedRealtime() < deadline) {
+            // The chat intentionally contains an infinite orb animation. Tests
+            // freeze auto-advance to avoid Espresso idling forever, so advance
+            // finite dialog/recomposition frames explicitly while polling.
+            composeRule.mainClock.advanceTimeBy(100)
+            if (condition()) return true
+            SystemClock.sleep(25)
+        }
+        return condition()
+    }
+
+    private fun isModelReadyInSettings(): Boolean =
+        composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
+            .fetchSemanticsNodes().isNotEmpty()
+
     private fun waitForModelReady() {
         composeRule.onNodeWithTag("bozer_settings").performClick()
-        val readyBeforeInstall = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
-            .fetchSemanticsNodes().isNotEmpty()
-        if (!readyBeforeInstall) {
-            val installButtonVisible = composeRule.onAllNodesWithText("Installer le cerveau local")
-                .fetchSemanticsNodes().isNotEmpty()
-            if (installButtonVisible) {
-                composeRule.onNodeWithText("Installer le cerveau local").performClick()
-            }
-        }
-        composeRule.waitUntil(timeoutMillis = 300_000) {
-            val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
-                .fetchSemanticsNodes().isNotEmpty()
-            val failed = listOf("Chargement impossible", "Installation impossible").any { label ->
-                composeRule.onAllNodesWithText(label, substring = true)
+        val settingsReady = waitForUiCondition(15_000) {
+            isModelReadyInSettings() ||
+                composeRule.onAllNodesWithText("Installer le cerveau local")
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodesWithText("Chargement", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodesWithText("Démarrage", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodesWithText("Installation impossible", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
-            }
-            ready || failed
         }
-        val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
-            .fetchSemanticsNodes().isNotEmpty()
-        assertTrue("Le chargement du modèle local a échoué ou dépassé 180 secondes.", ready)
+        assertTrue("Les réglages du cerveau local ne sont pas apparus.", settingsReady)
+
+        if (!isModelReadyInSettings() &&
+            composeRule.onAllNodesWithText("Installer le cerveau local")
+                .fetchSemanticsNodes().isNotEmpty()
+        ) {
+            composeRule.onNodeWithText("Installer le cerveau local").performClick()
+        }
+
+        val settled = waitForUiCondition(300_000) {
+            isModelReadyInSettings() ||
+                composeRule.onAllNodesWithText("Chargement impossible", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodesWithText("Installation impossible", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+        }
+        assertTrue("Le chargement du modèle local n'a pas atteint un état final.", settled)
+        assertTrue("Le modèle local n'est pas prêt après son téléchargement et sa vérification.", isModelReadyInSettings())
         composeRule.onNodeWithText("Fermer").performClick()
     }
 
