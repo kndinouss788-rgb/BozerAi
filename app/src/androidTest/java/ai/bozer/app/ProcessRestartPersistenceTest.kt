@@ -30,6 +30,16 @@ class ProcessRestartPersistenceTest {
         composeRule.mainClock.autoAdvance = false
     }
 
+    private fun waitForUiCondition(timeoutMs: Long, condition: () -> Boolean): Boolean {
+        val deadline = SystemClock.elapsedRealtime() + timeoutMs
+        while (SystemClock.elapsedRealtime() < deadline) {
+            composeRule.mainClock.advanceTimeBy(100)
+            if (condition()) return true
+            SystemClock.sleep(25)
+        }
+        return condition()
+    }
+
     private fun assistantCount(): Int {
         val dbFile = context.getDatabasePath("bozer_chat.db")
         return SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
@@ -62,7 +72,7 @@ class ProcessRestartPersistenceTest {
             facts.any { it.contains("mon animal préféré est le chat", ignoreCase = true) })
 
         composeRule.onNodeWithTag("bozer_settings").performClick()
-        composeRule.waitUntil(timeoutMillis = 180_000) {
+        val settled = waitForUiCondition(180_000) {
             val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
                 .fetchSemanticsNodes().isNotEmpty()
             val failed = listOf("Chargement impossible", "Installation impossible").any { label ->
@@ -71,6 +81,7 @@ class ProcessRestartPersistenceTest {
             }
             ready || failed
         }
+        assertTrue("L'état du cerveau n'a pas été actualisé après le redémarrage.", settled)
         val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
             .fetchSemanticsNodes().isNotEmpty()
         assertTrue("Le modèle local n'a pas été rechargé après redémarrage.", ready)
