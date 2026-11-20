@@ -49,21 +49,46 @@ class VoicePathInstrumentedTest {
 
         composeRule.onNodeWithTag("bozer_mic").performClick()
 
-        val allow = device.wait(
-            Until.findObject(By.text("While using the app")),
-            8_000
-        ) ?: device.wait(
-            Until.findObject(By.text("Only this time")),
-            2_000
-        ) ?: device.wait(
-            Until.findObject(By.text("Allow")),
-            2_000
+        val permissionPackages = listOf(
+            "com.android.permissioncontroller",
+            "com.google.android.permissioncontroller"
         )
-        assertNotNull("Android n'a pas affiché la demande d'autorisation du microphone.", allow)
+        val allowResourceIds = listOf(
+            "permission_allow_foreground_only_button",
+            "permission_allow_one_time_button",
+            "permission_allow_button"
+        )
+        var allow: androidx.test.uiautomator.UiObject2? = null
+        // Android 13 wording varies by system image and locale. Prefer the
+        // stable permission-controller button IDs instead of exact English text.
+        for (permissionPackage in permissionPackages) {
+            for (resourceId in allowResourceIds) {
+                if (allow == null) {
+                    allow = device.wait(
+                        Until.findObject(By.res(permissionPackage, resourceId)),
+                        1_500
+                    )
+                }
+            }
+        }
+        if (allow == null) {
+            allow = device.wait(Until.findObject(By.textContains("Allow")), 2_000)
+                ?: device.wait(Until.findObject(By.textContains("Autoriser")), 2_000)
+        }
+        assertNotNull(
+            "Android n'a pas affiché le bouton d'autorisation du microphone. " +
+                "Permission UI visible=" + device.hasObject(By.pkg("com.android.permissioncontroller")),
+            allow
+        )
+        Log.i("BOZER_VOICE", "microphone_permission_dialog_detected=true")
         allow!!.click()
 
-        composeRule.waitUntil(timeoutMillis = 8_000) {
-            context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        val permissionDeadline = SystemClock.elapsedRealtime() + 8_000
+        while (
+            context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED &&
+            SystemClock.elapsedRealtime() < permissionDeadline
+        ) {
+            SystemClock.sleep(100)
         }
         assertTrue(
             "L'autorisation micro n'a pas été accordée après confirmation Android.",
