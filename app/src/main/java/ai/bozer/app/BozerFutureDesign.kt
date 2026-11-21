@@ -17,19 +17,19 @@ import androidx.compose.material3.Text
 fun FutureSettingLine(title: String, subtitle: String, glyph: String) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
-            .background(Color(0xFFF7FAFC)).padding(12.dp),
+            .background(Color(0xFFF0F4F1)).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            Modifier.size(34.dp).clip(CircleShape).background(Color(0xFFE8F7FD)),
+            Modifier.size(34.dp).clip(CircleShape).background(Color(0xFFE2ECE6)),
             contentAlignment = Alignment.Center
         ) {
-            Text(glyph, color = Color(0xFF319BC7), fontSize = 19.sp)
+            Text(glyph, color = Color(0xFF58786B), fontSize = 18.sp)
         }
         Spacer(Modifier.width(11.dp))
         Column {
-            Text(title, color = Color(0xFF172538), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = Color(0xFF7D8A9B), fontSize = 11.sp)
+            Text(title, color = Color(0xFF263A35), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(subtitle, color = Color(0xFF78877F), fontSize = 11.sp)
         }
     }
 }
