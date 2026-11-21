@@ -76,8 +76,9 @@ object BozerAppCommandParser {
         if (text.isBlank()) return null
 
         if (text in setOf(
-                "ouvre les parametres d accessibilite", "ouvre les reglages d accessibilite",
-                "ouvre les parametres accessibilite", "configure bozer action",
+                "ouvre les parametres d accessibilite", "ouvre les parametres d accessibilite android",
+                "ouvre les reglages d accessibilite", "ouvre les parametres accessibilite",
+                "configure bozer action",
                 "configure l automatisation des applications"
             )
         ) return BozerAppCommand.OpenAccessibilitySettings
