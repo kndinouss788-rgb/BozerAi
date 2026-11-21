@@ -85,14 +85,30 @@ class MainActivity : ComponentActivity() {
     private var pendingVoiceStart = false
     private val voiceResult = mutableStateOf<String?>(null)
     private val actionResult = mutableStateOf<String?>(null)
+    private val voiceStatus = mutableStateOf<String?>(null)
     private var speechInput: BozerSpeechInput? = null
     private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) speechInput?.start()
+        if (granted) {
+            voiceStatus.value = "Je t'écoute…"
+            if (speechInput?.start() != true) {
+                voiceStatus.value = "La reconnaissance vocale n'est pas disponible sur cet appareil."
+            }
+        } else {
+            voiceStatus.value = "L'accès au microphone a été refusé. Autorise-le dans les paramètres Android pour parler à BOZER."
+        }
     }
     private fun startVoiceInput() {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            speechInput?.start()
+            voiceStatus.value = "Je t'écoute…"
+            try {
+                if (speechInput?.start() != true) {
+                    voiceStatus.value = "La reconnaissance vocale n'est pas disponible sur cet appareil."
+                }
+            } catch (_: Exception) {
+                voiceStatus.value = "Impossible de démarrer le microphone. Vérifie son autorisation puis réessaie."
+            }
         } else {
+            voiceStatus.value = "Autorisation du microphone nécessaire…"
             microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
@@ -128,7 +144,28 @@ class MainActivity : ComponentActivity() {
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1204)
         }
-        speechInput = BozerSpeechInput(this, onText = { voiceResult.value = it }, onFailure = { /* user may retry */ })
+        speechInput = BozerSpeechInput(
+            this,
+            onText = {
+                voiceStatus.value = null
+                voiceResult.value = it
+            },
+            onFailure = { errorCode ->
+                voiceStatus.value = when (errorCode) {
+                    android.speech.SpeechRecognizer.ERROR_NO_MATCH,
+                    android.speech.SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
+                        "Je n'ai pas compris ou je n'ai rien entendu. Réessaie."
+                    android.speech.SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
+                        "L'autorisation du microphone est nécessaire pour parler à BOZER."
+                    android.speech.SpeechRecognizer.ERROR_NETWORK,
+                    android.speech.SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
+                        "Le service de reconnaissance vocale ne répond pas. Vérifie ta connexion ou la voix hors ligne Android."
+                    android.speech.SpeechRecognizer.ERROR_RECOGNIZER_BUSY ->
+                        "La reconnaissance vocale est déjà occupée. Réessaie dans un instant."
+                    else -> "La reconnaissance vocale a échoué (code $errorCode). Réessaie."
+                }
+            }
+        )
         engine = LocalLlamaEngine()
         val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, applicationContext)
         val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
@@ -138,7 +175,7 @@ class MainActivity : ComponentActivity() {
         val actionExecutor = AndroidActionExecutor(this)
         setContent {
             BozerChat(repository, modelManager, engine, actionExecutor,
-                ::enableFloatingBubble, ::disableFloatingBubble, voiceResult, actionResult, ::startVoiceInput)
+                ::enableFloatingBubble, ::disableFloatingBubble, voiceResult, actionResult, voiceStatus, ::startVoiceInput)
         }
         pendingVoiceStart = intent?.action == BozerFloatingService.ACTION_START_VOICE
     }
@@ -210,6 +247,7 @@ private fun BozerChat(
     onDisableFloatingBubble: () -> Unit,
     voiceText: androidx.compose.runtime.MutableState<String?>,
     actionText: androidx.compose.runtime.MutableState<String?>,
+    voiceStatus: androidx.compose.runtime.MutableState<String?>,
     onStartVoiceInput: () -> Unit
 ) {
     val context = LocalContext.current
@@ -623,13 +661,13 @@ private fun BozerChat(
         val spoken = voiceText.value?.trim().orEmpty()
         if (spoken.isNotBlank()) {
             voiceText.value = null
+            voiceStatus.value = null
             draft = spoken
-            if (actionExecutor.isActionCommand(spoken)) {
-                // Dispatch in the composition scope so clearing voiceText cannot cancel it.
-                scope.launch {
-                    delay(80)
-                    send()
-                }
+            // Speech is a conversational turn, not merely text dictation:
+            // submit it after Compose has applied the new draft value.
+            scope.launch {
+                delay(80)
+                send()
             }
         }
     }
@@ -709,6 +747,15 @@ private fun BozerChat(
                                 }
                             }
                         }
+                    }
+
+                    if (voiceStatus.value != null) {
+                        Text(
+                            voiceStatus.value.orEmpty(),
+                            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                            color = Muted,
+                            fontSize = 11.sp
+                        )
                     }
 
                     Row(
