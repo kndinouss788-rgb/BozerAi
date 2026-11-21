@@ -1,25 +1,6 @@
-name: BOZER NEURAL 1B architecture checks and baseline training
+name: ARCHIVED - BOZER NEURAL 1B experiment (manual only)
 
 on:
-  push:
-    branches:
-      - bozer-neural-v0.1
-    paths:
-      - ".github/workflows/bozer-neural-1b-checks.yml"
-      - "bozer_neural/**"
-      - "data/bozer_neural_v0_5/**"
-      - "requirements-neural.txt"
-      - "tests/test_bozer_neural*.py"
-      - "tests/test_bozer_pretraining_corpus.py"
-      - "tests/test_bozer_tts_corpus.py"
-      - "tests/test_bozer_voice_profile.py"
-      - "tests/test_moore_french_translator.py"
-      - "tests/test_malm_lexicon_import.py"
-      - "tests/test_moore_lexicon_validation.py"
-      - "data/moore_french/**"
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
