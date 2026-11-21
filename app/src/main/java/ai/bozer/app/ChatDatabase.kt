@@ -76,7 +76,7 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
     fun enabledBozerAlarms(): List<BozerAlarm> {
         val result = mutableListOf<BozerAlarm>()
         readableDatabase.query("bozer_alarms", arrayOf("id","trigger_at","label","enabled","repeat_days_mask"),
-            "enabled = 1 AND trigger_at > ?", arrayOf(System.currentTimeMillis().toString()),
+            "enabled = 1", null,
             null, null, "trigger_at ASC").use { c ->
             while (c.moveToNext()) result += BozerAlarm(c.getLong(0), c.getLong(1), c.getString(2), true, c.getInt(4))
         }
