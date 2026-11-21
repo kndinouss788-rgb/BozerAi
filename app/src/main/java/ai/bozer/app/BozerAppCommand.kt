@@ -82,9 +82,12 @@ object BozerAppCommandParser {
             )
         ) return BozerAppCommand.OpenSettings
 
-        if (text.contains("tiktok") && containsAny(text, "filme", "filmer", "enregistre", "enregistrement", "camera", "video")) {
-            return BozerAppCommand.OpenTikTokForRecording
-        }
+        val startsAsAction = text.startsWith("ouvre ") || text.startsWith("lance ") ||
+            text.startsWith("demarre ") || text.startsWith("filme ") ||
+            text.startsWith("enregistre ")
+        if (startsAsAction && text.contains("tiktok") &&
+            containsAny(text, "filme", "filmer", "enregistre", "enregistrement", "camera", "video")
+        ) return BozerAppCommand.OpenTikTokForRecording
 
         if (text in setOf(
                 "filme moi", "enregistre une video", "lance un enregistrement video",
