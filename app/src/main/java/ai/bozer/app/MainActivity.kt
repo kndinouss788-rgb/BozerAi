@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
     private var pendingVoiceStart = false
     private val voiceResult = mutableStateOf<String?>(null)
+    private val actionResult = mutableStateOf<String?>(null)
     private var speechInput: BozerSpeechInput? = null
     private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) speechInput?.start()
@@ -137,7 +138,7 @@ class MainActivity : ComponentActivity() {
         val actionExecutor = AndroidActionExecutor(this)
         setContent {
             BozerChat(repository, modelManager, engine, actionExecutor,
-                ::enableFloatingBubble, ::disableFloatingBubble, voiceResult, ::startVoiceInput)
+                ::enableFloatingBubble, ::disableFloatingBubble, voiceResult, actionResult, ::startVoiceInput)
         }
         pendingVoiceStart = intent?.action == BozerFloatingService.ACTION_START_VOICE
     }
@@ -208,6 +209,7 @@ private fun BozerChat(
     onEnableFloatingBubble: () -> Unit,
     onDisableFloatingBubble: () -> Unit,
     voiceText: androidx.compose.runtime.MutableState<String?>,
+    actionText: androidx.compose.runtime.MutableState<String?>,
     onStartVoiceInput: () -> Unit
 ) {
     val context = LocalContext.current
@@ -484,6 +486,9 @@ private fun BozerChat(
     }
 
     SideEffect {
+        BozerAccessibilityService.setResultListener { _, message ->
+            actionText.value = message
+        }
         actionExecutor.setBozerAppCommandHandler { command ->
             when (command) {
                 BozerAppCommand.OpenAccessibilitySettings -> {
@@ -557,6 +562,14 @@ private fun BozerChat(
                 is BozerAppCommand.ControlVisibleUi,
                 is BozerAppCommand.LaunchAppAndUiActions -> "Cette action doit être traitée par le moteur BOZER ACTION."
             }
+        }
+    }
+
+    LaunchedEffect(actionText.value) {
+        val result = actionText.value?.trim().orEmpty()
+        if (result.isNotBlank()) {
+            actionText.value = null
+            appendActionResult(result)
         }
     }
 
