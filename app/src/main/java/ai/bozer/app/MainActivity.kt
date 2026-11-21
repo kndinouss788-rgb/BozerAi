@@ -130,7 +130,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startFloatingBubbleService() {
-        startService(Intent(this, BozerFloatingService::class.java))
+        androidx.core.content.ContextCompat.startForegroundService(
+            this,
+            Intent(this, BozerFloatingService::class.java)
+        )
     }
 
     private fun disableFloatingBubble() {
