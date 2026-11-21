@@ -90,7 +90,7 @@ class BozerPiperModelManager(context: Context) {
 
     companion object {
         private const val MODEL_FILE_NAME = "fr_FR-mls-medium.onnx"
-        private const val TOKENS_FILE_NAME = "fr_FR-mls-medium.tokens.txt"
+        const val TOKENS_FILE_NAME = "tokens.txt"
         private const val MIN_MODEL_BYTES = 70L * 1024L * 1024L
         private const val MIN_TOKENS_BYTES = 900L
         private const val MODEL_URL =
