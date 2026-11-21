@@ -36,13 +36,13 @@ object BozerUiActionParser {
                 return BozerUiAction.PressHome
         }
 
-        Regex("^(?:clique|appuie|touche|selectionne|choisis)\\s+(?:sur\\s+)?(.+)$", RegexOption.IGNORE_CASE)
+        Regex("^(?:clique|appuie|touche|selectionne|sélectionne|choisis)\\s+(?:sur\\s+)?(.+)$", RegexOption.IGNORE_CASE)
             .find(raw)?.groupValues?.get(1)?.trim()?.trimEnd('.', '!', '?')
             ?.takeIf { it.isNotBlank() && it.length <= 100 }
             ?.let { return BozerUiAction.TapText(it) }
 
-        Regex("^(?:tape|ecris|saisis|entre)\\s+(.+)$", RegexOption.IGNORE_CASE)
-            .find(raw)?.groupValues?.get(1)?.trim()?.trimEnd('.', '!')
+        Regex("^(?:tape|ecris|écris|saisis|entre)\\s+(.+)$", RegexOption.IGNORE_CASE)
+            .find(raw)?.groupValues?.get(1)?.trim()
             ?.takeIf { it.isNotBlank() && it.length <= 500 }
             ?.let { return BozerUiAction.EnterText(it) }
 
