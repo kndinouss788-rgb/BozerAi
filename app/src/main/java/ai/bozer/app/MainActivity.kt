@@ -82,6 +82,7 @@ private val Silver = Color(0xFFC8D2CD)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
+    private var pendingVoiceStart = false
     private val voiceResult = mutableStateOf<String?>(null)
     private var speechInput: BozerSpeechInput? = null
     private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -138,16 +139,14 @@ class MainActivity : ComponentActivity() {
             BozerChat(repository, modelManager, engine, actionExecutor,
                 ::enableFloatingBubble, ::disableFloatingBubble, voiceResult, ::startVoiceInput)
         }
-        if (intent?.action == BozerFloatingService.ACTION_START_VOICE) {
-            window.decorView.post { startVoiceInput() }
-        }
+        pendingVoiceStart = intent?.action == BozerFloatingService.ACTION_START_VOICE
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.action == BozerFloatingService.ACTION_START_VOICE) {
-            window.decorView.post { startVoiceInput() }
+            pendingVoiceStart = true
         }
     }
 
@@ -163,6 +162,10 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         isVisible = true
         notifyFloatingBubbleVisibility(appVisible = true)
+        if (pendingVoiceStart) {
+            pendingVoiceStart = false
+            window.decorView.post { startVoiceInput() }
+        }
     }
 
     override fun onPause() {
