@@ -42,7 +42,7 @@ BOZER supports a local llama.cpp OpenAI-compatible endpoint with no API key:
 - DialogueEngine.from_environment() prefers this local provider over a configured remote provider.
 - Model calls still require allow_model=True. Local inference uses device CPU/RAM/battery and does not require paid API credits.
 
-This repository currently adds the provider bridge and tests; it does not yet embed/build llama.cpp in the Android app or bundle/download a model automatically. Android JNI/runtime integration and a real-device inference test remain required. A 0.5B model is a modest starter, not ChatGPT-level intelligence.
+The Python service's local endpoint setup above is separate from the Android app. The Android app contains a llama.cpp JNI runtime and a Qwen2.5-0.5B GGUF brain that is downloaded on demand (not bundled into the APK), verified by SHA-256, and retained in app-private storage across normal app updates. Kotlin/build checks and real-device inference validation remain required. A 0.5B model is a modest starter, not ChatGPT-level intelligence.
 
 
 ## BOZER ACTION — Mission mode (execution core)
