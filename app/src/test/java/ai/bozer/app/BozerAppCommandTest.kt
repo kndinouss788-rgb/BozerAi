@@ -17,6 +17,12 @@ class BozerAppCommandTest {
     }
 
     @Test
+    fun parsesVoiceCancellationOfTheCurrentMission() {
+        assertEquals(BozerAppCommand.CancelCurrentUiMission, BozerAppCommandParser.parse("BOZER, annule la mission"))
+        assertEquals(BozerAppCommand.CancelCurrentUiMission, BozerAppCommandParser.parse("Arrête la mission"))
+    }
+
+    @Test
     fun parsesThemeChangesAndCycles() {
         assertEquals(BozerAppCommand.SetTheme(BozerTheme.GLACIER), BozerAppCommandParser.parse("Passe au thème glacier"))
         assertEquals(BozerAppCommand.SetTheme(BozerTheme.SAGE), BozerAppCommandParser.parse("BOZER thème sauge"))
