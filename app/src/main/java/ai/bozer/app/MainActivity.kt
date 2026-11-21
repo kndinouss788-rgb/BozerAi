@@ -404,7 +404,7 @@ private fun BozerChat(
     fun confirmPendingAction() {
         val command = pendingAndroidAction ?: return
         pendingAndroidAction = null
-        val answer = runCatching { actionExecutor.execute(command) }
+        val answer = runCatching { actionExecutor.execute(command, userConfirmed = true) }
             .getOrNull() ?: "Je n'ai pas pu préparer cette action."
         appendActionResult(answer)
     }
@@ -511,7 +511,9 @@ private fun BozerChat(
                     }
                 }
                 BozerAppCommand.OpenTikTokForRecording,
-                BozerAppCommand.OpenVideoCamera -> "Cette action doit être traitée par le lanceur Android."
+                BozerAppCommand.OpenVideoCamera,
+                is BozerAppCommand.ControlVisibleUi,
+                is BozerAppCommand.LaunchAppAndUiActions -> "Cette action doit être traitée par le moteur BOZER ACTION."
             }
         }
     }
@@ -1102,9 +1104,9 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Activer la bulle flottante", color = Color(0xFF5A7D70)) }
                                 TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Désactiver la bulle flottante", color = Color(0xFF5A7D70)) }
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text("Automatisation des applications", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    Text("BOZER ACTION — contrôle vocal des applications", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                     Text(
-                                        "Optionnelle : autorise BOZER à cliquer sur un bouton visible de TikTok après une commande explicite. Android considère cet accès comme sensible.",
+                                        "Autorise BOZER à toucher les contrôles visibles, saisir du texte, faire défiler les écrans et revenir en arrière dans les applications. L'écran n'est examiné que pendant une mission vocale explicitement demandée. Certaines actions sensibles demanderont une confirmation supplémentaire.",
                                         color = Muted,
                                         fontSize = 11.sp,
                                         lineHeight = 15.sp
@@ -1113,7 +1115,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                         onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("Configurer BOZER ACTION", color = Color(0xFF5A7D70))
+                                        Text("Autoriser le contrôle vocal des applications", color = Color(0xFF5A7D70))
                                     }
                                 }
                             }
