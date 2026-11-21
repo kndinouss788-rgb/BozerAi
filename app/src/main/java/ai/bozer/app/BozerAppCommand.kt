@@ -90,7 +90,8 @@ object BozerAppCommandParser {
             }
         }
 
-        BozerUiActionParser.parse(input)?.let { return BozerAppCommand.ControlVisibleUi(it) }
+        val actionInput = input.trim().replace(Regex("(?i)^bozer[, ]+"), "")
+        BozerUiActionParser.parse(actionInput)?.let { return BozerAppCommand.ControlVisibleUi(it) }
 
         if (text in setOf(
                 "ouvre les parametres d accessibilite", "ouvre les parametres d accessibilite android",
