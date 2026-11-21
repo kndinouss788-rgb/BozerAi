@@ -1,13 +1,13 @@
 package ai.bozer.app
 
-/**
- * Presentation-only speech output boundary.
- *
- * The TTS engine may pronounce a response selected by BOZER NEURAL, but it
- * cannot change reasoning, memory, permissions, policy, or action results.
- */
+/** Speech output boundary with sentence callbacks for synchronized captions. */
 interface BozerSpeechEngine {
-    fun speak(text: String, utteranceId: String = "bozer_reply")
+    fun speak(
+        text: String,
+        utteranceId: String = "bozer_reply",
+        onSegmentStarted: (start: Int, endExclusive: Int) -> Unit = { _, _ -> },
+        onCompleted: () -> Unit = {}
+    )
     fun stop(utteranceId: String? = null)
     fun isReady(): Boolean
     fun release()
