@@ -22,6 +22,22 @@ class AndroidCommandParserTest {
     }
 
     @Test
+    fun parsesAndroidSettingsShortcuts() {
+        assertEquals(
+            AndroidCommand.OpenDeviceSettings(android.provider.Settings.ACTION_WIFI_SETTINGS, "Wi-Fi"),
+            AndroidCommandParser.parse("ouvre les paramètres Wi-Fi")
+        )
+        assertEquals(
+            AndroidCommand.OpenDeviceSettings(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS, "Bluetooth"),
+            AndroidCommandParser.parse("ouvre les paramètres Bluetooth")
+        )
+        assertEquals(
+            AndroidCommand.OpenDeviceSettings(android.provider.Settings.ACTION_DISPLAY_SETTINGS, "Affichage"),
+            AndroidCommandParser.parse("ouvre les paramètres d'affichage")
+        )
+    }
+
+    @Test
     fun parsesWebAndAppActions() {
         assertEquals(AndroidCommand.OpenUrl("https://example.com"), AndroidCommandParser.parse("ouvre https://example.com"))
         assertEquals(AndroidCommand.SearchWeb("météo Ouagadougou"), AndroidCommandParser.parse("cherche sur internet météo Ouagadougou"))
