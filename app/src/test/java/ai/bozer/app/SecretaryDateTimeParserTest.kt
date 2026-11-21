@@ -80,11 +80,42 @@ class SecretaryDateTimeParserTest {
     }
 
     @Test
+    fun invalidTimeWithDateIsRejectedInsteadOfUsingDefaultTime() {
+        val now = localTime(2026, Calendar.NOVEMBER, 21, 10, 0)
+        val parsed = SecretaryDateTimeParser.parse("Appeler maman demain à 28h", now)
+
+        assertEquals("Appeler maman demain à 28h", parsed.title)
+        assertNull(parsed.dueAtMillis)
+        assertNotNull(parsed.dateWarning)
+    }
+
+    @Test
+    fun invalidCalendarDateReturnsAWarning() {
+        val now = localTime(2026, Calendar.JANUARY, 1, 10, 0)
+        val parsed = SecretaryDateTimeParser.parse("Préparer le dossier le 31 février", now)
+
+        assertEquals("Préparer le dossier le 31 février", parsed.title)
+        assertNull(parsed.dueAtMillis)
+        assertNotNull(parsed.dateWarning)
+    }
+
+    @Test
+    fun pastSameDayTimeReturnsAnExplicitWarning() {
+        val now = localTime(2026, Calendar.NOVEMBER, 21, 10, 0)
+        val parsed = SecretaryDateTimeParser.parse("Appeler maman aujourd'hui à 8h", now)
+
+        assertEquals("Appeler maman", parsed.title)
+        assertNull(parsed.dueAtMillis)
+        assertNotNull(parsed.dateWarning)
+    }
+
+    @Test
     fun invalidTimeIsNotGuessed() {
         val now = localTime(2026, Calendar.NOVEMBER, 21, 10, 0)
         val parsed = SecretaryDateTimeParser.parse("Préparer le dossier à 28h", now)
 
         assertEquals("Préparer le dossier à 28h", parsed.title)
         assertNull(parsed.dueAtMillis)
+        assertNotNull(parsed.dateWarning)
     }
 }
