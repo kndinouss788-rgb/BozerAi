@@ -32,6 +32,7 @@ class BozerAppCommandTest {
     fun separatesTiktokLaunchFromSystemVideoCamera() {
         assertEquals(BozerAppCommand.OpenTikTokForRecording, BozerAppCommandParser.parse("Ouvre TikTok et filme-moi"))
         assertEquals(BozerAppCommand.OpenVideoCamera, BozerAppCommandParser.parse("Ouvre la caméra en mode vidéo"))
+        assertEquals(BozerAppCommand.OpenVideoCamera, BozerAppCommandParser.parse("Filme-moi"))
     }
 
     @Test
