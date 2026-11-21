@@ -174,21 +174,6 @@ private fun BozerChat(
         context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
             .edit().putString("brain_mode", mode.name).apply()
     }
-
-    fun toggleTerminal() {
-        terminalOpen = !terminalOpen
-        if (soundEffectsEnabled) {
-            BozerInteractionSound.play(
-                if (terminalOpen) BozerInteractionSound.Event.OPEN else BozerInteractionSound.Event.CLOSE
-            )
-        }
-    }
-
-    fun closeTerminal() {
-        if (!terminalOpen) return
-        terminalOpen = false
-        if (soundEffectsEnabled) BozerInteractionSound.play(BozerInteractionSound.Event.CLOSE)
-    }
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     LaunchedEffect(voiceText.value) { voiceText.value?.let { draft = it; voiceText.value = null } }
@@ -207,6 +192,21 @@ private fun BozerChat(
         mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("sound_effects_enabled", true))
     }
     var activeSpeechMessageAt by remember { mutableStateOf<Long?>(null) }
+    fun toggleTerminal() {
+        terminalOpen = !terminalOpen
+        if (soundEffectsEnabled) {
+            BozerInteractionSound.play(
+                if (terminalOpen) BozerInteractionSound.Event.OPEN else BozerInteractionSound.Event.CLOSE
+            )
+        }
+    }
+
+    fun closeTerminal() {
+        if (!terminalOpen) return
+        terminalOpen = false
+        if (soundEffectsEnabled) BozerInteractionSound.play(BozerInteractionSound.Event.CLOSE)
+    }
+
     var activeSpeechRange by remember { mutableStateOf<IntRange?>(null) }
     var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", true)) }
     var voiceTtsStatus by remember { mutableStateOf("Initialisation du moteur vocal…") }
