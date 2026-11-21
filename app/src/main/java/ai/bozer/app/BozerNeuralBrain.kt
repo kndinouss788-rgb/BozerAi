@@ -74,7 +74,7 @@ BOZER aide quand on le lui demande, converse naturellement, reste honnête et sa
                 else -> null
             } ?: return@forEach
             append("<|im_start|>").append(role).append('\n')
-            append(item.content.trim().take(420)).append("<|im_end|>\n")
+            append(item.content.trim().take(320)).append("<|im_end|>\n")
         }
         append("<|im_start|>assistant\n")
     }
