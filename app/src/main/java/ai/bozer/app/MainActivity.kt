@@ -361,6 +361,15 @@ private fun BozerChat(
     var secretaryEditPriority by remember { mutableStateOf(SecretaryPriority.NORMAL) }
     var secretaryEditError by remember { mutableStateOf<String?>(null) }
     var secretaryDeleteTarget by remember { mutableStateOf<SecretaryTask?>(null) }
+    var alarmsOpen by remember { mutableStateOf(false) }
+    val alarmRepository = remember(context) { BozerAlarmRepository(ChatDatabase(context)) }
+    val alarmScheduler = remember(context) { BozerAlarmScheduler(context) }
+    val alarmItems = remember { mutableStateListOf<BozerAlarm>() }
+    var alarmDraftLabel by remember { mutableStateOf("") }
+    var alarmDraftAt by remember { mutableStateOf<Long?>(null) }
+    var alarmRepeatDaily by remember { mutableStateOf(false) }
+    var alarmStatus by remember { mutableStateOf<String?>(null) }
+    var alarmDeleteTarget by remember { mutableStateOf<BozerAlarm?>(null) }
     var confirmClearMemory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -383,6 +392,17 @@ private fun BozerChat(
         if (secretaryOpen) {
             secretaryTasks.clear()
             secretaryTasks.addAll(withContext(Dispatchers.IO) { secretary.tasks() })
+        }
+    }
+
+    LaunchedEffect(alarmsOpen) {
+        if (alarmsOpen) {
+            val active = withContext(Dispatchers.IO) {
+                alarmScheduler.rescheduleEnabled(alarmRepository)
+                alarmRepository.enabled()
+            }
+            alarmItems.clear()
+            alarmItems.addAll(active.sortedBy { it.triggerAtMillis })
         }
     }
 
@@ -873,6 +893,10 @@ private fun BozerChat(
                 onSettings = {
                     bozerSpaceOpen = false
                     settingsOpen = true
+                },
+                onAlarms = {
+                    bozerSpaceOpen = false
+                    alarmsOpen = true
                 }
             )
         }
@@ -882,6 +906,212 @@ private fun BozerChat(
                 animationsEnabled = animationsEnabled,
                 onClose = { bozerLabOpen = false }
             )
+        }
+
+        if (alarmsOpen) {
+            Dialog(
+                onDismissRequest = { alarmsOpen = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Surface(
+                    Modifier.fillMaxWidth().widthIn(max = 440.dp).heightIn(max = 600.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = Color(0xF9FFFFFF),
+                    shadowElevation = 24.dp
+                ) {
+                    Column(
+                        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("BOZER • ALARMES", color = DeepBlue, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                                Text("Tes réveils et rappels enregistrés sur ce téléphone.", color = Muted, fontSize = 12.sp)
+                            }
+                            FutureIconButton("close", { alarmsOpen = false }, 38.dp)
+                        }
+                        OutlinedTextField(
+                            value = alarmDraftLabel,
+                            onValueChange = { alarmDraftLabel = it.take(120) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Nom du réveil ou rappel") },
+                            placeholder = { Text("Ex. Prière du matin") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                val initial = java.util.Calendar.getInstance().apply {
+                                    timeInMillis = alarmDraftAt ?: (System.currentTimeMillis() + 60 * 60 * 1000L)
+                                }
+                                android.app.DatePickerDialog(
+                                    context,
+                                    { _, year, month, day ->
+                                        val selected = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = alarmDraftAt ?: System.currentTimeMillis()
+                                            set(java.util.Calendar.YEAR, year)
+                                            set(java.util.Calendar.MONTH, month)
+                                            set(java.util.Calendar.DAY_OF_MONTH, day)
+                                        }
+                                        android.app.TimePickerDialog(
+                                            context,
+                                            { _, hour, minute ->
+                                                selected.set(java.util.Calendar.HOUR_OF_DAY, hour)
+                                                selected.set(java.util.Calendar.MINUTE, minute)
+                                                selected.set(java.util.Calendar.SECOND, 0)
+                                                selected.set(java.util.Calendar.MILLISECOND, 0)
+                                                alarmDraftAt = selected.timeInMillis
+                                                alarmStatus = null
+                                            },
+                                            initial.get(java.util.Calendar.HOUR_OF_DAY),
+                                            initial.get(java.util.Calendar.MINUTE),
+                                            true
+                                        ).show()
+                                    },
+                                    initial.get(java.util.Calendar.YEAR),
+                                    initial.get(java.util.Calendar.MONTH),
+                                    initial.get(java.util.Calendar.DAY_OF_MONTH)
+                                ).show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(15.dp)
+                        ) { Text("Choisir la date et l'heure", color = Color(0xFF5A7D70)) }
+                        Text(
+                            alarmDraftAt?.let {
+                                "Prévu : " + java.text.DateFormat.getDateTimeInstance(
+                                    java.text.DateFormat.MEDIUM,
+                                    java.text.DateFormat.SHORT,
+                                    java.util.Locale.FRANCE
+                                ).format(java.util.Date(it))
+                            } ?: "Aucune date choisie",
+                            color = Muted,
+                            fontSize = 11.sp
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Répéter tous les jours", color = DeepBlue, fontSize = 13.sp)
+                                Text("Laisse désactivé pour un seul déclenchement.", color = Muted, fontSize = 10.sp)
+                            }
+                            Switch(checked = alarmRepeatDaily, onCheckedChange = { alarmRepeatDaily = it })
+                        }
+                        Button(
+                            onClick = {
+                                val selected = alarmDraftAt
+                                if (selected == null) {
+                                    alarmStatus = "Choisis d'abord une date et une heure."
+                                } else {
+                                    var trigger = selected
+                                    if (trigger <= System.currentTimeMillis()) {
+                                        val calendar = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = trigger
+                                            add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                        }
+                                        trigger = calendar.timeInMillis
+                                    }
+                                    val label = alarmDraftLabel.trim().ifBlank { "Rappel BOZER" }
+                                    val repeatMask = if (alarmRepeatDaily) 127 else 0
+                                    scope.launch {
+                                        try {
+                                            val id = withContext(Dispatchers.IO) {
+                                                alarmRepository.create(trigger, label, repeatMask)
+                                            }
+                                            val alarm = withContext(Dispatchers.IO) { alarmRepository.get(id) }
+                                            val scheduled = alarm != null && alarmScheduler.schedule(alarm)
+                                            if (!scheduled) {
+                                                withContext(Dispatchers.IO) {
+                                                    alarmRepository.disable(id)
+                                                    alarmScheduler.cancel(id)
+                                                }
+                                                alarmStatus = "L'alarme est enregistrée mais Android a refusé sa programmation. Vérifie les autorisations et les notifications."
+                                            } else {
+                                                alarmStatus = if (alarmScheduler.exactAlarmAccessGranted()) {
+                                                    "Alarme enregistrée sur ce téléphone."
+                                                } else {
+                                                    "Alarme enregistrée. Android peut retarder son déclenchement sans l'accès aux alarmes précises."
+                                                }
+                                                alarmDraftLabel = ""
+                                                alarmDraftAt = null
+                                                val active = withContext(Dispatchers.IO) { alarmRepository.enabled().sortedBy { it.triggerAtMillis } }
+                                                alarmItems.clear()
+                                                alarmItems.addAll(active)
+                                            }
+                                        } catch (error: Exception) {
+                                            alarmStatus = "Création impossible : ${error.message ?: "erreur inconnue"}."
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = alarmDraftAt != null,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(15.dp)
+                        ) { Text("Enregistrer l'alarme") }
+                        alarmStatus?.let { Text(it, color = Muted, fontSize = 11.sp, lineHeight = 15.sp) }
+                        HorizontalDivider(color = Color(0xFFEAF0F4))
+                        Text("ALARMES PROGRAMMÉES", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                        if (alarmItems.isEmpty()) {
+                            Text("Aucune alarme active pour le moment.", color = Muted, fontSize = 13.sp)
+                        } else {
+                            alarmItems.forEach { alarm ->
+                                Column(
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
+                                        .background(Color(0xFFF4F6F3)).padding(10.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(alarm.label, color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                            Text(
+                                                java.text.DateFormat.getDateTimeInstance(
+                                                    java.text.DateFormat.MEDIUM,
+                                                    java.text.DateFormat.SHORT,
+                                                    java.util.Locale.FRANCE
+                                                ).format(java.util.Date(alarm.triggerAtMillis)),
+                                                color = Muted,
+                                                fontSize = 11.sp
+                                            )
+                                            Text(
+                                                if (alarm.repeatDaysMask == 127) "Tous les jours" else "Une seule fois",
+                                                color = Muted,
+                                                fontSize = 10.sp
+                                            )
+                                        }
+                                        TextButton(onClick = { alarmDeleteTarget = alarm }) {
+                                            Text("Annuler", color = Color(0xFFB65E70))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (alarmDeleteTarget != null) {
+                val target = alarmDeleteTarget!!
+                AlertDialog(
+                    onDismissRequest = { alarmDeleteTarget = null },
+                    containerColor = Color(0xFFF9FCFF),
+                    shape = RoundedCornerShape(26.dp),
+                    title = { Text("Annuler cette alarme ?", color = DeepBlue) },
+                    text = { Text("« ${target.label} » ne sonnera plus.", color = Muted) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            alarmDeleteTarget = null
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    alarmScheduler.cancel(target.id)
+                                    alarmRepository.delete(target.id)
+                                }
+                                alarmItems.removeAll { it.id == target.id }
+                                alarmStatus = "Alarme annulée."
+                            }
+                        }) { Text("Annuler l'alarme", color = Color(0xFFB65E70)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { alarmDeleteTarget = null }) {
+                            Text("Garder", color = DeepBlue)
+                        }
+                    }
+                )
+            }
         }
 
         if (tiktokOpen) {
