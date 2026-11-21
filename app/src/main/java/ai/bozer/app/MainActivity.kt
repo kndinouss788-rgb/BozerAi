@@ -448,6 +448,10 @@ private fun BozerChat(
     SideEffect {
         actionExecutor.setBozerAppCommandHandler { command ->
             when (command) {
+                BozerAppCommand.OpenAccessibilitySettings -> {
+                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    "J'ouvre les paramètres d'accessibilité Android pour configurer BOZER ACTION."
+                }
                 BozerAppCommand.OpenSettings -> {
                     settingsOpen = true
                     terminalOpen = false
@@ -1093,6 +1097,21 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 }
                                 TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Activer la bulle flottante", color = Color(0xFF5A7D70)) }
                                 TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Désactiver la bulle flottante", color = Color(0xFF5A7D70)) }
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text("Automatisation des applications", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        "Optionnelle : autorise BOZER à cliquer sur un bouton visible de TikTok après une commande explicite. Android considère cet accès comme sensible.",
+                                        color = Muted,
+                                        fontSize = 11.sp,
+                                        lineHeight = 15.sp
+                                    )
+                                    TextButton(
+                                        onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Configurer BOZER ACTION", color = Color(0xFF5A7D70))
+                                    }
+                                }
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
