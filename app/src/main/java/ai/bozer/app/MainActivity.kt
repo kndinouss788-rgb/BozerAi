@@ -1294,12 +1294,15 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             val task = withContext(Dispatchers.IO) {
                                 secretary.tasks().firstOrNull { it.title.equals(taskTitle, ignoreCase = true) }
                             }
-                            val deleted = task != null && withContext(Dispatchers.IO) { secretary.deleteTask(task.id) }
-                            appendActionResult(
-                                if (deleted) "La tâche « ${task!!.title} » a été supprimée."
-                                else "Je n'ai pas trouvé la tâche « $taskTitle » ou elle a déjà été supprimée."
-                            )
-                            if (deleted) secretaryTasks.removeAll { it.id == task!!.id }
+                            val answer = if (task == null) {
+                                "Je n'ai pas trouvé la tâche « $taskTitle » ou elle a déjà été supprimée."
+                            } else if (withContext(Dispatchers.IO) { secretary.deleteTask(task.id) }) {
+                                secretaryTasks.removeAll { it.id == task.id }
+                                "La tâche « ${task.title} » a été supprimée."
+                            } else {
+                                "Je n'ai pas réussi à supprimer la tâche « $taskTitle »."
+                            }
+                            appendActionResult(answer)
                         }
                     }) { Text("Supprimer", color = Color(0xFFB65E70)) }
                 },
