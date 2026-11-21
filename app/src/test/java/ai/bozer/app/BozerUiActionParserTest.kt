@@ -18,6 +18,22 @@ class BozerUiActionParserTest {
     }
 
     @Test
+    fun parsesLongPressAndDirectionalSwipes() {
+        assertEquals(
+            listOf(BozerUiAction.LongPressText("photo")),
+            BozerUiActionParser.parse("Maintien appuyé sur photo")
+        )
+        assertEquals(
+            listOf(BozerUiAction.Swipe(BozerUiAction.Direction.LEFT)),
+            BozerUiActionParser.parse("Glisse vers la gauche")
+        )
+        assertEquals(
+            listOf(BozerUiAction.Swipe(BozerUiAction.Direction.UP)),
+            BozerUiActionParser.parse("swipe up")
+        )
+    }
+
+    @Test
     fun parsesNavigationAndScrolling() {
         assertEquals(listOf(BozerUiAction.ScrollForward), BozerUiActionParser.parse("Fais défiler vers le bas"))
         assertEquals(listOf(BozerUiAction.ScrollBackward), BozerUiActionParser.parse("scroll up"))
