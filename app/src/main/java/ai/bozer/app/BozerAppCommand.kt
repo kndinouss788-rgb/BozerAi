@@ -13,6 +13,7 @@ sealed interface BozerAppCommand {
     data object OpenSettings : BozerAppCommand
     data object OpenAccessibilitySettings : BozerAppCommand
     data object RequestAccessibilityConsent : BozerAppCommand
+    data object CancelCurrentUiMission : BozerAppCommand
     data class SetSilentMode(val enabled: Boolean) : BozerAppCommand
     data class SetAnimations(val enabled: Boolean) : BozerAppCommand
     data class SetSoundEffects(val enabled: Boolean) : BozerAppCommand
@@ -76,6 +77,12 @@ object BozerAppCommandParser {
             .removePrefix("bozer, ")
             .removePrefix("bozer ")
             .trim()
+        if (text in setOf(
+                "annule la mission", "annule la mission bozer action",
+                "arrete la mission", "stoppe la mission", "annule cette action"
+            )
+        ) return BozerAppCommand.CancelCurrentUiMission
+
         if (text.isBlank()) return null
 
         val actionInput = input.trim().replace(Regex("(?i)^bozer[, ]+"), "")
