@@ -554,16 +554,6 @@ private fun BozerChat(
         val text = draft.trim()
         if (text.isEmpty() || sending) return
 
-        if (actionExecutor.requiresUserConfirmation(text)) {
-            draft = ""
-            val userMessage = ChatMessage(role = "user", content = text)
-            messages.add(userMessage)
-            runCatching { repository.save(userMessage) }
-            pendingAndroidAction = text
-            scope.launch { listState.animateScrollToItem(messages.lastIndex) }
-            return
-        }
-
         val secretaryCommand = SecretaryCommandParser.parse(text)
         if (secretaryCommand is SecretaryCommand.Delete) {
             draft = ""
@@ -571,6 +561,16 @@ private fun BozerChat(
             messages.add(userMessage)
             runCatching { repository.save(userMessage) }
             pendingSecretaryDelete = secretaryCommand.title
+            scope.launch { listState.animateScrollToItem(messages.lastIndex) }
+            return
+        }
+
+        if (actionExecutor.requiresUserConfirmation(text)) {
+            draft = ""
+            val userMessage = ChatMessage(role = "user", content = text)
+            messages.add(userMessage)
+            runCatching { repository.save(userMessage) }
+            pendingAndroidAction = text
             scope.launch { listState.animateScrollToItem(messages.lastIndex) }
             return
         }
