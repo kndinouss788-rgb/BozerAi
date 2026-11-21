@@ -172,6 +172,20 @@ class BozerPiperVoiceOutput(
                 check(written > 0) { "Écriture audio interrompue (" + written + ")." }
                 offset += written
             }
+
+            // AudioTrack.write() confirms that PCM data entered the playback
+            // buffer, not that the listener has heard it. Wait for the playback
+            // head to drain the complete segment before releasing the track.
+            val drainDeadline = System.currentTimeMillis() +
+                (samples.size.toLong() * 1_000L / sampleRate) + PLAYBACK_DRAIN_GRACE_MS
+            while (generation.get() == request) {
+                val playedFrames = track.playbackHeadPosition.toLong() and 0xFFFF_FFFFL
+                if (playedFrames >= samples.size.toLong()) break
+                check(System.currentTimeMillis() < drainDeadline) {
+                    "La lecture audio locale ne progresse pas."
+                }
+                Thread.sleep(10)
+            }
         } finally {
             if (activeTrack === track) activeTrack = null
             runCatching {
@@ -226,5 +240,6 @@ class BozerPiperVoiceOutput(
         private const val EXPECTED_SPEAKER_COUNT = 125
         private const val MALE_SPEAKER_ID = 55
         private const val SPEECH_SPEED = 0.97f
+        private const val PLAYBACK_DRAIN_GRACE_MS = 5_000L
     }
 }
