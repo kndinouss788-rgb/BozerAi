@@ -21,6 +21,8 @@ sealed interface BozerAppCommand {
     data object CycleTheme : BozerAppCommand
     data object OpenTikTokForRecording : BozerAppCommand
     data object OpenVideoCamera : BozerAppCommand
+    data class ControlVisibleUi(val actions: List<BozerUiAction>) : BozerAppCommand
+    data class LaunchAppAndUiActions(val appName: String, val actions: List<BozerUiAction>) : BozerAppCommand
 }
 
 enum class BozerTheme(val label: String) {
@@ -75,6 +77,20 @@ object BozerAppCommandParser {
             .removePrefix("bozer ")
             .trim()
         if (text.isBlank()) return null
+
+        val launchAndAct = Regex(
+            """^(?:ouvre|lance|demarre)\\s+(?:l application\\s+|l appli\\s+|application\\s+)?(.+?)\\s+(?:puis|et ensuite)\\s+(.+)$""",
+            RegexOption.IGNORE_CASE
+        ).find(text)
+        if (launchAndAct != null) {
+            val appName = launchAndAct.groupValues[1].trim()
+            val actions = BozerUiActionParser.parse(launchAndAct.groupValues[2]) ?: return null
+            if (appName.isNotBlank() && appName.length <= 60) {
+                return BozerAppCommand.LaunchAppAndUiActions(appName, actions)
+            }
+        }
+
+        BozerUiActionParser.parse(input)?.let { return BozerAppCommand.ControlVisibleUi(it) }
 
         if (text in setOf(
                 "ouvre les parametres d accessibilite", "ouvre les parametres d accessibilite android",
