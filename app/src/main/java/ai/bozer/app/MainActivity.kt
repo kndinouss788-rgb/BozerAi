@@ -1000,13 +1000,19 @@ private fun BozerChat(
                                 if (selected == null) {
                                     alarmStatus = "Choisis d'abord une date et une heure."
                                 } else {
+                                    val requestedTime = java.util.Calendar.getInstance().apply { timeInMillis = selected }
                                     var trigger = selected
                                     if (trigger <= System.currentTimeMillis()) {
-                                        val calendar = java.util.Calendar.getInstance().apply {
-                                            timeInMillis = trigger
-                                            add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                        val nextOccurrence = java.util.Calendar.getInstance().apply {
+                                            set(java.util.Calendar.HOUR_OF_DAY, requestedTime.get(java.util.Calendar.HOUR_OF_DAY))
+                                            set(java.util.Calendar.MINUTE, requestedTime.get(java.util.Calendar.MINUTE))
+                                            set(java.util.Calendar.SECOND, 0)
+                                            set(java.util.Calendar.MILLISECOND, 0)
+                                            if (timeInMillis <= System.currentTimeMillis()) {
+                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                            }
                                         }
-                                        trigger = calendar.timeInMillis
+                                        trigger = nextOccurrence.timeInMillis
                                     }
                                     val label = alarmDraftLabel.trim().ifBlank { "Rappel BOZER" }
                                     val repeatMask = if (alarmRepeatDaily) 127 else 0
@@ -1024,10 +1030,14 @@ private fun BozerChat(
                                                 }
                                                 alarmStatus = "L'alarme est enregistrée mais Android a refusé sa programmation. Vérifie les autorisations et les notifications."
                                             } else {
-                                                alarmStatus = if (alarmScheduler.exactAlarmAccessGranted()) {
-                                                    "Alarme enregistrée sur ce téléphone."
-                                                } else {
-                                                    "Alarme enregistrée. Android peut retarder son déclenchement sans l'accès aux alarmes précises."
+                                                val exact = alarmScheduler.exactAlarmAccessGranted()
+                                                val notificationsAllowed = Build.VERSION.SDK_INT < 33 || notificationPermissionGranted
+                                                alarmStatus = when {
+                                                    !notificationsAllowed ->
+                                                        "Alarme programmée, mais les notifications BOZER sont bloquées par Android. Autorise-les pour voir le rappel."
+                                                    !exact ->
+                                                        "Alarme enregistrée. Android peut retarder son déclenchement sans l'accès aux alarmes précises."
+                                                    else -> "Alarme enregistrée sur ce téléphone."
                                                 }
                                                 alarmDraftLabel = ""
                                                 alarmDraftAt = null
