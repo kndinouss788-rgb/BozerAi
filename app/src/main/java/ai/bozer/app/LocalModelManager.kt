@@ -48,6 +48,12 @@ class LocalModelManager(private val context: Context) {
             if (verifyInstalled()) return@withContext modelFile
 
             modelDir.mkdirs()
+            if (modelFile.exists()) {
+                check(modelFile.delete()) {
+                    "Le fichier du cerveau local est endommagé et ne peut pas être remplacé."
+                }
+            }
+            verifiedMarker.delete()
             var offset = partialFile.takeIf { it.isFile }?.length() ?: 0L
             if (offset > MODEL_BYTES) {
                 partialFile.delete()
