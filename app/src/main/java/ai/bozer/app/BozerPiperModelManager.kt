@@ -31,6 +31,16 @@ class BozerPiperModelManager(context: Context) {
             isValidAsset(tokensFile, TOKENS_BYTES, null)
     }
 
+    suspend fun deleteAssets(): Boolean = withContext(Dispatchers.IO) {
+        val files = listOf(
+            modelFile,
+            tokensFile,
+            File(directory, "$MODEL_FILE_NAME.part"),
+            File(directory, "$TOKENS_FILE_NAME.part")
+        )
+        files.all { file -> !file.exists() || file.delete() }
+    }
+
     suspend fun install(onProgress: (downloaded: Long, total: Long) -> Unit = { _, _ -> }): File =
         withContext(Dispatchers.IO) {
             directory.mkdirs()
