@@ -33,8 +33,15 @@ class BozerAppCommandTest {
     }
 
     @Test
-    fun separatesTiktokLaunchFromSystemVideoCamera() {
-        assertEquals(BozerAppCommand.OpenTikTokForRecording, BozerAppCommandParser.parse("Ouvre TikTok et filme-moi"))
+    fun routesEveryExternalAppThroughTheSameUiActionPath() {
+        assertEquals(
+            BozerAppCommand.LaunchAppAndUiActions("TikTok", listOf(BozerUiAction.TapText("Créer"))),
+            BozerAppCommandParser.parse("Ouvre TikTok puis clique sur Créer")
+        )
+        assertEquals(
+            BozerAppCommand.LaunchAppAndUiActions("WhatsApp", listOf(BozerUiAction.TapText("Messages"))),
+            BozerAppCommandParser.parse("Ouvre WhatsApp puis clique sur Messages")
+        )
         assertEquals(BozerAppCommand.OpenVideoCamera, BozerAppCommandParser.parse("Ouvre la caméra en mode vidéo"))
         assertEquals(BozerAppCommand.OpenVideoCamera, BozerAppCommandParser.parse("Filme-moi"))
     }
