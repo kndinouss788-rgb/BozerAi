@@ -103,7 +103,8 @@ class ChatRepository(
                 append("\n\nSources Internet (EYE_SEARCH) :\n")
                 searchResults.forEachIndexed { index, result ->
                     append(index + 1).append(". ").append(result.title)
-                        .append(" — ").append(result.url).append('\n')
+                        .append(" [").append(result.source).append("] — ")
+                        .append(result.url).append('\n')
                 }
             }
         } catch (error: Exception) {
