@@ -408,7 +408,8 @@ object AndroidCommandParser {
         val normalized = normalize(text)
         if (normalized in setOf("ouvre les parametres", "ouvre les reglages", "ouvre les parametres du telephone")) return AndroidCommand.OpenSettings
         when (normalized) {
-            "ouvre les parametres wifi", "ouvre les reglages wifi", "ouvre les parametres du wi fi", "ouvre les reglages du wifi" ->
+            "ouvre les parametres wifi", "ouvre les reglages wifi", "ouvre les parametres wi fi",
+            "ouvre les parametres du wi fi", "ouvre les reglages du wifi", "ouvre les reglages wi fi" ->
                 return AndroidCommand.OpenDeviceSettings(Settings.ACTION_WIFI_SETTINGS, "Wi-Fi")
             "ouvre les parametres bluetooth", "ouvre les reglages bluetooth" ->
                 return AndroidCommand.OpenDeviceSettings(Settings.ACTION_BLUETOOTH_SETTINGS, "Bluetooth")
@@ -506,6 +507,8 @@ object AndroidCommandParser {
     private fun normalize(value: String): String =
         Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
             .replace(Regex("\\p{Mn}+"), "")
+            .replace(Regex("[’']"), " ")
+            .replace(Regex("[-_]"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
 }
