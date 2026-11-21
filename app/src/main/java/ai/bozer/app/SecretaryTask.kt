@@ -100,7 +100,8 @@ fun formatOpenSecretaryTasks(tasks: List<SecretaryTask>): String =
     else "Voici tes tâches en attente :\n" + tasks.joinToString("\n") { "• ${it.title}" }
 
 class SecretaryCommandProcessor(private val repository: SecretaryRepository) {
-    fun execute(input: String): String? = when (val command = SecretaryCommandParser.parse(input)) {
+    fun execute(input: String, userConfirmedDeletion: Boolean = false): String? =
+        when (val command = SecretaryCommandParser.parse(input)) {
         null -> null
         is SecretaryCommand.Add -> {
             val id = repository.createTask(command.title)
@@ -113,10 +114,14 @@ class SecretaryCommandProcessor(private val repository: SecretaryRepository) {
             else "Je n'ai pas réussi à mettre à jour cette tâche."
         }
         is SecretaryCommand.Delete -> {
-            val task = repository.tasks().firstOrNull { it.title.equals(command.title, ignoreCase = true) }
-            if (task == null) "Je ne trouve pas la tâche « ${command.title} »."
-            else if (repository.deleteTask(task.id)) "J'ai supprimé la tâche « ${task.title} »."
-            else "Je n'ai pas réussi à supprimer cette tâche."
+            if (!userConfirmedDeletion) {
+                "Cette suppression nécessite une confirmation explicite."
+            } else {
+                val task = repository.tasks().firstOrNull { it.title.equals(command.title, ignoreCase = true) }
+                if (task == null) "Je ne trouve pas la tâche « ${command.title} »."
+                else if (repository.deleteTask(task.id)) "J'ai supprimé la tâche « ${task.title} »."
+                else "Je n'ai pas réussi à supprimer cette tâche."
+            }
         }
         SecretaryCommand.ListOpen -> {
             val open = repository.tasks(includeCompleted = false)
