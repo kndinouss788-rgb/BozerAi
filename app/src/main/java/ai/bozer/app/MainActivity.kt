@@ -224,6 +224,7 @@ private fun BozerChat(
     var modelStatus by remember { mutableStateOf("Le cerveau local BOZER n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var actionPermissionDialogOpen by remember { mutableStateOf(false) }
     var actionAccessibilityEnabled by remember { mutableStateOf(BozerAccessibilityService.isConnected()) }
     var overlayPermissionGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var microphonePermissionGranted by remember {
@@ -485,6 +486,10 @@ private fun BozerChat(
                 BozerAppCommand.OpenAccessibilitySettings -> {
                     context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     "J'ouvre les paramètres d'accessibilité Android pour configurer BOZER ACTION."
+                }
+                BozerAppCommand.RequestAccessibilityConsent -> {
+                    actionPermissionDialogOpen = true
+                    "Avant d'activer BOZER ACTION, je t'explique l'accès demandé."
                 }
                 BozerAppCommand.OpenSettings -> {
                     settingsOpen = true
@@ -1144,7 +1149,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     lineHeight = 15.sp
                                 )
                                 TextButton(
-                                    onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                                    onClick = { actionPermissionDialogOpen = true },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
@@ -1204,6 +1209,33 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                         TextButton(onClick = { settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Fermer", color = Color(0xFF5A7D70), fontWeight = FontWeight.SemiBold) }
                     }
                 }
+            }
+            if (actionPermissionDialogOpen) {
+                AlertDialog(
+                    onDismissRequest = { actionPermissionDialogOpen = false },
+                    containerColor = Color(0xFFF9FCFF),
+                    shape = RoundedCornerShape(26.dp),
+                    title = { Text("Autoriser BOZER ACTION ?", color = DeepBlue) },
+                    text = {
+                        Text(
+                            "Pour exécuter tes commandes dans les autres applications, BOZER a besoin de l'accès d'accessibilité Android. Cet accès peut voir les libellés des éléments visibles et toucher les contrôles à ta demande. BOZER ne consulte l'écran que pendant une mission explicite ; il n'envoie pas le contenu de l'écran au cerveau distant. Les champs de mot de passe sont ignorés et les actions sensibles demandent encore une confirmation. Tu peux désactiver cet accès à tout moment dans Android.",
+                            color = Muted
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            actionPermissionDialogOpen = false
+                            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        }) {
+                            Text("Continuer vers Android", color = Color(0xFF5A7D70))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { actionPermissionDialogOpen = false }) {
+                            Text("Pas maintenant", color = DeepBlue)
+                        }
+                    }
+                )
             }
             if (confirmClearMemory) {
                 AlertDialog(
