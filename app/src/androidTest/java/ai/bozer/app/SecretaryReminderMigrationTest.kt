@@ -17,7 +17,7 @@ class SecretaryReminderMigrationTest {
         val file = context.getDatabasePath("bozer_chat.db")
         file.parentFile?.mkdirs()
 
-        SQLiteDatabase.openOrCreateDatabase(file, null).use { legacy ->
+        SQLiteDatabase.openOrCreateDatabase(file.absolutePath, null).use { legacy ->
             legacy.execSQL(
                 """
                 CREATE TABLE secretary_tasks (
