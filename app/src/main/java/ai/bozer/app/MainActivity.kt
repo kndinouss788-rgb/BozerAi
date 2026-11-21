@@ -688,7 +688,9 @@ private fun BozerChat(
             return
         }
 
-        val actionReply = secretaryCommands.execute(text) ?: actionExecutor.execute(text)
+        val actionReply = secretaryCommands.execute(text) ?: run {
+            if (repository.isInternetResearchRequest(text)) null else actionExecutor.execute(text)
+        }
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
