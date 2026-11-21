@@ -45,8 +45,12 @@ class ChatRepository(
 
         val onlineAvailable = internetAvailable()
         val selectedMode = brainMode
+        val searchQuery = extractSearchQuery(latestUserText)
+        if (searchQuery != null && (selectedMode == BrainMode.OFFLINE || !onlineAvailable)) {
+            return@withLock "Je ne peux pas accéder à Internet actuellement. Tu es hors ligne ou le mode Hors ligne est activé. Reconnecte-toi puis repasse en Automatique ou En ligne pour que je fasse cette recherche."
+        }
         if (selectedMode == BrainMode.ONLINE && !onlineAvailable) {
-            return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
+            return@withLock "Je ne peux pas accéder à Internet actuellement. Vérifie ta connexion, puis réessaie ou passe en Automatique pour utiliser le cerveau local."
         }
         val autoCanUseRemote = selectedMode == BrainMode.AUTO &&
             onlineAvailable && remoteBrain?.isConfigured == true
@@ -57,12 +61,11 @@ class ChatRepository(
             return@withLock "La passerelle distante BOZER n'est pas configurée. Repasse en Automatique pour utiliser le cerveau local gratuit."
         }
 
-        val searchQuery = if (selectedMode == BrainMode.OFFLINE || !onlineAvailable) null else extractSearchQuery(latestUserText)
         val searchResults = if (searchQuery != null) {
             try {
-                internetSearch.search(searchQuery)
+                internetSearch.search(searchQuery, limit = 8)
             } catch (_: Exception) {
-                return@withLock "Je n'ai pas pu effectuer la recherche Internet. Vérifie ta connexion puis réessaie ; je ne vais pas inventer de résultats."
+                return@withLock "Je n'ai pas pu effectuer la recherche Internet. La connexion ou les moteurs de recherche ne répondent pas ; je ne vais pas inventer de résultats."
             }
         } else emptyList()
         if (searchQuery != null && searchResults.isEmpty()) {
@@ -97,7 +100,7 @@ class ChatRepository(
             }
             if (searchResults.isEmpty()) answer else buildString {
                 append(answer)
-                append("\n\nSources Internet (Wikipedia) :\n")
+                append("\n\nSources Internet (EYE_SEARCH) :\n")
                 searchResults.forEachIndexed { index, result ->
                     append(index + 1).append(". ").append(result.title)
                         .append(" — ").append(result.url).append('\n')
@@ -121,14 +124,34 @@ class ChatRepository(
         return fact.takeIf { it.length >= 3 }
     }
 
+    /**
+     * Explicit web requests and clearly time-sensitive questions use EYE_SEARCH.
+     * Ordinary timeless conversation stays on the normal chat path.
+     */
     private fun extractSearchQuery(text: String): String? {
-        val match = Regex(
-            """^(?:fais\s+une\s+)?(?:recherche|cherche)(?:\s+sur\s+internet)?\s*[:,-]?\s*(.+)$""",
+        val clean = text.trim()
+        val explicit = Regex(
+            """^(?:(?:s'il te plaît|s'il te plait)\s*)?(?:(?:fais|lance|effectue)\s+)?(?:une\s+)?(?:recherche|cherche|va\s+chercher|trouve|vérifie|verifie|regarde)(?:\s+(?:moi|pour\s+moi))?(?:\s+sur\s+(?:internet|le\s+web))?\s*[:,-]?\s*(.+)$""",
             RegexOption.IGNORE_CASE
-        ).find(text.trim()) ?: return null
-        return match.groupValues[1].trim().takeIf { it.length >= 2 }
-    }
+        ).find(clean)
+        if (explicit != null) {
+            return explicit.groupValues[1].trim().takeIf { it.length >= 2 }
+        }
 
+        val normalized = clean.lowercase(Locale.ROOT)
+        val freshnessSignals = listOf(
+            "aujourd'hui", "aujourd’hui", "actuellement", "en ce moment",
+            "dernières nouvelles", "dernieres nouvelles", "actualité", "actualite",
+            "actualités", "actualites", "récent", "recent", "récente", "recente",
+            "dernier", "dernière", "derniere", "à jour", "a jour",
+            "prix actuel", "taux de change", "cours actuel", "cette semaine",
+            "cette année", "cette annee", "en 2026"
+        )
+        val asksForFreshFacts = freshnessSignals.any(normalized::contains) ||
+            Regex("""\b(?:qui\s+est|quel\s+est|quelle\s+est)\b.*\b(?:actuel|actuelle|maintenant)\b""")
+                .containsMatchIn(normalized)
+        return clean.takeIf { asksForFreshFacts && it.length >= 5 }
+    }
     private fun asksToForgetMemory(text: String): Boolean {
         val normalized = text.lowercase(Locale.ROOT)
         return listOf(
