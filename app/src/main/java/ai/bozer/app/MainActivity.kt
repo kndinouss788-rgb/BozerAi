@@ -2187,8 +2187,16 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             secretaryTasks.clear()
                                             secretaryTasks.addAll(latest)
                                             secretaryEditingTask = null
+                                            val notificationsAllowed = Build.VERSION.SDK_INT < 33 ||
+                                                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
                                             secretaryStatus = when {
-                                                !reminderReady -> "Tâche enregistrée, mais son rappel n'a pas pu être programmé. Vérifie les autorisations et les notifications."
+                                                !reminderReady -> "Tâche enregistrée, mais son rappel n'a pas pu être programmé. Vérifie l'espace disponible et les autorisations Android."
+                                                updated.dueAtMillis != null && updated.dueAtMillis > System.currentTimeMillis() &&
+                                                    !updated.completed && !notificationsAllowed ->
+                                                    "Rappel enregistré, mais les notifications BOZER sont bloquées. Autorise-les dans les réglages Android."
+                                                updated.dueAtMillis != null && updated.dueAtMillis > System.currentTimeMillis() &&
+                                                    !updated.completed && !alarmScheduler.exactAlarmAccessGranted() ->
+                                                    "Rappel enregistré. Android peut le retarder sans l'autorisation des alarmes précises."
                                                 updated.dueAtMillis != null && updated.dueAtMillis > System.currentTimeMillis() && !updated.completed ->
                                                     "Tâche enregistrée avec son rappel local BOZER."
                                                 updated.dueAtMillis != null && !updated.completed ->
