@@ -1479,6 +1479,12 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     fontSize = 10.sp,
                                     lineHeight = 14.sp
                                 )
+                                Text(
+                                    "Mode En ligne expérimental : la passerelle actuelle n'authentifie pas encore un vrai compte ou appareil. N'y envoie pas de mots de passe, données sensibles ou informations privées avant la sécurisation de l'accès.",
+                                    color = Color(0xFF9B7957),
+                                    fontSize = 10.sp,
+                                    lineHeight = 14.sp
+                                )
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("Mode silencieux", color = DeepBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
