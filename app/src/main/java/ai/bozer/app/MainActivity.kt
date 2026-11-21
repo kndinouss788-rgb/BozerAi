@@ -404,7 +404,16 @@ private fun BozerChat(
         }
     }
 
-    MaterialTheme {
+    MaterialTheme(
+        colorScheme = lightColorScheme(
+            primary = Color(0xFF5A7D70),
+            onPrimary = Color.White,
+            secondary = Color(0xFF8BA99B),
+            background = Pearl,
+            surface = Color.White,
+            onSurface = Ink
+        )
+    ) {
         Surface(Modifier.fillMaxSize(), color = Pearl) {
             Box(
                 Modifier.fillMaxSize().background(
@@ -743,7 +752,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                 text = { Text(actionExecutor.confirmationSummary(actionToConfirm), color = Muted) },
                 confirmButton = {
                     TextButton(onClick = { confirmPendingAction() }) {
-                        Text("Confirmer", color = Color(0xFF258DB8))
+                        Text("Confirmer", color = Color(0xFF5A7D70))
                     }
                 },
                 dismissButton = {
@@ -777,20 +786,20 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(17.dp)) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(onClick = { secretaryOpen = true; settingsOpen = false }, modifier = Modifier.fillMaxWidth()) {
-                                    Text("Ouvrir BOZER SECRETARY  →", color = Color(0xFF258DB8), fontWeight = FontWeight.SemiBold)
+                                    Text("Ouvrir BOZER SECRETARY  →", color = Color(0xFF5A7D70), fontWeight = FontWeight.SemiBold)
                                 }
                                 Text("INTELLIGENCE", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                                Text("Mode du moteur de réponse", color = Color(0xFF172538), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Mode du moteur de réponse", color = Color(0xFF2D4247), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                 BrainMode.entries.forEach { mode ->
                                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                                        .background(if (brainMode == mode) Color(0xFFEAF7FF) else Color(0xFFF7FAFC))
-                                        .border(1.dp, if (brainMode == mode) Color(0xFFB9E9FA) else Color(0xFFEAF0F4), RoundedCornerShape(16.dp))
+                                        .background(if (brainMode == mode) Color(0xFFE7F0EA) else Color(0xFFF5F8F5))
+                                        .border(1.dp, if (brainMode == mode) Color(0xFFBCCDC2) else Color(0xFFEAF0F4), RoundedCornerShape(16.dp))
                                         .clickable { chooseBrainMode(mode) }.padding(horizontal = 10.dp, vertical = 7.dp),
                                         verticalAlignment = Alignment.CenterVertically) {
-                                        RadioButton(selected = brainMode == mode, onClick = { chooseBrainMode(mode) }, colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF42B9E8)))
+                                        RadioButton(selected = brainMode == mode, onClick = { chooseBrainMode(mode) }, colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF6D9585)))
                                         Column(Modifier.weight(1f)) {
-                                            Text(mode.label, color = Color(0xFF172538), fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                                            Text(mode.description, color = Color(0xFF7D8A9B), fontSize = 11.sp, lineHeight = 15.sp)
+                                            Text(mode.label, color = Color(0xFF2D4247), fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                                            Text(mode.description, color = Color(0xFF77877F), fontSize = 11.sp, lineHeight = 15.sp)
                                         }
                                     }
                                 }
@@ -813,7 +822,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 }
                                 Text(
                                     voiceTtsStatus,
-                                    color = Color(0xFF7D8A9B),
+                                    color = Color(0xFF77877F),
                                     fontSize = 11.sp,
                                     lineHeight = 15.sp
                                 )
@@ -831,7 +840,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Écouter un essai de la voix", color = Color(0xFF258DB8))
+                                    Text("Écouter un essai de la voix", color = Color(0xFF5A7D70))
                                 }
                                 TextButton(
                                     onClick = {
@@ -840,7 +849,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Arrêter la voix", color = Color(0xFF7D8A9B))
+                                    Text("Arrêter la voix", color = Color(0xFF77877F))
                                 }
                                 TextButton(
                                     onClick = { installPiperVoice() },
@@ -854,15 +863,15 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             piperModelInstalled -> "Charger la voix française locale"
                                             else -> "Installer la voix française locale (≈77 Mo)"
                                         },
-                                        color = Color(0xFF258DB8)
+                                        color = Color(0xFF5A7D70)
                                     )
                                 }
                                 if (piperBusy) {
                                     LinearProgressIndicator(
                                         progress = { piperProgress },
                                         modifier = Modifier.fillMaxWidth(),
-                                        color = Color(0xFF53BFEA),
-                                        trackColor = Color(0xFFE5F5FC)
+                                        color = Color(0xFF7D9F91),
+                                        trackColor = Color(0xFFE4ECE6)
                                     )
                                 }
                                 Text(
@@ -881,20 +890,20 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Gérer / installer les voix françaises", color = Color(0xFF258DB8))
+                                    Text("Gérer / installer les voix françaises", color = Color(0xFF5A7D70))
                                 }
                                 Text(
                                     if (modelReady) "Cerveau local intégré et prêt — discussion hors ligne disponible."
                                     else modelStatus,
-                                    color = Color(0xFF7D8A9B),
+                                    color = Color(0xFF77877F),
                                     fontSize = 11.sp,
                                     lineHeight = 16.sp
                                 )
                                 if (modelBusy) LinearProgressIndicator(
                                     progress = { downloadProgress },
                                     modifier = Modifier.fillMaxWidth(),
-                                    color = Color(0xFF53BFEA),
-                                    trackColor = Color(0xFFE5F5FC)
+                                    color = Color(0xFF7D9F91),
+                                    trackColor = Color(0xFFE4ECE6)
                                 )
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
@@ -937,12 +946,12 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                                 Uri.parse("package:${context.packageName}")
                                             ))
                                         }, modifier = Modifier.fillMaxWidth()) {
-                                            Text("Autoriser les alarmes précises", color = Color(0xFF258DB8))
+                                            Text("Autoriser les alarmes précises", color = Color(0xFF5A7D70))
                                         }
                                     }
                                 }
-                                TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Activer la bulle flottante", color = Color(0xFF258DB8)) }
-                                TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Désactiver la bulle flottante", color = Color(0xFF258DB8)) }
+                                TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Activer la bulle flottante", color = Color(0xFF5A7D70)) }
+                                TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Désactiver la bulle flottante", color = Color(0xFF5A7D70)) }
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -951,7 +960,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             }
                         }
                         Spacer(Modifier.height(12.dp))
-                        TextButton(onClick = { settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Fermer", color = Color(0xFF258DB8), fontWeight = FontWeight.SemiBold) }
+                        TextButton(onClick = { settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Fermer", color = Color(0xFF5A7D70), fontWeight = FontWeight.SemiBold) }
                     }
                 }
             }
@@ -1025,7 +1034,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 secretaryTasks.forEach { task ->
                                     Row(
                                         Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
-                                            .background(Color(0xFFF4F8FB)).padding(horizontal = 8.dp, vertical = 6.dp),
+                                            .background(Color(0xFFF4F6F3)).padding(horizontal = 8.dp, vertical = 6.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Checkbox(
@@ -1058,7 +1067,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             }
                         }
                         TextButton(onClick = { secretaryOpen = false }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Fermer", color = Color(0xFF258DB8))
+                            Text("Fermer", color = Color(0xFF5A7D70))
                         }
                     }
                 }
@@ -1620,7 +1629,7 @@ private fun ThinkingDots() {
     val transition = rememberInfiniteTransition(label="dots")
     val alpha by transition.animateFloat(.25f,1f,
         infiniteRepeatable(tween(650),RepeatMode.Reverse),label="dotAlpha")
-    Text(" ···", color=Color(0xFF6BA6CE).copy(alpha=alpha), fontSize=19.sp)
+    Text(" ···", color=Color(0xFF8BA99B).copy(alpha=alpha), fontSize=19.sp)
 }
 
 @Composable
@@ -1629,7 +1638,7 @@ private fun SettingsSection(kicker: String, title: String, content: @Composable 
         .background(Color.White.copy(alpha=.76f))
         .border(1.dp, Color.White, RoundedCornerShape(20.dp)).padding(12.dp),
         verticalArrangement=Arrangement.spacedBy(5.dp)) {
-        Text(kicker, color=Color(0xFF6D9DBD), fontSize=9.sp, letterSpacing=1.5.sp, fontWeight=FontWeight.Bold)
+        Text(kicker, color=Color(0xFF6F9585), fontSize=9.sp, letterSpacing=1.5.sp, fontWeight=FontWeight.Bold)
         Text(title, color=DeepBlue, fontSize=14.sp, fontWeight=FontWeight.SemiBold)
         content()
     }
@@ -1643,6 +1652,6 @@ private fun SettingsAction(title: String, subtitle: String, onClick: () -> Unit)
             Text(title, color=Ink, fontSize=13.sp, fontWeight=FontWeight.Medium)
             Text(subtitle, color=Muted, fontSize=10.sp)
         }
-        Text("›", color=Color(0xFF6D9DBD), fontSize=23.sp)
+        Text("›", color=Color(0xFF6F9585), fontSize=23.sp)
     }
 }
