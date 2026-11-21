@@ -26,7 +26,8 @@ Le modèle conversationnel ne reçoit pas un accès autonome au téléphone. Les
 
 ### Pilotage vocal d'une application au premier plan
 Le service d'accessibilité facultatif, activé manuellement dans les paramètres Android, fournit un premier jeu d'actions génériques :
-- Toucher un contrôle visible à partir de son libellé accessible.
+- Toucher ou maintenir un contrôle visible à partir de son libellé accessible.
+- Effectuer un glissement explicite vers la gauche, la droite, le haut ou le bas.
 - Saisir du texte dans le champ actuellement focalisé (ou dans l'unique champ éditable visible). Les champs marqués comme mot de passe sont ignorés.
 - Faire défiler vers le haut ou vers le bas.
 - Revenir en arrière ou retourner à l'écran d'accueil.
