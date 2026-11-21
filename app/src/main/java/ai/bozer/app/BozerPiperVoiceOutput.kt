@@ -17,6 +17,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 
 /**
@@ -36,7 +37,7 @@ class BozerPiperVoiceOutput(
     private val engineLock = Any()
 
     @Volatile private var tts: OfflineTts? = null
-    @Volatile private var activeTrack: AudioTrack? = null
+    private val activeTrack = AtomicReference<AudioTrack?>(null)
     @Volatile private var released = false
     @Volatile private var currentStatus = "Voix locale BOZER non chargée."
 
@@ -163,7 +164,7 @@ class BozerPiperVoiceOutput(
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
 
-        activeTrack = track
+        activeTrack.set(track)
         try {
             track.play()
             var offset = 0
@@ -187,22 +188,23 @@ class BozerPiperVoiceOutput(
                 Thread.sleep(10)
             }
         } finally {
-            if (activeTrack === track) activeTrack = null
-            runCatching {
-                if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.stop()
-            }
-            track.release()
+            // Exactly one caller owns release: either this playback completes
+            // naturally, or stopTrack() takes ownership during cancellation.
+            if (activeTrack.compareAndSet(track, null)) releaseTrack(track)
         }
     }
 
     private fun stopTrack() {
-        val track = activeTrack ?: return
-        activeTrack = null
+        val track = activeTrack.getAndSet(null) ?: return
+        releaseTrack(track)
+    }
+
+    private fun releaseTrack(track: AudioTrack) {
         runCatching {
             if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.pause()
-            track.flush()
-            track.stop()
         }
+        runCatching { track.flush() }
+        runCatching { track.stop() }
         runCatching { track.release() }
     }
 
