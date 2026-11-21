@@ -24,7 +24,7 @@ BOZER ACTION transforme une intention vocale ou écrite en une action contrôlé
 
 ## Automatisation à l'intérieur des applications
 
-Le service d'accessibilité Android optionnel est déclaré, mais il doit être activé explicitement par l'utilisateur dans les réglages Android. Il ne parcourt pas les écrans en continu : il recherche un contrôle uniquement lorsqu'une demande précise est en attente, uniquement dans les deux paquets TikTok configurés, et uniquement pour le libellé visible « Enregistrer » ou « Record ». La demande expire après 30 secondes. Aucun contenu d'écran n'est copié vers le réseau ou envoyé à BOZER.
+Le service d'accessibilité Android optionnel est déclaré, mais il doit être activé explicitement par l'utilisateur dans les réglages Android. Il ne parcourt pas les écrans en continu : il recherche un contrôle uniquement lorsqu'une demande précise est en attente, uniquement dans les deux paquets TikTok configurés, et uniquement pour des libellés vidéo explicites (par exemple « Enregistrer une vidéo » ou « Start recording »), afin d'éviter les boutons ambigus « Enregistrer » qui pourraient simplement sauvegarder. La demande expire après 30 secondes. Aucun contenu d'écran n'est copié vers le réseau ou envoyé à BOZER.
 
 Ce pont est un premier connecteur spécialisé, pas encore un automatisme universel pour toutes les applications. Les interfaces tierces changent et peuvent cacher leurs boutons aux services d'accessibilité ; tout clic reste donc à vérifier visuellement par l'utilisateur.
 
