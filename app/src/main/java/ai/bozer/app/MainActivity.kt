@@ -1023,20 +1023,11 @@ private fun BozerChat(
                                 if (selected == null) {
                                     alarmStatus = "Choisis d'abord une date et une heure."
                                 } else {
-                                    val requestedTime = java.util.Calendar.getInstance().apply { timeInMillis = selected }
-                                    var trigger = selected
-                                    if (trigger <= System.currentTimeMillis()) {
-                                        val nextOccurrence = java.util.Calendar.getInstance().apply {
-                                            set(java.util.Calendar.HOUR_OF_DAY, requestedTime.get(java.util.Calendar.HOUR_OF_DAY))
-                                            set(java.util.Calendar.MINUTE, requestedTime.get(java.util.Calendar.MINUTE))
-                                            set(java.util.Calendar.SECOND, 0)
-                                            set(java.util.Calendar.MILLISECOND, 0)
-                                            if (timeInMillis <= System.currentTimeMillis()) {
-                                                add(java.util.Calendar.DAY_OF_YEAR, 1)
-                                            }
-                                        }
-                                        trigger = nextOccurrence.timeInMillis
+                                    if (selected <= System.currentTimeMillis()) {
+                                        alarmStatus = "Cette date et cette heure sont déjà passées. Choisis un moment futur."
+                                        return@Button
                                     }
+                                    val trigger = selected
                                     val label = alarmDraftLabel.trim().ifBlank { "Rappel BOZER" }
                                     val repeatMask = if (alarmRepeatDaily) 127 else 0
                                     scope.launch {
