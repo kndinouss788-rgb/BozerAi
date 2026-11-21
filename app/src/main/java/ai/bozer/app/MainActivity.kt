@@ -138,6 +138,17 @@ class MainActivity : ComponentActivity() {
             BozerChat(repository, modelManager, engine, actionExecutor,
                 ::enableFloatingBubble, ::disableFloatingBubble, voiceResult, ::startVoiceInput)
         }
+        if (intent?.action == BozerFloatingService.ACTION_START_VOICE) {
+            window.decorView.post { startVoiceInput() }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == BozerFloatingService.ACTION_START_VOICE) {
+            window.decorView.post { startVoiceInput() }
+        }
     }
 
     private fun hasValidatedInternet(): Boolean {
