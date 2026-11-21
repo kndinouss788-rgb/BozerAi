@@ -47,7 +47,7 @@ class BozerUiActionParserTest {
     fun recognisesAppLaunchThenActions() {
         assertEquals(
             BozerAppCommand.LaunchAppAndUiActions(
-                "whatsapp",
+                "WhatsApp",
                 listOf(BozerUiAction.TapText("Messages"), BozerUiAction.EnterText("Bonjour"))
             ),
             BozerAppCommandParser.parse("Ouvre WhatsApp puis clique sur Messages puis écris Bonjour")
