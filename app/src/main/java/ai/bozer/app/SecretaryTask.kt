@@ -18,7 +18,8 @@ data class SecretaryTask(
     val dueAtMillis: Long? = null,
     val priority: SecretaryPriority = SecretaryPriority.NORMAL,
     val completed: Boolean = false,
-    val createdAtMillis: Long = System.currentTimeMillis()
+    val createdAtMillis: Long = System.currentTimeMillis(),
+    val reminderAlarmId: Long? = null
 ) {
     init {
         require(id >= 0) { "L'identifiant d'une tâche ne peut pas être négatif." }
@@ -26,10 +27,11 @@ data class SecretaryTask(
         require(title.trim().length <= 140) { "Le titre est limité à 140 caractères." }
         require(notes.length <= 2000) { "Les notes sont limitées à 2 000 caractères." }
         require(dueAtMillis == null || dueAtMillis >= 0) { "La date limite est invalide." }
+        require(reminderAlarmId == null || reminderAlarmId > 0) { "L'identifiant du rappel est invalide." }
     }
 }
 
-/** Persistence-facing API. Android reminder scheduling is a separate integration. */
+/** Persistence-facing API for BOZER Secretary tasks. */
 class SecretaryRepository(private val database: ChatDatabase) {
     fun createTask(
         title: String,
