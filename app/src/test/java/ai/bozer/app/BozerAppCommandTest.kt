@@ -11,6 +11,9 @@ class BozerAppCommandTest {
         assertEquals(BozerAppCommand.OpenAccessibilitySettings, BozerAppCommandParser.parse("Ouvre les paramètres d'accessibilité Android"))
         assertEquals(BozerAppCommand.SetSilentMode(true), BozerAppCommandParser.parse("Passe en mode silencieux"))
         assertEquals(BozerAppCommand.SetSilentMode(false), BozerAppCommandParser.parse("Désactive le mode silencieux"))
+        assertEquals(BozerAppCommand.SetBrainMode(BrainMode.OFFLINE), BozerAppCommandParser.parse("Passe en mode hors ligne"))
+        assertEquals(BozerAppCommand.SetBrainMode(BrainMode.ONLINE), BozerAppCommandParser.parse("Active le mode en ligne"))
+        assertEquals(BozerAppCommand.SetBrainMode(BrainMode.AUTO), BozerAppCommandParser.parse("PASSE EN MODE AUTOMATIQUE"))
     }
 
     @Test
