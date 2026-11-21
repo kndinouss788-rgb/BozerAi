@@ -148,7 +148,7 @@ object BozerAppCommandParser {
     }
 
     private fun containsAny(value: String, vararg terms: String): Boolean =
-        terms.any(value::contains)
+        terms.any { term -> value.contains(term) }
 
     private fun normalize(value: String): String =
         Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
