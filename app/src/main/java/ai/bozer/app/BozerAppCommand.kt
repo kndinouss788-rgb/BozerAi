@@ -12,6 +12,7 @@ import java.util.Locale
 sealed interface BozerAppCommand {
     data object OpenSettings : BozerAppCommand
     data object OpenAccessibilitySettings : BozerAppCommand
+    data object RequestAccessibilityConsent : BozerAppCommand
     data class SetSilentMode(val enabled: Boolean) : BozerAppCommand
     data class SetAnimations(val enabled: Boolean) : BozerAppCommand
     data class SetSoundEffects(val enabled: Boolean) : BozerAppCommand
