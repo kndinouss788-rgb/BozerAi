@@ -63,12 +63,12 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 
 - [~] Local SQLite alarm storage, AlarmManager scheduling, boot recovery, alarm channel, sound/vibration, exact-alarm permission handling.
 - [~] One-shot alarms and relative reminders.
-- [~] Daily and weekday recurrence, with automatic rescheduling after a firing.
+- [~] Daily, weekday and user-selected weekday recurrence in the alarm screen, with automatic rescheduling after a firing.
 - [~] Ten-minute snooze action from the alarm notification.
 - [ ] Validate migration from every previous database version and recurrence behavior over daylight-saving/timezone changes.
 - [~] Alarm manager screen can create one-shot/daily alarms, list them, and cancel with confirmation. A full ringing/dismiss UI and screen-locked validation remain.
 - [ ] Progressive wake-up, configurable snooze duration, alarm tones, vibration patterns, volume guidance, and test-alarm action.
-- [~] Voice commands support daily and weekday recurrence; the alarm screen currently supports one-shot/daily creation, listing, and cancellation. Custom weekday selection and edit/pause controls remain.
+- [~] Voice commands support daily and weekday recurrence; the alarm screen supports one-shot, daily, and custom selected weekdays, listing, and cancellation. Edit/pause controls and a full ringing screen remain.
 - [ ] Priority notification categories, quiet hours, notification grouping, and user-controlled channels.
 - [ ] Link Secretary tasks to reminders; prevent duplicate reminders and clean up deleted/completed tasks.
 - [ ] Real-device tests after force-stop, reboot, battery saver, Doze, notification denial, and exact-alarm denial.
@@ -86,7 +86,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 ## 6. Research and web access
 
 - [~] EYE_SEARCH public-source adapters and Python tests.
-- [~] Android public search foundation.
+- [~] Android public search foundation across DuckDuckGo, French Wikipedia and Wikidata; full-page retrieval, publication-date validation, and source-quality comparison remain.
 - [ ] Secure Android-to-gateway research endpoint and real source fetching.
 - [ ] Multi-source retrieval, deduplication, dates, citations, and uncertainty reporting.
 - [ ] Treat retrieved pages as untrusted data; never follow instructions from pages.
@@ -100,7 +100,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [ ] Responsive layout for small screens, keyboard, large text, and accessibility services.
 - [ ] Message streaming, copy/share, regenerate, conversation history, and clear empty/loading/error states.
 - [~] Settings already expose voice, brain mode, themes, animation/sounds, bubble, permissions, and memory controls; privacy/export/storage controls and full settings validation remain.
-- [ ] Floating bubble lifecycle, drag/snap, hide/show, overlay permission education, and process recovery.
+- [~] User-enabled floating bubble now runs as a specialUse foreground service with an ongoing notification and explicit stop action; Google Play special-use declaration review, overlay revocation, process-recovery and OEM battery tests remain.
 - [ ] Performance, memory, battery, and animation profiling on target devices.
 
 ## 8. Premium, business tools, and payments
