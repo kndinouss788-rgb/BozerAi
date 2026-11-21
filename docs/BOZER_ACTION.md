@@ -32,6 +32,7 @@ Le service d'accessibilité facultatif, activé manuellement dans les paramètre
 - Faire défiler vers le haut ou vers le bas.
 - Revenir en arrière ou retourner à l'écran d'accueil.
 - Exécuter une séquence de jusqu'à huit étapes explicitement données par l'utilisateur.
+- Annuler une mission en cours avec « BOZER, annule la mission ».
 - Ouvrir une application précise puis exécuter la séquence dans cette application.
 
 Exemples :
