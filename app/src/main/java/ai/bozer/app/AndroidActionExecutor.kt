@@ -106,13 +106,6 @@ class AndroidActionExecutor(private val activity: Activity) {
         if (appCommand != null) {
             return try {
                 when (appCommand) {
-                    BozerAppCommand.OpenTikTokForRecording -> {
-                        if (TikTokPublisher.openTikTok(activity)) {
-                            "J'ouvre TikTok. Dis-moi ensuite quelle action tu veux effectuer à l'écran."
-                        } else {
-                            "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
-                        }
-                    }
                     BozerAppCommand.OpenVideoCamera -> openVideoCamera()
                     BozerAppCommand.OpenAccessibilitySettings -> {
                         activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
