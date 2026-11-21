@@ -365,9 +365,13 @@ private fun BozerChat(
     var secretaryEditPriority by remember { mutableStateOf(SecretaryPriority.NORMAL) }
     var secretaryEditError by remember { mutableStateOf<String?>(null) }
     var secretaryDeleteTarget by remember { mutableStateOf<SecretaryTask?>(null) }
+    var secretaryStatus by remember { mutableStateOf<String?>(null) }
     var alarmsOpen by remember { mutableStateOf(false) }
     val alarmRepository = remember(context) { BozerAlarmRepository(ChatDatabase(context)) }
     val alarmScheduler = remember(context) { BozerAlarmScheduler(context) }
+    val secretaryReminders = remember(context) {
+        SecretaryReminderCoordinator(secretary, alarmRepository, alarmScheduler)
+    }
     val alarmItems = remember { mutableStateListOf<BozerAlarm>() }
     var alarmDraftLabel by remember { mutableStateOf("") }
     var alarmDraftAt by remember { mutableStateOf<Long?>(null) }
@@ -1397,9 +1401,9 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             }
                             val answer = if (task == null) {
                                 "Je n'ai pas trouvé la tâche « $taskTitle » ou elle a déjà été supprimée."
-                            } else if (withContext(Dispatchers.IO) { secretary.deleteTask(task.id) }) {
+                            } else if (withContext(Dispatchers.IO) { secretaryReminders.delete(task) }) {
                                 secretaryTasks.removeAll { it.id == task.id }
-                                "La tâche « ${task.title} » a été supprimée."
+                                "La tâche « ${task.title} » et son rappel associé ont été supprimés."
                             } else {
                                 "Je n'ai pas réussi à supprimer la tâche « $taskTitle »."
                             }
@@ -1949,7 +1953,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             onCheckedChange = { checked ->
                                                 scope.launch {
                                                     withContext(Dispatchers.IO) {
-                                                        if (checked) secretary.completeTask(task.id) else secretary.reopenTask(task.id)
+                                                        secretaryReminders.complete(task, checked)
                                                     }
                                                     val latest = withContext(Dispatchers.IO) { secretary.tasks() }
                                                     secretaryTasks.clear()
@@ -2027,8 +2031,13 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                         TextButton(onClick = {
                             secretaryDeleteTarget = null
                             scope.launch {
-                                val deleted = withContext(Dispatchers.IO) { secretary.deleteTask(target.id) }
-                                if (deleted) secretaryTasks.removeAll { it.id == target.id }
+                                val deleted = withContext(Dispatchers.IO) { secretaryReminders.delete(target) }
+                                if (deleted) {
+                                    secretaryTasks.removeAll { it.id == target.id }
+                                    secretaryStatus = "Tâche et rappel associé supprimés."
+                                } else {
+                                    secretaryStatus = "Impossible de supprimer cette tâche."
+                                }
                             }
                         }) { Text("Supprimer", color = Color(0xFFB65E70)) }
                     },
