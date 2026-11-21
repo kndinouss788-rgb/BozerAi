@@ -419,13 +419,15 @@ private fun BozerChat(
                     ) {
                         GlassIconButton("⚙", "Ouvrir les paramètres") { settingsOpen = true }
                         Spacer(Modifier.weight(1f))
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("BOZER", color = DeepBlue, fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold, letterSpacing = 3.6.sp)
-                            Text(
-                                if (messages.isEmpty()) "INTELLIGENCE PERSONNELLE" else "CONVERSATION",
-                                color = Muted.copy(alpha = .9f), fontSize = 8.sp, letterSpacing = 1.4.sp
-                            )
+                        if (messages.isEmpty()) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("BOZER", color = DeepBlue, fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold, letterSpacing = 3.6.sp)
+                                Text("INTELLIGENCE PERSONNELLE", color = Muted.copy(alpha = .9f),
+                                    fontSize = 8.sp, letterSpacing = 1.4.sp)
+                            }
+                        } else {
+                            Text("Conversation", color = DeepBlue, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         }
                         Spacer(Modifier.weight(1f))
                         GlassIconButton("⌘", "Ouvrir le terminal BOZER") { toggleTerminal() }
