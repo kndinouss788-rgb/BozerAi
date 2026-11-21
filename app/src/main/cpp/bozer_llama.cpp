@@ -15,6 +15,7 @@ llama_model * model = nullptr;
 llama_context * context = nullptr;
 bool backend_initialized = false;
 std::atomic<uint32_t> sampler_seed{0xB02E2u};
+int32_t active_context_size = 1024;
 
 void throw_java(JNIEnv * env, const char * message) {
     jclass type = env->FindClass("java/lang/IllegalStateException");
@@ -32,7 +33,7 @@ std::string from_jstring(JNIEnv * env, jstring value) {
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
-        JNIEnv * env, jobject, jstring path, jint) {
+        JNIEnv * env, jobject, jstring path, jint requested_context_size) {
     std::lock_guard<std::mutex> lock(engine_mutex);
     if (model) return JNI_TRUE;
 
@@ -57,9 +58,10 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
 
     // Reuse one inference context for the whole session. The full conversation
     // is rebuilt into the prompt on each turn, so the KV cache can be cleared.
+    active_context_size = std::clamp(static_cast<int32_t>(requested_context_size), 1024, 2048);
     llama_context_params context_params = llama_context_default_params();
-    context_params.n_ctx = 1024;
-    context_params.n_batch = 1024;
+    context_params.n_ctx = static_cast<uint32_t>(active_context_size);
+    context_params.n_batch = static_cast<uint32_t>(std::min(1024, active_context_size));
     const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
     context_params.n_threads = threads;
     context_params.n_threads_batch = threads;
@@ -102,8 +104,9 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
-    if (needed <= 0 || needed > 896) {
-        throw_java(env, "La conversation est trop longue pour le contexte local. Raccourcis le dernier message.");
+    const int32_t input_budget = std::max(256, active_context_size - 192);
+    if (needed <= 0 || needed > input_budget) {
+        throw_java(env, "Le contexte local est plein. Raccourcis le message ou efface une partie de l'historique.");
         return nullptr;
     }
 
