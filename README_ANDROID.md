@@ -11,6 +11,7 @@ BOZER sépare l'application Android de son cerveau linguistique local afin de ga
 - **Bulle flottante :** le service fonctionne au premier plan avec une notification persistante et une action d'arrêt ; Android et Google Play imposent une déclaration spécifique pour le type `specialUse`, qui reste à examiner avant publication.
 - **Persistance :** le modèle est stocké dans le répertoire privé de l'application et n'est pas retéléchargé lors d'une mise à jour normale de l'application.
 - **Reprise :** les téléchargements interrompus conservent leur fichier partiel et reprennent via HTTP Range lorsque le serveur le permet.
+- **Secrétaire :** une échéance future de tâche crée une alarme locale BOZER ; modifier l'échéance remplace le rappel, et terminer/supprimer la tâche l'annule.
 - **Intégrité :** taille attendue et SHA-256 contrôlés avant chargement.
 - **Contexte local :** le moteur accepte 1 024 à 2 048 tokens ; le prompt conserve six échanges récents au maximum, quatre faits mémorisés et trois résultats de recherche.
 
