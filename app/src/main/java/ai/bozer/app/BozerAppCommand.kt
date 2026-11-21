@@ -79,7 +79,7 @@ object BozerAppCommandParser {
         if (text.isBlank()) return null
 
         val launchAndAct = Regex(
-            """^(?:ouvre|lance|demarre)\\s+(?:l application\\s+|l appli\\s+|application\\s+)?(.+?)\\s+(?:puis|et ensuite)\\s+(.+)$""",
+            """^(?:ouvre|lance|demarre)\s+(?:l application\s+|l appli\s+|application\s+)?(.+?)\s+(?:puis|et ensuite)\s+(.+)$""",
             RegexOption.IGNORE_CASE
         ).find(text)
         if (launchAndAct != null) {
