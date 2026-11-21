@@ -67,14 +67,14 @@ object SecretaryCommandParser {
         val text = input.trim().removeSuffix(".").removeSuffix("!").trim()
         val normalized = normalize(text)
         val add = Regex(
-            "^(?:bozer[, ]*)?(?:ajoute|ajouter|note|enregistre)(?:-moi)?\\s+" +
-                "(?:(?:une\\s+tache)(?:\\s+(?:a\\s+ma\\s+liste))?|a\\s+ma\\s+liste|dans\\s+ma\\s+liste)" +
+            "^(?:bozer[, ]*)?(?:ajoute|ajouter|note|enregistre)(?:[ -]moi)?\\s+" +
+                "(?:(?:(?:une\\s+)?tache)(?:\\s+(?:a\\s+ma\\s+liste))?|a\\s+ma\\s+liste|dans\\s+ma\\s+liste)" +
                 "\\s*[:,-]?\\s*(.+)$"
         ).find(normalized)?.groupValues?.get(1)?.trim()
         if (!add.isNullOrBlank()) {
             val originalTitle = Regex(
-                "(?i)^(?:bozer[, ]*)?(?:ajoute|ajouter|note|enregistre)(?:-moi)?\\s+" +
-                    "(?:(?:une\\s+t[âa]che)(?:\\s+(?:à|a)\\s+ma\\s+liste)?|(?:à|a)\\s+ma\\s+liste|dans\\s+ma\\s+liste)" +
+                "(?i)^(?:bozer[, ]*)?(?:ajoute|ajouter|note|enregistre)(?:[ -]moi)?\\s+" +
+                    "(?:(?:(?:une\\s+)?t[âa]che)(?:\\s+(?:à|a)\\s+ma\\s+liste)?|(?:à|a)\\s+ma\\s+liste|dans\\s+ma\\s+liste)" +
                     "\\s*[:,-]?\\s*(.+)$"
             ).find(text)?.groupValues?.get(1)?.trim()
             val details = SecretaryDateTimeParser.parse(originalTitle ?: add)
