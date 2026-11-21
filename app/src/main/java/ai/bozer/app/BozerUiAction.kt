@@ -17,7 +17,7 @@ sealed interface BozerUiAction {
  */
 object BozerUiActionParser {
     fun parse(input: String): List<BozerUiAction>? {
-        val chunks = input.trim().split(Regex("\\s+ puis \\s+"), ignoreCase = true)
+        val chunks = Regex("\\s+puis\\s+", RegexOption.IGNORE_CASE).split(input.trim())
         if (chunks.isEmpty() || chunks.size > MAX_STEPS) return null
         val actions = chunks.map { parseOne(it.trim()) ?: return null }
         return actions
