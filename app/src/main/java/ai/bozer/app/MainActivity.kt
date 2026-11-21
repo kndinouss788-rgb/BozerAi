@@ -2004,7 +2004,11 @@ private fun BozerSpaceDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     BozerSpaceStatus("Cerveau local", localModelStatus, modelReady)
-                    BozerSpaceStatus("Passerelle en ligne", if (remoteConfigured) "Configurée" else "Non configurée", remoteConfigured)
+                    BozerSpaceStatus(
+                        "Passerelle en ligne",
+                        if (remoteConfigured) "URL HTTPS définie — serveur et quotas non vérifiés" else "URL non configurée",
+                        false
+                    )
                     BozerSpaceStatus("Voix BOZER", if (voiceEnabled) "Activée" else "Mode silencieux", voiceEnabled)
                 }
                 Text("ACCÈS RAPIDE", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
