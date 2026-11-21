@@ -1464,6 +1464,12 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     lineHeight = 15.sp
                                 )
                                 Text(
+                                    "La transcription privilégie le moteur hors ligne Android lorsqu'il est disponible. Sinon, le service de reconnaissance du téléphone peut utiliser Internet et envoyer l'audio à son fournisseur.",
+                                    color = Color(0xFF9AA6B3),
+                                    fontSize = 10.sp,
+                                    lineHeight = 14.sp
+                                )
+                                Text(
                                     "Voix française locale si installée ; sinon voix française fournie par Android.",
                                     color = Color(0xFF9AA6B3),
                                     fontSize = 10.sp,
