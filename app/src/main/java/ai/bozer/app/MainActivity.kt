@@ -379,6 +379,10 @@ private fun BozerChat(
     var alarmRepeatDaysMask by remember { mutableIntStateOf(0) }
     var alarmStatus by remember { mutableStateOf<String?>(null) }
     var alarmDeleteTarget by remember { mutableStateOf<BozerAlarm?>(null) }
+    var alarmEditing by remember { mutableStateOf<BozerAlarm?>(null) }
+    var alarmEditLabel by remember { mutableStateOf("") }
+    var alarmEditAt by remember { mutableStateOf<Long?>(null) }
+    var alarmEditDaysMask by remember { mutableIntStateOf(0) }
     var confirmClearMemory by remember { mutableStateOf(false) }
     var confirmDeleteBrain by remember { mutableStateOf(false) }
     var confirmClearHistory by remember { mutableStateOf(false) }
@@ -1302,6 +1306,15 @@ private fun BozerChat(
                                                 }
                                             )
                                         }
+                                        TextButton(onClick = {
+                                            alarmEditing = alarm
+                                            alarmEditLabel = alarm.label
+                                            alarmEditAt = alarm.triggerAtMillis
+                                            alarmEditDaysMask = alarm.repeatDaysMask
+                                            alarmStatus = null
+                                        }) {
+                                            Text("Modifier", color = Color(0xFF5A7D70))
+                                        }
                                         TextButton(onClick = { alarmDeleteTarget = alarm }) {
                                             Text("Supprimer", color = Color(0xFFB65E70))
                                         }
@@ -1340,6 +1353,153 @@ private fun BozerChat(
                     }
                 )
             }
+        }
+
+        if (alarmEditing != null) {
+            val target = alarmEditing!!
+            AlertDialog(
+                onDismissRequest = { alarmEditing = null },
+                containerColor = Color(0xFFF9FCFF),
+                shape = RoundedCornerShape(26.dp),
+                title = { Text("Modifier l'alarme", color = DeepBlue) },
+                text = {
+                    Column(
+                        Modifier.fillMaxWidth().heightIn(max = 500.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = alarmEditLabel,
+                            onValueChange = { alarmEditLabel = it.take(120) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Nom du réveil ou rappel") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        TextButton(
+                            onClick = {
+                                val initial = java.util.Calendar.getInstance().apply {
+                                    timeInMillis = alarmEditAt ?: target.triggerAtMillis
+                                }
+                                android.app.DatePickerDialog(
+                                    context,
+                                    { _, year, month, day ->
+                                        val selected = java.util.Calendar.getInstance().apply {
+                                            timeInMillis = alarmEditAt ?: target.triggerAtMillis
+                                            set(java.util.Calendar.YEAR, year)
+                                            set(java.util.Calendar.MONTH, month)
+                                            set(java.util.Calendar.DAY_OF_MONTH, day)
+                                        }
+                                        android.app.TimePickerDialog(
+                                            context,
+                                            { _, hour, minute ->
+                                                selected.set(java.util.Calendar.HOUR_OF_DAY, hour)
+                                                selected.set(java.util.Calendar.MINUTE, minute)
+                                                selected.set(java.util.Calendar.SECOND, 0)
+                                                selected.set(java.util.Calendar.MILLISECOND, 0)
+                                                alarmEditAt = selected.timeInMillis
+                                            },
+                                            initial.get(java.util.Calendar.HOUR_OF_DAY),
+                                            initial.get(java.util.Calendar.MINUTE),
+                                            true
+                                        ).show()
+                                    },
+                                    initial.get(java.util.Calendar.YEAR),
+                                    initial.get(java.util.Calendar.MONTH),
+                                    initial.get(java.util.Calendar.DAY_OF_MONTH)
+                                ).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Changer la date et l'heure", color = Color(0xFF5A7D70)) }
+                        Text(
+                            alarmEditAt?.let {
+                                java.text.DateFormat.getDateTimeInstance(
+                                    java.text.DateFormat.MEDIUM,
+                                    java.text.DateFormat.SHORT,
+                                    java.util.Locale.FRANCE
+                                ).format(java.util.Date(it))
+                            } ?: "Aucune date choisie",
+                            color = Muted,
+                            fontSize = 11.sp
+                        )
+                        Text("Répétition", color = DeepBlue, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            listOf("Une fois" to 0, "Chaque jour" to 127, "Lun–Ven" to 62).forEach { (label, mask) ->
+                                FilterChip(
+                                    selected = alarmEditDaysMask == mask,
+                                    onClick = { alarmEditDaysMask = mask },
+                                    label = { Text(label, fontSize = 10.sp) }
+                                )
+                            }
+                        }
+                        val editDays = listOf(
+                            "Lun" to 2, "Mar" to 4, "Mer" to 8, "Jeu" to 16,
+                            "Ven" to 32, "Sam" to 64, "Dim" to 1
+                        )
+                        listOf(editDays.take(4), editDays.drop(4)).forEach { dayRow ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                dayRow.forEach { (label, bit) ->
+                                    FilterChip(
+                                        selected = alarmEditDaysMask and bit != 0,
+                                        onClick = {
+                                            alarmEditDaysMask = if (alarmEditDaysMask and bit != 0) {
+                                                alarmEditDaysMask and bit.inv()
+                                            } else {
+                                                alarmEditDaysMask or bit
+                                            }
+                                        },
+                                        label = { Text(label, fontSize = 10.sp) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                if (dayRow.size < 4) Spacer(Modifier.weight((4 - dayRow.size).toFloat()))
+                            }
+                        }
+                        alarmStatus?.let { Text(it, color = Muted, fontSize = 11.sp) }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val newTime = alarmEditAt
+                            val newLabel = alarmEditLabel.trim()
+                            when {
+                                newLabel.isBlank() -> alarmStatus = "Donne un nom à cette alarme."
+                                newTime == null || newTime <= System.currentTimeMillis() ->
+                                    alarmStatus = "Choisis une date et une heure futures."
+                                else -> scope.launch {
+                                    val result = withContext(Dispatchers.IO) {
+                                        val current = alarmRepository.get(target.id) ?: return@withContext "Alarme introuvable."
+                                        alarmScheduler.cancel(target.id)
+                                        val saved = alarmRepository.update(
+                                            target.id, newTime, newLabel, alarmEditDaysMask
+                                        )
+                                        if (!saved) return@withContext "La modification n'a pas pu être enregistrée."
+                                        val updated = alarmRepository.get(target.id)
+                                            ?: return@withContext "L'alarme modifiée est introuvable."
+                                        if (!updated.enabled) {
+                                            "Alarme modifiée. Elle reste en pause."
+                                        } else if (alarmScheduler.schedule(updated)) {
+                                            "Alarme modifiée et reprogrammée."
+                                        } else {
+                                            alarmRepository.setEnabled(target.id, false)
+                                            "Alarme modifiée, mais Android a refusé sa programmation. Elle est laissée en pause."
+                                        }
+                                    }
+                                    val all = withContext(Dispatchers.IO) { alarmRepository.all() }
+                                    alarmItems.clear()
+                                    alarmItems.addAll(all.sortedBy { it.triggerAtMillis })
+                                    alarmStatus = result
+                                    alarmEditing = null
+                                }
+                            }
+                        },
+                        enabled = alarmEditLabel.isNotBlank()
+                    ) { Text("Enregistrer", color = Color(0xFF5A7D70)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { alarmEditing = null }) { Text("Fermer", color = DeepBlue) }
+                }
+            )
         }
 
         if (tiktokOpen) {
