@@ -102,11 +102,17 @@ object BozerAppCommandParser {
 
         if (text in setOf(
                 "ouvre les parametres d accessibilite", "ouvre les parametres d accessibilite android",
-                "ouvre les reglages d accessibilite", "ouvre les parametres accessibilite",
-                "configure bozer action",
-                "configure l automatisation des applications"
+                "ouvre les reglages d accessibilite", "ouvre les parametres accessibilite"
             )
         ) return BozerAppCommand.OpenAccessibilitySettings
+
+        if (text in setOf(
+                "configure bozer action",
+                "configure l automatisation des applications",
+                "active le controle vocal des applications",
+                "autorise bozer a controler les applications"
+            )
+        ) return BozerAppCommand.RequestAccessibilityConsent
 
         if (text in setOf(
                 "ouvre tes parametres", "affiche tes parametres",
