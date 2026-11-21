@@ -37,10 +37,27 @@ class AndroidActionExecutor(private val activity: Activity) {
             )
     }
 
-    fun requiresUserConfirmation(command: String): Boolean =
-        BozerActionSafetyPolicy.requiresUserConfirmation(command)
+    fun requiresUserConfirmation(command: String): Boolean {
+        val appCommand = BozerAppCommandParser.parse(command)
+        val actions = when (appCommand) {
+            is BozerAppCommand.ControlVisibleUi -> appCommand.actions
+            is BozerAppCommand.LaunchAppAndUiActions -> appCommand.actions
+            else -> emptyList()
+        }
+        return actions.any(BozerAccessibilityService::isSensitiveAction) ||
+            BozerActionSafetyPolicy.requiresUserConfirmation(command)
+    }
 
     fun confirmationSummary(command: String): String {
+        val uiCommand = BozerAppCommandParser.parse(command)
+        val uiActions = when (uiCommand) {
+            is BozerAppCommand.ControlVisibleUi -> uiCommand.actions
+            is BozerAppCommand.LaunchAppAndUiActions -> uiCommand.actions
+            else -> emptyList()
+        }
+        if (uiActions.any(BozerAccessibilityService::isSensitiveAction)) {
+            return "BOZER doit toucher « ${uiActions.filterIsInstance<BozerUiAction.TapText>().joinToString(" », « ") { it.label } } » dans l'application affichée. Cette action peut envoyer, publier, supprimer ou payer. Confirme seulement si c'est bien ce que tu veux."
+        }
         val normalized = normalize(command)
         return when (val parsed = AndroidCommandParser.parse(command)) {
             is AndroidCommand.Dial ->
@@ -84,28 +101,27 @@ class AndroidActionExecutor(private val activity: Activity) {
         }
     }
 
-    fun execute(command: String): String? {
+    fun execute(command: String, userConfirmed: Boolean = false): String? {
         val appCommand = BozerAppCommandParser.parse(command)
         if (appCommand != null) {
             return try {
                 when (appCommand) {
                     BozerAppCommand.OpenTikTokForRecording -> {
-                        val automationQueued = BozerAccessibilityService.requestTikTokRecordingClick()
-                        val opened = TikTokPublisher.openTikTok(activity)
-                        if (!opened) {
-                            BozerAccessibilityService.cancelPendingRequest()
-                            "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
-                        } else if (automationQueued) {
-                            "J'ouvre TikTok et je tente de sélectionner un bouton vidéo clairement identifié pendant les 30 prochaines secondes. Je ne peux pas confirmer que TikTok l'a accepté : vérifie l'écran et le compteur."
+                        if (TikTokPublisher.openTikTok(activity)) {
+                            "J'ouvre TikTok. Dis-moi ensuite quelle action tu veux effectuer à l'écran."
                         } else {
-                            "J'ouvre TikTok. Pour que BOZER essaie d'appuyer sur Enregistrer, active d'abord le service facultatif BOZER ACTION dans les paramètres d'accessibilité Android. Sans ce service, lance toi-même l'enregistrement dans TikTok."
+                            "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
                         }
                     }
                     BozerAppCommand.OpenVideoCamera -> openVideoCamera()
                     BozerAppCommand.OpenAccessibilitySettings -> {
                         activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                        "J'ouvre les paramètres d'accessibilité Android. Tu peux y activer BOZER ACTION pour autoriser ses clics visibles dans TikTok."
+                        "J'ouvre les paramètres d'accessibilité Android. Tu peux y activer BOZER ACTION pour permettre les actions vocales dans les applications."
                     }
+                    is BozerAppCommand.ControlVisibleUi ->
+                        queueUiActions(appCommand.actions, null, userConfirmed)
+                    is BozerAppCommand.LaunchAppAndUiActions ->
+                        launchAppAndQueueUiActions(appCommand.appName, appCommand.actions, userConfirmed)
                     else -> bozerAppCommandHandler?.invoke(appCommand)
                         ?: "Cette commande BOZER n'est pas encore reliée à ses paramètres."
                 }
@@ -154,6 +170,69 @@ class AndroidActionExecutor(private val activity: Activity) {
         } catch (error: Exception) {
             "Je n'ai pas pu préparer cette action : ${error.message ?: "erreur inconnue"}."
         }
+    }
+
+    private fun queueUiActions(
+        actions: List<BozerUiAction>,
+        targetPackage: String?,
+        userConfirmed: Boolean
+    ): String {
+        if (!BozerAccessibilityService.isConnected()) {
+            activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            return "Pour agir dans les applications, active le service BOZER ACTION dans les paramètres d'accessibilité Android, puis redis ta commande."
+        }
+        val requestId = BozerAccessibilityService.requestActions(
+            actions = actions,
+            targetPackage = targetPackage,
+            allowSensitiveActions = userConfirmed
+        ) ?: return if (targetPackage == null && BozerAccessibilityService.lastUsedExternalPackage() == null) {
+            "Je ne sais pas encore quelle application tu veux contrôler. Ouvre-la ou demande-moi de l'ouvrir, puis redis ta commande."
+        } else {
+            "Je n'ai pas pu préparer cette action. Vérifie que BOZER ACTION est activé et que l'application affiche bien le contrôle demandé."
+        }
+        return "Mission BOZER ACTION lancée (n°$requestId). Je vais agir dans l'application au premier plan. Je ne confirmerai le résultat que si l'application le permet ; vérifie l'écran."
+    }
+
+    private fun launchAppAndQueueUiActions(
+        requestedName: String,
+        actions: List<BozerUiAction>,
+        userConfirmed: Boolean
+    ): String {
+        val normalized = normalize(requestedName)
+            .removePrefix("l'")
+            .removePrefix("le ")
+            .removePrefix("la ")
+            .removePrefix("les ")
+            .trim()
+        val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val candidates = activity.packageManager.queryIntentActivities(launcher, PackageManager.MATCH_DEFAULT_ONLY)
+            .filter { it.activityInfo.packageName != activity.packageName }
+            .map { Triple(it.activityInfo.packageName, it.loadLabel(activity.packageManager).toString(), normalize(it.loadLabel(activity.packageManager).toString())) }
+            .distinctBy { it.first }
+        val selected = candidates.sortedBy { (_, _, label) ->
+            when {
+                label == normalized -> 0
+                label.contains(normalized) -> 1
+                normalized.contains(label) -> 2
+                else -> 3
+            }
+        }.firstOrNull { (_, _, label) ->
+            label == normalized || label.contains(normalized) || normalized.contains(label)
+        } ?: return "Je ne trouve pas l'application « $requestedName » sur ce téléphone."
+
+        val intent = activity.packageManager.getLaunchIntentForPackage(selected.first)
+            ?: return "L'application « ${selected.second} » ne peut pas être ouverte depuis son icône."
+        if (!BozerAccessibilityService.isConnected()) {
+            activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            return "J'ai trouvé ${selected.second}. Pour exécuter les étapes vocales dans son écran, active d'abord BOZER ACTION dans les paramètres d'accessibilité Android, puis redis ta commande."
+        }
+        val requestId = BozerAccessibilityService.requestActions(
+            actions = actions,
+            targetPackage = selected.first,
+            allowSensitiveActions = userConfirmed
+        ) ?: return "Je n'ai pas pu préparer les étapes pour ${selected.second}. Vérifie le service BOZER ACTION."
+        activity.startActivity(intent)
+        return "J'ouvre ${selected.second} et je lance les étapes de ta mission BOZER ACTION (n°$requestId). Vérifie l'écran : certaines applications peuvent bloquer l'automatisation."
     }
 
     private fun executeOpenApp(command: String): String? {
