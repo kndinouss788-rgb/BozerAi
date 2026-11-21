@@ -371,7 +371,7 @@ private fun BozerChat(
     val alarmItems = remember { mutableStateListOf<BozerAlarm>() }
     var alarmDraftLabel by remember { mutableStateOf("") }
     var alarmDraftAt by remember { mutableStateOf<Long?>(null) }
-    var alarmRepeatDaily by remember { mutableStateOf(false) }
+    var alarmRepeatDaysMask by remember { mutableIntStateOf(0) }
     var alarmStatus by remember { mutableStateOf<String?>(null) }
     var alarmDeleteTarget by remember { mutableStateOf<BozerAlarm?>(null) }
     var confirmClearMemory by remember { mutableStateOf(false) }
@@ -1010,12 +1010,49 @@ private fun BozerChat(
                             color = Muted,
                             fontSize = 11.sp
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text("Répéter tous les jours", color = DeepBlue, fontSize = 13.sp)
-                                Text("Laisse désactivé pour un seul déclenchement.", color = Muted, fontSize = 10.sp)
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Répétition", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                TextButton(onClick = { alarmRepeatDaysMask = 0 }) {
+                                    Text("Une fois", color = if (alarmRepeatDaysMask == 0) Color(0xFF5A7D70) else Muted, fontSize = 11.sp)
+                                }
+                                TextButton(onClick = { alarmRepeatDaysMask = 127 }) {
+                                    Text("Tous les jours", color = if (alarmRepeatDaysMask == 127) Color(0xFF5A7D70) else Muted, fontSize = 11.sp)
+                                }
+                                TextButton(onClick = { alarmRepeatDaysMask = 62 }) {
+                                    Text("Lun–Ven", color = if (alarmRepeatDaysMask == 62) Color(0xFF5A7D70) else Muted, fontSize = 11.sp)
+                                }
                             }
-                            Switch(checked = alarmRepeatDaily, onCheckedChange = { alarmRepeatDaily = it })
+                            val alarmWeekdays = listOf(
+                                "L" to 2, "M" to 4, "M" to 8, "J" to 16,
+                                "V" to 32, "S" to 64, "D" to 1
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                alarmWeekdays.forEach { (label, bit) ->
+                                    FilterChip(
+                                        selected = alarmRepeatDaysMask and bit != 0,
+                                        onClick = {
+                                            alarmRepeatDaysMask = if (alarmRepeatDaysMask and bit != 0) {
+                                                alarmRepeatDaysMask and bit.inv()
+                                            } else {
+                                                alarmRepeatDaysMask or bit
+                                            }
+                                        },
+                                        label = { Text(label, fontSize = 11.sp) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                            Text(
+                                when (alarmRepeatDaysMask) {
+                                    0 -> "L'alarme sonnera une seule fois."
+                                    127 -> "Répétition quotidienne."
+                                    62 -> "Répétition du lundi au vendredi."
+                                    else -> "Répétition les jours sélectionnés."
+                                },
+                                color = Muted,
+                                fontSize = 10.sp
+                            )
                         }
                         Button(
                             onClick = {
@@ -1029,7 +1066,7 @@ private fun BozerChat(
                                     }
                                     val trigger = selected
                                     val label = alarmDraftLabel.trim().ifBlank { "Rappel BOZER" }
-                                    val repeatMask = if (alarmRepeatDaily) 127 else 0
+                                    val repeatMask = alarmRepeatDaysMask
                                     scope.launch {
                                         try {
                                             val id = withContext(Dispatchers.IO) {
@@ -1055,6 +1092,7 @@ private fun BozerChat(
                                                 }
                                                 alarmDraftLabel = ""
                                                 alarmDraftAt = null
+                                                alarmRepeatDaysMask = 0
                                                 val active = withContext(Dispatchers.IO) { alarmRepository.enabled().sortedBy { it.triggerAtMillis } }
                                                 alarmItems.clear()
                                                 alarmItems.addAll(active)
@@ -1142,11 +1180,18 @@ private fun BozerChat(
                                                 color = Muted,
                                                 fontSize = 11.sp
                                             )
-                                            Text(
-                                                if (alarm.repeatDaysMask == 127) "Tous les jours" else "Une seule fois",
-                                                color = Muted,
-                                                fontSize = 10.sp
+                                            val dayNames = listOf(
+                                                "Lun" to 2, "Mar" to 4, "Mer" to 8, "Jeu" to 16,
+                                                "Ven" to 32, "Sam" to 64, "Dim" to 1
                                             )
+                                            val repeatLabel = when (alarm.repeatDaysMask) {
+                                                0 -> "Une seule fois"
+                                                127 -> "Tous les jours"
+                                                62 -> "Du lundi au vendredi"
+                                                else -> dayNames.filter { alarm.repeatDaysMask and it.second != 0 }
+                                                    .joinToString(" • ") { it.first }
+                                            }
+                                            Text(repeatLabel, color = Muted, fontSize = 10.sp)
                                         }
                                         TextButton(onClick = { alarmDeleteTarget = alarm }) {
                                             Text("Annuler", color = Color(0xFFB65E70))
