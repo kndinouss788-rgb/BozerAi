@@ -26,11 +26,12 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [~] Local llama.cpp JNI/runtime foundation.
 - [~] Keep the 491 MB GGUF out of the APK; add user-triggered private-storage download, SHA-256 verification, and HTTP Range resume. Kotlin/build validation remains pending.
 - [ ] Make Android local inference reliably usable from first launch; validate first download, resume/retry, checksum failure, storage/RAM limits, and warm-load behavior on Android.
+- [~] Compact and bound the local prompt; use a configurable native 1,024–2,048-token context with 192 output tokens. Prompt sizing and performance still need Kotlin/native validation and device measurement.
 - [ ] Measure real latency on low/mid-range devices; optimize warm-up, context length, token generation, and cancellation.
-- [ ] Reliable AUTO / ONLINE / OFFLINE selector with explicit status, fallback rules, and no hidden paid calls.
+- [~] AUTO uses local inference only; ONLINE is an explicit remote-provider choice; OFFLINE is local-only. Remote health/authentication and failure behavior still need validation.
 - [ ] Streaming responses, stop generation, retry, timeout handling, and clear offline/error messages.
 - [ ] Conversation quality suite: factual questions, French, ambiguity, refusal/safety, multi-turn context, and hallucination checks.
-- [ ] Context management: relevant recent turns, user-controlled facts, deletion/export, bounded memory, and no secret capture.
+- [~] Bound local context to recent turns, a small set of explicit memory facts, and a limited number of search results; memory deletion exists. Conversation export, complete data controls, and token-level budget validation remain.
 - [ ] Stable model/provider settings and user-visible cost controls.
 
 ## 2. BOZER ACTION — phone actions and missions
@@ -50,7 +51,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 ## 3. Voice and listening
 
 - [~] French Android TextToSpeech output.
-- [~] In-app speech recognition; on-device recognizer preferred when available, otherwise system recognizer may use network.
+- [~] In-app French speech recognition prefers on-device when available; normal spoken messages now submit automatically and common recognition errors are surfaced. Offline behavior remains device-dependent.
 - [ ] Add selectable voice/rate/pitch and robust TTS engine availability checks.
 - [ ] Add hands-free conversation session with visible listening state, timeout, stop control, and privacy indicator.
 - [ ] Evaluate true on-device ASR package/model size, language quality, battery, and offline behavior.
@@ -65,9 +66,9 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [~] Daily and weekday recurrence, with automatic rescheduling after a firing.
 - [~] Ten-minute snooze action from the alarm notification.
 - [ ] Validate migration from every previous database version and recurrence behavior over daylight-saving/timezone changes.
-- [ ] Full alarm screen with dismiss/snooze, accessible controls, and screen-locked behavior where Android permits.
+- [~] Alarm manager screen can create one-shot/daily alarms, list them, and cancel with confirmation. A full ringing/dismiss UI and screen-locked validation remain.
 - [ ] Progressive wake-up, configurable snooze duration, alarm tones, vibration patterns, volume guidance, and test-alarm action.
-- [ ] Weekly/custom selected weekdays and edit/enable/disable/delete alarm UI.
+- [~] Voice commands support daily and weekday recurrence; the alarm screen currently supports one-shot/daily creation, listing, and cancellation. Custom weekday selection and edit/pause controls remain.
 - [ ] Priority notification categories, quiet hours, notification grouping, and user-controlled channels.
 - [ ] Link Secretary tasks to reminders; prevent duplicate reminders and clean up deleted/completed tasks.
 - [ ] Real-device tests after force-stop, reboot, battery saver, Doze, notification denial, and exact-alarm denial.
@@ -75,7 +76,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 ## 5. Secretary and personal organization
 
 - [~] SQLite tasks with title, notes, due date, priority, completion, and command parser.
-- [ ] Full task UI: create/edit/delete/complete, due date/time, priority, filters, search, overdue view.
+- [~] Secretary UI supports create/edit/delete/complete, notes, due date/time, priority, filters/search, and overdue labels. Calendar integration, reminders, export, and migration tests remain.
 - [ ] Calendar integration with explicit confirmation and timezone-safe dates.
 - [ ] Task-to-alarm/reminder linking and recurring routines.
 - [ ] Daily briefing and end-of-day summary with opt-in notification.
@@ -128,7 +129,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [ ] Authenticated backend with rate limits, quotas, abuse controls, and account/device revocation.
 - [ ] Privacy policy, permissions explanation, data export/deletion, backup policy, and consent flows.
 - [ ] Database migration tests from all released schema versions.
-- [ ] Automated Python, Kotlin unit, Android emulator, integration, and release build workflows.
+- [~] Python CI runs automatically; Kotlin unit tests have been added/updated but not run. Android emulator, integration, and release-build workflows remain.
 - [ ] Crash reporting only with consent and privacy review.
 - [ ] APK size budget and install/upgrade tests; model assets remain separate and checksum-verified.
 - [ ] Real-device acceptance matrix for target TECNO/Redmi-class hardware and Android versions.
