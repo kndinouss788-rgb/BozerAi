@@ -7,6 +7,43 @@ package ai.bozer.app
 internal object BozerSpeechText {
     const val DEFAULT_MAX_CHARACTERS = 280
 
+    /**
+     * Sentence-sized units retain exact source offsets for synchronized captions.
+     */
+    data class Segment(val text: String, val start: Int, val endExclusive: Int)
+
+    fun segments(text: String, maxCharacters: Int = 220): List<Segment> {
+        require(maxCharacters >= 20) { "maxCharacters must be at least 20" }
+        if (text.isBlank()) return emptyList()
+        val result = mutableListOf<Segment>()
+
+        fun appendRange(rawStart: Int, rawEnd: Int) {
+            var start = rawStart.coerceIn(0, text.length)
+            val end = rawEnd.coerceIn(start, text.length)
+            while (start < end && text[start].isWhitespace()) start++
+            var finish = end
+            while (finish > start && text[finish - 1].isWhitespace()) finish--
+            while (start < finish) {
+                val limit = minOf(finish, start + maxCharacters)
+                var cut = if (limit == finish) finish else text.lastIndexOf(' ', limit)
+                if (cut <= start) cut = text.indexOf(' ', limit).takeIf { it > start && it <= finish } ?: finish
+                var segmentEnd = cut.coerceIn(start + 1, finish)
+                while (segmentEnd > start && text[segmentEnd - 1].isWhitespace()) segmentEnd--
+                if (segmentEnd > start) result += Segment(text.substring(start, segmentEnd), start, segmentEnd)
+                start = cut.coerceIn(start + 1, finish)
+                while (start < finish && text[start].isWhitespace()) start++
+            }
+        }
+
+        var sentenceStart = 0
+        Regex("(?<=[.!?…])\\s+|\\n+").findAll(text).forEach { separator ->
+            appendRange(sentenceStart, separator.range.first)
+            sentenceStart = separator.range.last + 1
+        }
+        appendRange(sentenceStart, text.length)
+        return result
+    }
+
     fun chunks(text: String, maxCharacters: Int = DEFAULT_MAX_CHARACTERS): List<String> {
         require(maxCharacters >= 20) { "maxCharacters must be at least 20" }
         val normalized = text.replace(Regex("\\s+"), " ").trim()
