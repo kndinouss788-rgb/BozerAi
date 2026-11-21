@@ -7,10 +7,10 @@ BOZER utilise désormais un modèle de langage déjà pré-entraîné comme cerv
 - **Taille du fichier :** 491 400 032 octets (environ 491 Mo).
 - **Exécution :** llama.cpp natif via JNI, directement sur Android.
 - **Coût d'inférence :** aucun appel API nécessaire pour les conversations ordinaires.
-- **Installation :** téléchargement unique à la demande, puis stockage privé dans l'application.
+- **Intégration :** modèle téléchargé et vérifié pendant la compilation, puis embarqué dans les ressources de l'APK ; copie initiale automatique vers le stockage privé, sans bouton ni téléchargement réseau dans l'application.
 - **Intégrité :** SHA-256 contrôlé avant chargement.
 
-Le modèle est la base linguistique pré-entraînée. BOZER ajoute sa propre identité, son ton, sa mémoire locale, ses règles de fiabilité et son système d'actions Android autour de ce modèle. La passerelle distante reste une option explicite « En ligne » et n'est plus utilisée par défaut.
+Le modèle est la base linguistique pré-entraînée. BOZER ajoute sa propre identité, son ton, sa mémoire locale, ses règles de fiabilité et son système d'actions Android autour de ce modèle. En mode Automatique, BOZER utilise la passerelle distante configurée lorsqu'Internet est disponible, puis revient au cerveau local si le service distant échoue. Sans connexion, le modèle intégré répond localement. Le mode Hors ligne interdit les appels réseau.
 
 ## Pourquoi ce modèle
 
@@ -22,9 +22,11 @@ Le module CMake récupère llama.cpp à une révision Git immuable et compile `b
 
 ## État de validation
 
-- Le code de téléchargement et de vérification SHA-256 existe.
-- Le modèle est configuré pour devenir le cerveau local par défaut.
+- La compilation Gradle récupère le modèle depuis une révision Hugging Face figée, vérifie sa taille et son SHA-256, puis l'intègre aux assets de l'APK.
+- Au premier démarrage, BOZER copie automatiquement le modèle depuis l'APK vers son stockage privé, vérifie son intégrité puis le charge ; aucun bouton de téléchargement n'est exposé.
+- Le modèle augmente l'APK d'environ 491 Mo ; la première préparation demande aussi un espace libre temporaire suffisant sur le téléphone.
+- En mode Automatique, la passerelle BOZER configurée est utilisée avec Internet, avec repli sur le modèle local ; sans réseau, la conversation reste locale.
 - **Aucune validation réelle de génération sur le TECNO de l'utilisateur n'est revendiquée.**
-- La compilation Android/APK et le test sur téléphone restent à effectuer lorsque l'utilisateur demandera explicitement cette étape.
+- Ces changements sont commis sur `bozer-neural-v0.1`, mais la compilation Android/APK, la vérification de l'asset dans l'APK et le test sur téléphone restent à effectuer.
 
 Le chantier expérimental d'entraînement du modèle BOZER NEURAL 1B est arrêté. Son code et ses données sont conservés dans l'historique Git pour archivage, mais ils ne sont plus la voie active du cerveau Android.
