@@ -292,6 +292,7 @@ class BozerAccessibilityService : AccessibilityService() {
             allowSensitiveActions: Boolean = false
         ): Long? {
             val service = instance ?: return null
+            if (pendingRequest != null) return null
             if (actions.isEmpty() || actions.size > MAX_STEPS) return null
             if (!allowSensitiveActions && actions.any(::isSensitiveAction)) return null
             val target = targetPackage ?: lastExternalPackage
