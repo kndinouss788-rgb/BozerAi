@@ -19,7 +19,6 @@ sealed interface BozerAppCommand {
     data class SetTheme(val theme: BozerTheme) : BozerAppCommand
     data class SetBrainMode(val mode: BrainMode) : BozerAppCommand
     data object CycleTheme : BozerAppCommand
-    data object OpenTikTokForRecording : BozerAppCommand
     data object OpenVideoCamera : BozerAppCommand
     data class ControlVisibleUi(val actions: List<BozerUiAction>) : BozerAppCommand
     data class LaunchAppAndUiActions(val appName: String, val actions: List<BozerUiAction>) : BozerAppCommand
@@ -109,13 +108,6 @@ object BozerAppCommandParser {
             )
         ) return BozerAppCommand.OpenSettings
 
-        val startsAsAction = text.startsWith("ouvre ") || text.startsWith("lance ") ||
-            text.startsWith("demarre ") || text.startsWith("filme ") ||
-            text.startsWith("enregistre ")
-        if (startsAsAction && text.contains("tiktok") &&
-            containsAny(text, "filme", "filmer", "enregistre", "enregistrement", "camera", "video")
-        ) return BozerAppCommand.OpenTikTokForRecording
-
         if (text in setOf(
                 "filme moi", "enregistre une video", "lance un enregistrement video",
                 "demarre un enregistrement video", "ouvre la camera video",
@@ -181,9 +173,6 @@ object BozerAppCommandParser {
 
         return null
     }
-
-    private fun containsAny(value: String, vararg terms: String): Boolean =
-        terms.any { term -> value.contains(term) }
 
     private fun normalize(value: String): String =
         Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
