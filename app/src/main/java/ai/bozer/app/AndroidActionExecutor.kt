@@ -94,9 +94,9 @@ class AndroidActionExecutor(private val activity: Activity) {
                             BozerAccessibilityService.cancelPendingRequest()
                             "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
                         } else if (automationQueued) {
-                            "J'ouvre TikTok et je tente de sélectionner son bouton visible Enregistrer pendant les 30 prochaines secondes. Je ne peux pas confirmer que TikTok l'a accepté : vérifie l'écran et le compteur."
+                            "J'ouvre TikTok et je tente de sélectionner un bouton vidéo clairement identifié pendant les 30 prochaines secondes. Je ne peux pas confirmer que TikTok l'a accepté : vérifie l'écran et le compteur."
                         } else {
-                            "J'ouvre TikTok. Pour que BOZER essaie d'appuyer sur Enregistrer, active d'abord le service facultatif BOZER ACTION dans les paramètres d'accessibilité Android. Sans ce service, touche toi-même le bouton Enregistrer."
+                            "J'ouvre TikTok. Pour que BOZER essaie d'appuyer sur Enregistrer, active d'abord le service facultatif BOZER ACTION dans les paramètres d'accessibilité Android. Sans ce service, lance toi-même l'enregistrement dans TikTok."
                         }
                     }
                     BozerAppCommand.OpenVideoCamera -> openVideoCamera()
