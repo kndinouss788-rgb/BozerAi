@@ -112,6 +112,23 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         return writableDatabase.update("bozer_alarms", values, "id = ?", arrayOf(id.toString())) > 0
     }
 
+    fun updateBozerAlarm(
+        id: Long,
+        triggerAtMillis: Long,
+        label: String,
+        repeatDaysMask: Int
+    ): Boolean {
+        require(triggerAtMillis > 0) { "L'heure de l'alarme est invalide." }
+        require(label.isNotBlank() && label.length <= 120) { "Le nom de l'alarme est invalide." }
+        require(repeatDaysMask in 0..127) { "Les jours de répétition sont invalides." }
+        val values = ContentValues().apply {
+            put("trigger_at", triggerAtMillis)
+            put("label", label.trim())
+            put("repeat_days_mask", repeatDaysMask)
+        }
+        return writableDatabase.update("bozer_alarms", values, "id = ?", arrayOf(id.toString())) == 1
+    }
+
     fun setBozerAlarmEnabled(id: Long, enabled: Boolean): Boolean {
         val values = ContentValues().apply { put("enabled", if (enabled) 1 else 0) }
         return writableDatabase.update("bozer_alarms", values, "id = ?", arrayOf(id.toString())) > 0
