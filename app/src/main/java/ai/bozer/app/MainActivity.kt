@@ -371,6 +371,7 @@ private fun BozerChat(
     var alarmStatus by remember { mutableStateOf<String?>(null) }
     var alarmDeleteTarget by remember { mutableStateOf<BozerAlarm?>(null) }
     var confirmClearMemory by remember { mutableStateOf(false) }
+    var confirmClearHistory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
@@ -1547,7 +1548,12 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text("DONNÉES ET CONFIDENTIALITÉ", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                                TextButton(onClick = { confirmClearMemory = true }, modifier = Modifier.fillMaxWidth()) { Text("Effacer la mémoire", color = Color(0xFFB65E70)) }
+                                TextButton(onClick = { confirmClearMemory = true }, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Effacer les faits mémorisés", color = Color(0xFFB65E70))
+                                }
+                                TextButton(onClick = { confirmClearHistory = true }, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Effacer l'historique des conversations", color = Color(0xFFB65E70))
+                                }
                             }
                         }
                         Spacer(Modifier.height(12.dp))
@@ -1578,6 +1584,37 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                     dismissButton = {
                         TextButton(onClick = { actionPermissionDialogOpen = false }) {
                             Text("Pas maintenant", color = DeepBlue)
+                        }
+                    }
+                )
+            }
+            if (confirmClearHistory) {
+                AlertDialog(
+                    onDismissRequest = { confirmClearHistory = false },
+                    containerColor = Color(0xFFF9FCFF),
+                    shape = RoundedCornerShape(26.dp),
+                    title = { Text("Effacer tout l'historique ?", color = DeepBlue) },
+                    text = {
+                        Text(
+                            "Toutes les conversations enregistrées sur ce téléphone seront supprimées. Les faits explicitement mémorisés et les alarmes ne seront pas touchés.",
+                            color = Muted
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (!sending) {
+                                    repository.clearHistory()
+                                    messages.clear()
+                                    confirmClearHistory = false
+                                }
+                            },
+                            enabled = !sending
+                        ) { Text("Effacer l'historique", color = Color(0xFFB65E70)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmClearHistory = false }) {
+                            Text("Annuler", color = DeepBlue)
                         }
                     }
                 )
