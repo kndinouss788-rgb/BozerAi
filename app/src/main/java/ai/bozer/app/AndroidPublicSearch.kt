@@ -21,9 +21,9 @@ data class InternetSearchResult(
 /**
  * EYE_SEARCH: bounded public-web discovery from the Android app.
  *
- * Uses DuckDuckGo's public HTML results plus Wikipedia's public search API.
- * Search engines index only discoverable public pages; this is not a claim
- * that every page on the Internet can be scanned.
+ * Uses DuckDuckGo public HTML results, the French Wikipedia API, and Wikidata's
+ * public entity-search API. Search engines index only discoverable public pages;
+ * this is not a claim that every page on the Internet can be scanned.
  */
 class AndroidPublicSearch(
     private val connectTimeoutMs: Int = 7_000,
@@ -36,18 +36,19 @@ class AndroidPublicSearch(
         require(limit in 1..10) { "Le nombre de résultats doit être compris entre 1 et 10." }
 
         val collected = mutableListOf<InternetSearchResult>()
-        // Providers are independent: one failure must not cancel the other.
-        runCatching { searchDuckDuckGo(cleanQuery, limit) }
+        // Each public provider is independent: one outage must not cancel the others.
+        runCatching { searchDuckDuckGo(cleanQuery, minOf(5, limit)) }
             .onSuccess { collected.addAll(it) }
             .onFailure { Log.w("BOZER_SEARCH", "DuckDuckGo indisponible", it) }
-        if (collected.size < limit) {
-            runCatching { searchWikipedia(cleanQuery, minOf(5, limit - collected.size)) }
-                .onSuccess(collected::addAll)
-                .onFailure { Log.w("BOZER_SEARCH", "Wikipedia indisponible", it) }
-        }
+        runCatching { searchWikipedia(cleanQuery, minOf(2, limit)) }
+            .onSuccess { collected.addAll(it) }
+            .onFailure { Log.w("BOZER_SEARCH", "Wikipedia indisponible", it) }
+        runCatching { searchWikidata(cleanQuery, minOf(2, limit)) }
+            .onSuccess { collected.addAll(it) }
+            .onFailure { Log.w("BOZER_SEARCH", "Wikidata indisponible", it) }
 
         val unique = collected.distinctBy { normalizeUrl(it.url) }.take(limit)
-        Log.i("BOZER_SEARCH", "providers=duckduckgo,wikipedia results=" + unique.size)
+        Log.i("BOZER_SEARCH", "providers=duckduckgo,wikipedia,wikidata results=" + unique.size)
         return unique
     }
 
@@ -106,6 +107,33 @@ class AndroidPublicSearch(
                             url = "https://fr.wikipedia.org/wiki/$articlePath",
                             snippet = snippet.take(MAX_SNIPPET_CHARS),
                             source = "Wikipedia"
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun searchWikidata(query: String, limit: Int): List<InternetSearchResult> {
+        if (limit <= 0) return emptyList()
+        val encoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name())
+        val endpoint = "https://www.wikidata.org/w/api.php?action=wbsearchentities" +
+            "&format=json&language=fr&uselang=fr&limit=$limit&search=$encoded"
+        val root = JSONObject(requestText(endpoint, "application/json"))
+        val items = root.optJSONArray("search") ?: return emptyList()
+        return buildList {
+            for (index in 0 until minOf(items.length(), limit)) {
+                val item = items.optJSONObject(index) ?: continue
+                val id = item.optString("id").trim()
+                val title = item.optString("label").trim()
+                val description = item.optString("description").trim()
+                if (id.isNotBlank() && title.isNotBlank() && id.matches(Regex("Q[0-9]+"))) {
+                    add(
+                        InternetSearchResult(
+                            title = title,
+                            url = "https://www.wikidata.org/wiki/$id",
+                            snippet = description.take(MAX_SNIPPET_CHARS),
+                            source = "Wikidata"
                         )
                     )
                 }
