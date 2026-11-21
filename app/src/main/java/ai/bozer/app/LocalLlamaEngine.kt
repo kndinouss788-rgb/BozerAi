@@ -29,11 +29,10 @@ class LocalLlamaEngine {
     }
 
     @Synchronized
-    fun generate(prompt: String): String {
+    fun generate(prompt: String, maxTokens: Int = 192): String {
         check(loaded) { "Le modèle BOZER n'est pas chargé." }
-        // Allow fuller conversational answers instead of cutting every reply
-        // at an overly restrictive 96-token limit.
-        return nativeGenerate(prompt, 192).trim().also {
+        require(maxTokens in 32..192) { "La génération locale doit être comprise entre 32 et 192 tokens." }
+        return nativeGenerate(prompt, maxTokens).trim().also {
             check(it.isNotBlank()) { "Le modèle a renvoyé une réponse vide." }
         }
     }
