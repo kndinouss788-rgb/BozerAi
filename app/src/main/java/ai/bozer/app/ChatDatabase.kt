@@ -151,7 +151,8 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         return if (task.id == 0L) {
             writableDatabase.insertOrThrow("secretary_tasks", null, values)
         } else {
-            writableDatabase.update("secretary_tasks", values, "id = ?", arrayOf(task.id.toString()))
+            val updated = writableDatabase.update("secretary_tasks", values, "id = ?", arrayOf(task.id.toString()))
+            check(updated == 1) { "La tâche à modifier n'existe plus." }
             task.id
         }
     }
