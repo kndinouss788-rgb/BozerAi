@@ -314,6 +314,14 @@ private fun BozerChat(
     val secretaryCommands = remember { SecretaryCommandProcessor(secretary) }
     val secretaryTasks = remember { mutableStateListOf<SecretaryTask>() }
     var secretaryDraft by remember { mutableStateOf("") }
+    var secretarySearch by remember { mutableStateOf("") }
+    var secretaryShowCompleted by remember { mutableStateOf(false) }
+    var secretaryEditingTask by remember { mutableStateOf<SecretaryTask?>(null) }
+    var secretaryEditTitle by remember { mutableStateOf("") }
+    var secretaryEditNotes by remember { mutableStateOf("") }
+    var secretaryEditDueAt by remember { mutableStateOf<Long?>(null) }
+    var secretaryEditPriority by remember { mutableStateOf(SecretaryPriority.NORMAL) }
+    var secretaryEditError by remember { mutableStateOf<String?>(null) }
     var confirmClearMemory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -1309,11 +1317,14 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                     color = Color(0xF9FFFFFF),
                     shadowElevation = 24.dp
                 ) {
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text("BOZER SECRETARY", color = DeepBlue, fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                                Text("Tes tâches, au même endroit.", color = Muted, fontSize = 12.sp)
+                                Text("Tes tâches, leurs priorités et leurs échéances.", color = Muted, fontSize = 12.sp)
                             }
                             FutureIconButton("close", { secretaryOpen = false }, 38.dp)
                         }
@@ -1333,8 +1344,9 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     if (title.isNotEmpty()) {
                                         scope.launch {
                                             withContext(Dispatchers.IO) { secretary.createTask(title) }
+                                            val latest = withContext(Dispatchers.IO) { secretary.tasks() }
                                             secretaryTasks.clear()
-                                            secretaryTasks.addAll(withContext(Dispatchers.IO) { secretary.tasks() })
+                                            secretaryTasks.addAll(latest)
                                             secretaryDraft = ""
                                         }
                                     }
@@ -1344,16 +1356,48 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 13.dp)
                             ) { Text("+") }
                         }
-                        if (secretaryTasks.isEmpty()) {
-                            Box(Modifier.fillMaxWidth().padding(vertical = 28.dp), contentAlignment = Alignment.Center) {
-                                Text("Aucune tâche pour le moment. Ajoute ta première tâche.", color = Muted, fontSize = 13.sp)
+                        OutlinedTextField(
+                            value = secretarySearch,
+                            onValueChange = { secretarySearch = it.take(100) },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Rechercher une tâche…") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            FilterChip(
+                                selected = !secretaryShowCompleted,
+                                onClick = { secretaryShowCompleted = false },
+                                label = { Text("À faire") }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            FilterChip(
+                                selected = secretaryShowCompleted,
+                                onClick = { secretaryShowCompleted = true },
+                                label = { Text("Afficher les terminées") }
+                            )
+                        }
+                        val visibleTasks = secretaryTasks.filter { task ->
+                            (secretaryShowCompleted || !task.completed) &&
+                                (secretarySearch.isBlank() ||
+                                    task.title.contains(secretarySearch, ignoreCase = true) ||
+                                    task.notes.contains(secretarySearch, ignoreCase = true))
+                        }
+                        if (visibleTasks.isEmpty()) {
+                            Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                                Text(
+                                    if (secretaryTasks.isEmpty()) "Aucune tâche pour le moment. Ajoute ta première tâche."
+                                    else "Aucune tâche ne correspond à ce filtre.",
+                                    color = Muted,
+                                    fontSize = 13.sp
+                                )
                             }
                         } else {
                             Column(
-                                Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                                Modifier.fillMaxWidth().heightIn(max = 380.dp).verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
-                                secretaryTasks.forEach { task ->
+                                visibleTasks.forEach { task ->
                                     Row(
                                         Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
                                             .background(Color(0xFFF4F6F3)).padding(horizontal = 8.dp, vertical = 6.dp),
@@ -1366,22 +1410,61 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                                     withContext(Dispatchers.IO) {
                                                         if (checked) secretary.completeTask(task.id) else secretary.reopenTask(task.id)
                                                     }
+                                                    val latest = withContext(Dispatchers.IO) { secretary.tasks() }
                                                     secretaryTasks.clear()
-                                                    secretaryTasks.addAll(withContext(Dispatchers.IO) { secretary.tasks() })
+                                                    secretaryTasks.addAll(latest)
                                                 }
                                             }
                                         )
-                                        Text(
-                                            task.title,
-                                            Modifier.weight(1f),
-                                            color = if (task.completed) Muted else DeepBlue,
-                                            fontSize = 13.sp,
-                                            textDecoration = if (task.completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null
-                                        )
+                                        Column(Modifier.weight(1f)) {
+                                            TextButton(
+                                                onClick = {
+                                                    secretaryEditingTask = task
+                                                    secretaryEditTitle = task.title
+                                                    secretaryEditNotes = task.notes
+                                                    secretaryEditDueAt = task.dueAtMillis
+                                                    secretaryEditPriority = task.priority
+                                                    secretaryEditError = null
+                                                },
+                                                contentPadding = PaddingValues(0.dp)
+                                            ) {
+                                                Text(
+                                                    task.title,
+                                                    color = if (task.completed) Muted else DeepBlue,
+                                                    fontSize = 13.sp,
+                                                    textDecoration = if (task.completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null
+                                                )
+                                            }
+                                            Text(
+                                                "Priorité : ${task.priority.label}",
+                                                color = Muted,
+                                                fontSize = 10.sp
+                                            )
+                                            task.dueAtMillis?.let { dueAt ->
+                                                val formatted = java.text.DateFormat.getDateTimeInstance(
+                                                    java.text.DateFormat.MEDIUM,
+                                                    java.text.DateFormat.SHORT,
+                                                    java.util.Locale.FRANCE
+                                                ).format(java.util.Date(dueAt))
+                                                Text(
+                                                    if (!task.completed && dueAt < System.currentTimeMillis()) "En retard • $formatted" else "Échéance • $formatted",
+                                                    color = if (!task.completed && dueAt < System.currentTimeMillis()) Color(0xFFB65E70) else Muted,
+                                                    fontSize = 10.sp
+                                                )
+                                            }
+                                        }
+                                        TextButton(onClick = {
+                                            secretaryEditingTask = task
+                                            secretaryEditTitle = task.title
+                                            secretaryEditNotes = task.notes
+                                            secretaryEditDueAt = task.dueAtMillis
+                                            secretaryEditPriority = task.priority
+                                            secretaryEditError = null
+                                        }) { Text("✎", color = Color(0xFF5A7D70), fontSize = 17.sp) }
                                         TextButton(onClick = {
                                             scope.launch {
                                                 withContext(Dispatchers.IO) { secretary.deleteTask(task.id) }
-                                                secretaryTasks.remove(task)
+                                                secretaryTasks.removeAll { it.id == task.id }
                                             }
                                         }) { Text("×", color = Color(0xFFB65F70), fontSize = 20.sp) }
                                     }
@@ -1393,6 +1476,124 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                         }
                     }
                 }
+            }
+            if (secretaryEditingTask != null) {
+                AlertDialog(
+                    onDismissRequest = { secretaryEditingTask = null },
+                    containerColor = Color(0xFFF9FCFF),
+                    shape = RoundedCornerShape(26.dp),
+                    title = { Text("Modifier la tâche", color = DeepBlue) },
+                    text = {
+                        Column(
+                            Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = secretaryEditTitle,
+                                onValueChange = { secretaryEditTitle = it.take(140) },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Titre") },
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = secretaryEditNotes,
+                                onValueChange = { secretaryEditNotes = it.take(2000) },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Notes") },
+                                minLines = 3
+                            )
+                            Text("Priorité", color = DeepBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                SecretaryPriority.entries.forEach { priority ->
+                                    FilterChip(
+                                        selected = secretaryEditPriority == priority,
+                                        onClick = { secretaryEditPriority = priority },
+                                        label = { Text(priority.label, fontSize = 11.sp) }
+                                    )
+                                }
+                            }
+                            TextButton(
+                                onClick = {
+                                    val calendar = java.util.Calendar.getInstance().apply {
+                                        timeInMillis = secretaryEditDueAt ?: System.currentTimeMillis()
+                                    }
+                                    android.app.DatePickerDialog(
+                                        context,
+                                        { _, year, month, day ->
+                                            calendar.set(java.util.Calendar.YEAR, year)
+                                            calendar.set(java.util.Calendar.MONTH, month)
+                                            calendar.set(java.util.Calendar.DAY_OF_MONTH, day)
+                                            android.app.TimePickerDialog(
+                                                context,
+                                                { _, hour, minute ->
+                                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, hour)
+                                                    calendar.set(java.util.Calendar.MINUTE, minute)
+                                                    calendar.set(java.util.Calendar.SECOND, 0)
+                                                    calendar.set(java.util.Calendar.MILLISECOND, 0)
+                                                    secretaryEditDueAt = calendar.timeInMillis
+                                                },
+                                                calendar.get(java.util.Calendar.HOUR_OF_DAY),
+                                                calendar.get(java.util.Calendar.MINUTE),
+                                                true
+                                            ).show()
+                                        },
+                                        calendar.get(java.util.Calendar.YEAR),
+                                        calendar.get(java.util.Calendar.MONTH),
+                                        calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                                    ).show()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Choisir une date et une heure limite", color = Color(0xFF5A7D70)) }
+                            Text(
+                                secretaryEditDueAt?.let {
+                                    "Échéance : " + java.text.DateFormat.getDateTimeInstance(
+                                        java.text.DateFormat.MEDIUM,
+                                        java.text.DateFormat.SHORT,
+                                        java.util.Locale.FRANCE
+                                    ).format(java.util.Date(it))
+                                } ?: "Aucune échéance définie",
+                                color = Muted,
+                                fontSize = 11.sp
+                            )
+                            TextButton(
+                                onClick = { secretaryEditDueAt = null },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Retirer l'échéance", color = Muted) }
+                            secretaryEditError?.let { Text(it, color = Color(0xFFB65E70), fontSize = 11.sp) }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val original = secretaryEditingTask
+                                val title = secretaryEditTitle.trim()
+                                if (original != null && title.isNotBlank()) {
+                                    val updated = original.copy(
+                                        title = title,
+                                        notes = secretaryEditNotes,
+                                        dueAtMillis = secretaryEditDueAt,
+                                        priority = secretaryEditPriority
+                                    )
+                                    scope.launch {
+                                        try {
+                                            withContext(Dispatchers.IO) { secretary.updateTask(updated) }
+                                            val latest = withContext(Dispatchers.IO) { secretary.tasks() }
+                                            secretaryTasks.clear()
+                                            secretaryTasks.addAll(latest)
+                                            secretaryEditingTask = null
+                                        } catch (error: Exception) {
+                                            secretaryEditError = "Enregistrement impossible : ${error.message ?: "erreur inconnue"}."
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = secretaryEditTitle.isNotBlank()
+                        ) { Text("Enregistrer", color = Color(0xFF5A7D70)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { secretaryEditingTask = null }) { Text("Annuler", color = DeepBlue) }
+                    }
+                )
             }
         }
     }
