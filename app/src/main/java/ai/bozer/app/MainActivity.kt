@@ -571,6 +571,35 @@ private fun BozerChat(
         if (text.isEmpty() || sending) return
 
         val secretaryCommand = SecretaryCommandParser.parse(text)
+        if (secretaryCommand is SecretaryCommand.Complete) {
+            val taskTitle = secretaryCommand.title
+            draft = ""
+            val userMessage = ChatMessage(role = "user", content = text)
+            messages.add(userMessage)
+            if (runCatching { repository.save(userMessage) }.isFailure) {
+                messages.remove(userMessage)
+                appendActionResult("Je n'ai pas pu enregistrer ta demande.")
+                return
+            }
+            sending = true
+            scope.launch {
+                val task = withContext(Dispatchers.IO) {
+                    secretary.tasks().firstOrNull { it.title.equals(taskTitle, ignoreCase = true) }
+                }
+                val answer = when {
+                    task == null -> "Je ne trouve pas la tâche « $taskTitle »."
+                    withContext(Dispatchers.IO) { secretaryReminders.complete(task, true) } -> {
+                        secretaryTasks.removeAll { it.id == task.id }
+                        "C'est fait : « ${task.title} » est terminée. Son rappel BOZER a été annulé."
+                    }
+                    else -> "Je n'ai pas pu terminer « $taskTitle » ou annuler son rappel."
+                }
+                appendActionResult(answer)
+                sending = false
+            }
+            return
+        }
+
         if (secretaryCommand is SecretaryCommand.Delete) {
             draft = ""
             val userMessage = ChatMessage(role = "user", content = text)
@@ -1901,6 +1930,9 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 13.dp)
                             ) { Text("+") }
                         }
+                        secretaryStatus?.let {
+                            Text(it, color = Muted, fontSize = 11.sp, lineHeight = 15.sp)
+                        }
                         OutlinedTextField(
                             value = secretarySearch,
                             onValueChange = { secretarySearch = it.take(100) },
@@ -1953,7 +1985,8 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             onCheckedChange = { checked ->
                                                 scope.launch {
                                                     withContext(Dispatchers.IO) {
-                                                        secretaryReminders.complete(task, checked)
+                                                        val synced = secretaryReminders.complete(task, checked)
+                                                        if (!synced) secretaryStatus = "La tâche a été mise à jour, mais son rappel n'a pas pu être synchronisé."
                                                     }
                                                     val latest = withContext(Dispatchers.IO) { secretary.tasks() }
                                                     secretaryTasks.clear()
@@ -2147,11 +2180,21 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     )
                                     scope.launch {
                                         try {
-                                            withContext(Dispatchers.IO) { secretary.updateTask(updated) }
+                                            val reminderReady = withContext(Dispatchers.IO) {
+                                                secretaryReminders.synchronize(updated)
+                                            }
                                             val latest = withContext(Dispatchers.IO) { secretary.tasks() }
                                             secretaryTasks.clear()
                                             secretaryTasks.addAll(latest)
                                             secretaryEditingTask = null
+                                            secretaryStatus = when {
+                                                !reminderReady -> "Tâche enregistrée, mais son rappel n'a pas pu être programmé. Vérifie les autorisations et les notifications."
+                                                updated.dueAtMillis != null && updated.dueAtMillis > System.currentTimeMillis() && !updated.completed ->
+                                                    "Tâche enregistrée avec son rappel local BOZER."
+                                                updated.dueAtMillis != null && !updated.completed ->
+                                                    "Tâche enregistrée. Son échéance est déjà passée ; aucun rappel n'a été programmé."
+                                                else -> "Tâche mise à jour."
+                                            }
                                         } catch (error: Exception) {
                                             secretaryEditError = "Enregistrement impossible : ${error.message ?: "erreur inconnue"}."
                                         }
