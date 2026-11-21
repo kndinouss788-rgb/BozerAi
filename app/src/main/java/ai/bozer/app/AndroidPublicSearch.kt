@@ -58,8 +58,8 @@ class AndroidPublicSearch(
             "text/html,application/xhtml+xml"
         )
         val anchors = Regex("<a\\b([^>]*)>(.*?)</a>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-        val hrefRegex = Regex("""href\\s*=\\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        val classRegex = Regex("""class\\s*=\\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+        val hrefRegex = Regex("""href\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+        val classRegex = Regex("""class\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
         val snippets = Regex(
             """<(?:a|div)[^>]*class=["'][^"']*result__snippet[^"']*["'][^>]*>(.*?)</(?:a|div)>""",
             setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
