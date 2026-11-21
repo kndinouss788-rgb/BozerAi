@@ -78,10 +78,11 @@ object BozerAppCommandParser {
             .trim()
         if (text.isBlank()) return null
 
+        val actionInput = input.trim().replace(Regex("(?i)^bozer[, ]+"), "")
         val launchAndAct = Regex(
-            """^(?:ouvre|lance|demarre)\s+(?:l application\s+|l appli\s+|application\s+)?(.+?)\s+(?:puis|et ensuite)\s+(.+)$""",
+            """^(?:ouvre|lance|d[eé]marre)\\s+(?:l['’]application\\s+|l application\\s+|l['’]appli\\s+|l appli\\s+|application\\s+)?(.+?)\\s+(?:puis|et ensuite)\\s+(.+)$""",
             RegexOption.IGNORE_CASE
-        ).find(text)
+        ).find(actionInput)
         if (launchAndAct != null) {
             val appName = launchAndAct.groupValues[1].trim()
             val actions = BozerUiActionParser.parse(launchAndAct.groupValues[2]) ?: return null
@@ -90,7 +91,6 @@ object BozerAppCommandParser {
             }
         }
 
-        val actionInput = input.trim().replace(Regex("(?i)^bozer[, ]+"), "")
         BozerUiActionParser.parse(actionInput)?.let { return BozerAppCommand.ControlVisibleUi(it) }
 
         if (text in setOf(
