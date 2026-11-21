@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.IntentFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -37,6 +38,15 @@ class BozerFloatingService : Service() {
         }
     }
 
+    private val bubbleVisibilityReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            when (intent?.action) {
+                ACTION_HIDE_BUBBLE -> bubble?.visibility = View.GONE
+                ACTION_SHOW_BUBBLE -> bubble?.visibility = View.VISIBLE
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         if (!Settings.canDrawOverlays(this)) {
@@ -45,6 +55,16 @@ class BozerFloatingService : Service() {
         }
         preferences = getSharedPreferences("bozer_settings", MODE_PRIVATE)
         preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
+        val visibilityFilter = IntentFilter().apply {
+            addAction(ACTION_HIDE_BUBBLE)
+            addAction(ACTION_SHOW_BUBBLE)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(bubbleVisibilityReceiver, visibilityFilter, android.content.Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(bubbleVisibilityReceiver, visibilityFilter)
+        }
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         val size = dp(58)
         layoutParams = WindowManager.LayoutParams(
@@ -62,6 +82,7 @@ class BozerFloatingService : Service() {
 
         val view = BozerSpiralBubbleView(this).apply {
             elevation = dp(12).toFloat()
+            visibility = if (MainActivity.isVisible) View.GONE else View.VISIBLE
         }
         view.setOnTouchListener(createDragListener(view))
         spiralBubble = view
@@ -135,6 +156,7 @@ class BozerFloatingService : Service() {
         }
         if (::preferences.isInitialized) {
             preferences.unregisterOnSharedPreferenceChangeListener(preferenceListener)
+            runCatching { unregisterReceiver(bubbleVisibilityReceiver) }
         }
         bubble = null
         spiralBubble = null
@@ -146,6 +168,9 @@ class BozerFloatingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     companion object {
+        const val ACTION_HIDE_BUBBLE = "ai.bozer.app.action.HIDE_FLOATING_BUBBLE"
+        const val ACTION_SHOW_BUBBLE = "ai.bozer.app.action.SHOW_FLOATING_BUBBLE"
+
         @Volatile
         var isRunning: Boolean = false
             private set
