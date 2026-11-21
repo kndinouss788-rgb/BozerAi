@@ -1,5 +1,12 @@
 package ai.bozer.app
 
+object SecretaryReminderPolicy {
+    fun requiresReminder(task: SecretaryTask, nowMillis: Long): Boolean =
+        !task.completed && task.dueAtMillis?.let { it > nowMillis } == true
+
+    fun label(task: SecretaryTask): String = "Échéance : ${task.title}".take(120)
+}
+
 /**
  * Keeps a Secretary task's due-date reminder in sync with BOZER's local
  * AlarmManager store. All methods are synchronous and should run on Dispatchers.IO.
@@ -14,7 +21,7 @@ class SecretaryReminderCoordinator(
         val previousId = task.reminderAlarmId
         val dueAt = task.dueAtMillis
 
-        if (task.completed || dueAt == null || dueAt <= nowMillis()) {
+        if (!SecretaryReminderPolicy.requiresReminder(task, nowMillis())) {
             return try {
                 tasks.updateTask(task.copy(reminderAlarmId = null))
                 removeAlarm(previousId)
@@ -24,15 +31,16 @@ class SecretaryReminderCoordinator(
             }
         }
 
-        val label = "Échéance : ${task.title}".take(120)
+        val triggerAt = requireNotNull(dueAt)
+        val label = SecretaryReminderPolicy.label(task)
         val existing = previousId?.let(alarms::get)
         if (existing != null && existing.enabled &&
-            existing.triggerAtMillis == dueAt && existing.label == label
+            existing.triggerAtMillis == triggerAt && existing.label == label
         ) {
             return runCatching { tasks.updateTask(task) }.isSuccess
         }
 
-        val newId = runCatching { alarms.create(dueAt, label) }.getOrNull() ?: return false
+        val newId = runCatching { alarms.create(triggerAt, label) }.getOrNull() ?: return false
         val newAlarm = alarms.get(newId)
         if (newAlarm == null || !scheduler.schedule(newAlarm)) {
             removeAlarm(newId)
