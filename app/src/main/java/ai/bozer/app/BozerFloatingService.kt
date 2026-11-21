@@ -3,6 +3,7 @@ package ai.bozer.app
 import android.animation.ValueAnimator
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -26,7 +27,15 @@ import android.view.animation.LinearInterpolator
 class BozerFloatingService : Service() {
     private var windowManager: WindowManager? = null
     private var bubble: View? = null
+    private var spiralBubble: BozerSpiralBubbleView? = null
+    private lateinit var preferences: SharedPreferences
     private lateinit var layoutParams: WindowManager.LayoutParams
+
+    private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { shared, key ->
+        if (key == "animations_enabled") {
+            spiralBubble?.setAnimationsEnabled(shared.getBoolean("animations_enabled", true))
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -34,6 +43,8 @@ class BozerFloatingService : Service() {
             stopSelf()
             return
         }
+        preferences = getSharedPreferences("bozer_settings", MODE_PRIVATE)
+        preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         val size = dp(58)
         layoutParams = WindowManager.LayoutParams(
@@ -53,6 +64,7 @@ class BozerFloatingService : Service() {
             elevation = dp(12).toFloat()
         }
         view.setOnTouchListener(createDragListener(view))
+        spiralBubble = view
         bubble = view
         try {
             windowManager?.addView(view, layoutParams)
@@ -121,7 +133,11 @@ class BozerFloatingService : Service() {
                 // The system may already have removed the overlay window.
             }
         }
+        if (::preferences.isInitialized) {
+            preferences.unregisterOnSharedPreferenceChangeListener(preferenceListener)
+        }
         bubble = null
+        spiralBubble = null
         windowManager = null
         isRunning = false
         super.onDestroy()
@@ -146,6 +162,9 @@ private class BozerSpiralBubbleView(context: android.content.Context) : View(con
         color = Color.WHITE
         alpha = 175
     }
+    private var animationsEnabled = context.getSharedPreferences("bozer_settings", android.content.Context.MODE_PRIVATE)
+        .getBoolean("animations_enabled", true)
+
     private val animator = ValueAnimator.ofFloat(0f, 360f).apply {
         duration = 30_000L
         repeatCount = ValueAnimator.INFINITE
@@ -159,12 +178,19 @@ private class BozerSpiralBubbleView(context: android.content.Context) : View(con
     init {
         contentDescription = "Ouvrir BOZER"
         isClickable = true
-        setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+    }
+
+    fun setAnimationsEnabled(enabled: Boolean) {
+        if (animationsEnabled == enabled) return
+        animationsEnabled = enabled
+        rotationDegrees = 0f
+        if (enabled && isAttachedToWindow) animator.start() else animator.cancel()
+        invalidate()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        animator.start()
+        if (animationsEnabled) animator.start()
     }
 
     override fun onDetachedFromWindow() {
