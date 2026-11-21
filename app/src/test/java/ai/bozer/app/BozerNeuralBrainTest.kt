@@ -41,6 +41,36 @@ class BozerNeuralBrainTest {
     }
 
     @Test
+    fun localPromptBoundsHistoryMemoryAndSearchEvidence() {
+        val history = (0 until 10).map { index ->
+            ChatMessage(
+                role = if (index % 2 == 0) "user" else "assistant",
+                content = "turn-$index " + "x".repeat(500)
+            )
+        }
+        val facts = (0 until 8).map { index -> "fact-$index " + "y".repeat(240) }
+        val results = (0 until 8).map { index ->
+            InternetSearchResult(
+                title = "result-$index " + "t".repeat(200),
+                url = "https://example.org/$index/" + "u".repeat(220),
+                snippet = "snippet-$index " + "s".repeat(300)
+            )
+        }
+
+        val prompt = BozerNeuralBrain.buildLocalPrompt(history, facts, results)
+
+        assertTrue(prompt.contains("turn-4"))
+        assertTrue(prompt.contains("turn-9"))
+        assertFalse(prompt.contains("turn-3"))
+        assertTrue(prompt.contains("fact-4"))
+        assertTrue(prompt.contains("fact-7"))
+        assertFalse(prompt.contains("fact-3"))
+        assertTrue(prompt.contains("result-2"))
+        assertFalse(prompt.contains("result-3"))
+        assertTrue("Local prompt should fit the 2,048-token context budget", prompt.length < 6_000)
+    }
+
+    @Test
     fun remoteContextDoesNotTreatRetrievedContentAsInstructions() {
         val context = BozerNeuralBrain.buildRemoteContext(
             facts = listOf("Préférence explicite"),
