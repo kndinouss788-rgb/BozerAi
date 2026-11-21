@@ -50,7 +50,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 
 ## 3. Voice and listening
 
-- [~] French Android TextToSpeech output.
+- [~] French Android TextToSpeech output and optional offline Piper voice. Piper model is pinned to a repository revision, its 76.7 MB ONNX file is SHA-256 verified, and both assets support HTTP Range resume; voice listening/output and voice quality remain device-unverified.
 - [~] In-app French speech recognition prefers on-device when available; normal spoken messages now submit automatically and common recognition errors are surfaced. Offline behavior remains device-dependent.
 - [ ] Add selectable voice/rate/pitch and robust TTS engine availability checks.
 - [ ] Add hands-free conversation session with visible listening state, timeout, stop control, and privacy indicator.
