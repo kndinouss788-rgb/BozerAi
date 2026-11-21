@@ -24,6 +24,8 @@ class BozerAlarmRepository(private val database: ChatDatabase) {
     fun disable(id: Long): Boolean = setEnabled(id, false)
     fun delete(id: Long): Boolean = database.deleteBozerAlarm(id)
     fun updateTrigger(id: Long, triggerAtMillis: Long): Boolean = database.updateBozerAlarmTrigger(id, triggerAtMillis)
+    fun update(id: Long, triggerAtMillis: Long, label: String, repeatDaysMask: Int): Boolean =
+        database.updateBozerAlarm(id, triggerAtMillis, label, repeatDaysMask)
 }
 
 class BozerAlarmScheduler(context: Context) {
