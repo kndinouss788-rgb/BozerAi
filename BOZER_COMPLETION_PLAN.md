@@ -23,8 +23,9 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 
 - [~] Conversation orchestration and intent detection.
 - [~] Remote model gateway adapters; activate only through a secured backend with a verified provider key.
-- [~] Local llama.cpp JNI/runtime foundation and separately downloaded starter GGUF model.
-- [ ] Make Android local inference reliably usable from first launch; persist model download, verify checksum, show progress, resume interrupted download, handle storage/RAM limits.
+- [~] Local llama.cpp JNI/runtime foundation.
+- [~] Keep the 491 MB GGUF out of the APK; add user-triggered private-storage download, SHA-256 verification, and HTTP Range resume. Kotlin/build validation remains pending.
+- [ ] Make Android local inference reliably usable from first launch; validate first download, resume/retry, checksum failure, storage/RAM limits, and warm-load behavior on Android.
 - [ ] Measure real latency on low/mid-range devices; optimize warm-up, context length, token generation, and cancellation.
 - [ ] Reliable AUTO / ONLINE / OFFLINE selector with explicit status, fallback rules, and no hidden paid calls.
 - [ ] Streaming responses, stop generation, retry, timeout handling, and clear offline/error messages.
