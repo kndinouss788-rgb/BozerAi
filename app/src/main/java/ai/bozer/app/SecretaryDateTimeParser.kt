@@ -59,7 +59,11 @@ object SecretaryDateTimeParser {
             title = title.substring(0, dateMatch.range.first).trim()
             return ParsedSecretaryTaskDetails(
                 title,
-                buildDate(datePart, time ?: TimePart(9, 0), nowMillis)
+                buildDate(
+                    datePart,
+                    time ?: if (datePart == DatePart.RelativeDays(0)) TimePart(23, 59) else TimePart(9, 0),
+                    nowMillis
+                )
             )
         }
 
@@ -174,15 +178,15 @@ object SecretaryDateTimeParser {
             .replace(Regex("\\s+"), " ")
             .trim()
 
-    private val TIME_AT_END = Regex("""\\s+(?:a|à)\\s*(\\d{1,2})(?:\\s*h\\s*(\\d{2})?|\\s*:\\s*(\\d{2}))?\\s*$""")
-    private val DURATION_AT_END = Regex("""\\s+dans\\s+(\\d{1,5})\\s+(minutes?|mins?|heures?|hrs?|h|jours?)$""")
+    private val TIME_AT_END = Regex("""\s+(?:a|à)\s*(\d{1,2})(?:\s*h\s*(\d{2})?|\s*:\s*(\d{2}))?\s*$""")
+    private val DURATION_AT_END = Regex("""\s+dans\s+(\d{1,5})\s+(minutes?|mins?|heures?|hrs?|h|jours?)$""")
     private val DATE_AT_END = Regex(
-        """\\s+(aujourd'hui|aujourd hui|demain|apres[- ]demain|ce soir|(?:le\\s+)?(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)|(?:le\\s+)?\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{4})?|(?:le\\s+)?\\d{1,2}(?:er)?\\s+(?:janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre))$"""
+        """\s+(aujourd'hui|aujourd hui|demain|apres[- ]demain|ce soir|(?:le\s+)?(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)|(?:le\s+)?\d{1,2}[/-]\d{1,2}(?:[/-]\d{4})?|(?:le\s+)?\d{1,2}(?:er)?\s+(?:janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre))$"""
     )
-    private val WEEKDAY_AT_END = Regex("""(?:le\\s+)?(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)$""")
-    private val NUMERIC_DATE_AT_END = Regex("""(?:le\\s+)?(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{4}))?$""")
+    private val WEEKDAY_AT_END = Regex("""(?:le\s+)?(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)$""")
+    private val NUMERIC_DATE_AT_END = Regex("""(?:le\s+)?(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))?$""")
     private val MONTH_DATE_AT_END = Regex(
-        """(?:le\\s+)?(\\d{1,2})(?:er)?\\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)$"""
+        """(?:le\s+)?(\d{1,2})(?:er)?\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)$"""
     )
     private val MONTHS = listOf(
         "janvier", "fevrier", "mars", "avril", "mai", "juin",
