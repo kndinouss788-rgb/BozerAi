@@ -52,16 +52,21 @@ object SecretaryDateTimeParser {
         if (durationMatch != null) {
             val amount = durationMatch.groupValues[1].toLongOrNull()
             val unit = durationMatch.groupValues[2]
-            if (amount != null && amount in 1..10_000) {
-                val multiplier = when {
-                    unit.startsWith("min") -> 60_000L
-                    unit.startsWith("h") -> 3_600_000L
-                    else -> 86_400_000L
-                }
-                val due = nowMillis + amount * multiplier
-                title = title.substring(0, durationMatch.range.first).trim()
-                return ParsedSecretaryTaskDetails(title, due.takeIf { it > nowMillis })
+            if (amount == null || amount !in 1..10_000) {
+                return ParsedSecretaryTaskDetails(
+                    titleInput.trim(),
+                    null,
+                    "La durée indiquée n'est pas valide. Choisis une durée comprise entre 1 et 10 000 unités."
+                )
             }
+            val multiplier = when {
+                unit.startsWith("min") -> 60_000L
+                unit.startsWith("h") -> 3_600_000L
+                else -> 86_400_000L
+            }
+            val due = nowMillis + amount * multiplier
+            title = title.substring(0, durationMatch.range.first).trim()
+            return ParsedSecretaryTaskDetails(title, due.takeIf { it > nowMillis })
         }
 
         val normalizedTitle = normalize(title)
