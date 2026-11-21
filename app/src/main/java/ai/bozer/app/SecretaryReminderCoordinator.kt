@@ -40,7 +40,11 @@ class SecretaryReminderCoordinator(
             return runCatching { tasks.updateTask(task) }.isSuccess
         }
 
-        val newId = runCatching { alarms.create(triggerAt, label) }.getOrNull() ?: return false
+        val newId = runCatching { alarms.create(triggerAt, label) }.getOrNull() ?: run {
+            runCatching { tasks.updateTask(task.copy(reminderAlarmId = null)) }
+            removeAlarm(previousId)
+            return false
+        }
         val newAlarm = alarms.get(newId)
         if (newAlarm == null || !scheduler.schedule(newAlarm)) {
             removeAlarm(newId)
