@@ -21,7 +21,8 @@ internal object BozerActionSafetyPolicy {
             is AndroidCommand.OpenUrl,
             is AndroidCommand.SearchWeb,
             is AndroidCommand.Navigate,
-            AndroidCommand.OpenSettings -> false
+            AndroidCommand.OpenSettings,
+            is AndroidCommand.OpenDeviceSettings -> false
 
             is AndroidCommand.Dial,
             is AndroidCommand.ComposeSms,
