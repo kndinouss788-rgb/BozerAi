@@ -579,7 +579,11 @@ private fun BozerChat(
         draft = ""
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
-        repository.save(userMessage)
+        if (runCatching { repository.save(userMessage) }.isFailure) {
+            messages.remove(userMessage)
+            appendActionResult("Je n'ai pas pu enregistrer ton message sur ce téléphone. Vérifie l'espace de stockage puis réessaie.")
+            return
+        }
         sending = true
         scope.launch {
             val answer = try {
