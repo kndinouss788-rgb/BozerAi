@@ -181,15 +181,15 @@ class AndroidActionExecutor(private val activity: Activity) {
             activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             return "Pour agir dans les applications, active le service BOZER ACTION dans les paramètres d'accessibilité Android, puis redis ta commande."
         }
+        val resolvedTarget = targetPackage ?: BozerAccessibilityService.lastUsedExternalPackage()
+        if (resolvedTarget.isNullOrBlank()) {
+            return "Je ne sais pas encore quelle application tu veux contrôler. Ouvre-la ou demande-moi de l'ouvrir, puis redis ta commande."
+        }
         val requestId = BozerAccessibilityService.requestActions(
             actions = actions,
-            targetPackage = targetPackage,
+            targetPackage = resolvedTarget,
             allowSensitiveActions = userConfirmed
-        ) ?: return if (targetPackage == null && BozerAccessibilityService.lastUsedExternalPackage() == null) {
-            "Je ne sais pas encore quelle application tu veux contrôler. Ouvre-la ou demande-moi de l'ouvrir, puis redis ta commande."
-        } else {
-            "Je n'ai pas pu préparer cette action. Vérifie que BOZER ACTION est activé et que l'application affiche bien le contrôle demandé."
-        }
+        ) ?: return "Je n'ai pas pu préparer cette action. Vérifie que BOZER ACTION est activé et que l'application affiche bien le contrôle demandé."
         return "Mission BOZER ACTION lancée (n°$requestId). Je vais agir dans l'application au premier plan. Je ne confirmerai le résultat que si l'application le permet ; vérifie l'écran."
     }
 
