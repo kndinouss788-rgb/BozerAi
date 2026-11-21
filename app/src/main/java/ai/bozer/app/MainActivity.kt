@@ -490,6 +490,10 @@ private fun BozerChat(
                     saveBozerTheme(command.theme)
                     "Thème ${command.theme.label} activé."
                 }
+                is BozerAppCommand.SetBrainMode -> {
+                    chooseBrainMode(command.mode)
+                    "Mode ${command.mode.label} activé."
+                }
                 BozerAppCommand.CycleTheme -> {
                     val next = bozerTheme.next()
                     saveBozerTheme(next)
