@@ -1984,9 +1984,11 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             checked = task.completed,
                                             onCheckedChange = { checked ->
                                                 scope.launch {
-                                                    withContext(Dispatchers.IO) {
-                                                        val synced = secretaryReminders.complete(task, checked)
-                                                        if (!synced) secretaryStatus = "La tâche a été mise à jour, mais son rappel n'a pas pu être synchronisé."
+                                                    val synced = withContext(Dispatchers.IO) {
+                                                        secretaryReminders.complete(task, checked)
+                                                    }
+                                                    if (!synced) {
+                                                        secretaryStatus = "La tâche a été mise à jour, mais son rappel n'a pas pu être synchronisé."
                                                     }
                                                     val latest = withContext(Dispatchers.IO) { secretary.tasks() }
                                                     secretaryTasks.clear()
