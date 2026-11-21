@@ -26,6 +26,11 @@ class BozerPiperModelManager(context: Context) {
         modelFile.isFile && modelFile.length() == MODEL_BYTES &&
             tokensFile.isFile && tokensFile.length() == TOKENS_BYTES
 
+    suspend fun verifyInstalled(): Boolean = withContext(Dispatchers.IO) {
+        isValidAsset(modelFile, MODEL_BYTES, MODEL_SHA256) &&
+            isValidAsset(tokensFile, TOKENS_BYTES, null)
+    }
+
     suspend fun install(onProgress: (downloaded: Long, total: Long) -> Unit = { _, _ -> }): File =
         withContext(Dispatchers.IO) {
             directory.mkdirs()
