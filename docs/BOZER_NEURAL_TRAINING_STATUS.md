@@ -2,7 +2,7 @@
 
 > **Statut au 21 novembre 2026 : ARCHIVÉ.** Le modèle 1B personnalisé n'a jamais été entraîné sur GPU et n'est plus la voie active du cerveau Android. Le projet a été conservé sur la branche `archive/bozer-neural-training` pour préserver le travail et les données.
 
-La voie active est désormais le modèle pré-entraîné **Qwen2.5-0.5B-Instruct GGUF**, exécuté localement par llama.cpp et encadré par l'identité, la mémoire, les règles de fiabilité et les outils Android de BOZER. Le mode Automatique privilégie le modèle local ; l'inférence distante est réservée au mode En ligne explicite.
+La voie active est désormais le modèle pré-entraîné **Qwen2.5-0.5B-Instruct GGUF**, exécuté localement par llama.cpp et encadré par l'identité, la mémoire, les règles de fiabilité et les outils Android de BOZER. Le modèle est prévu pour être embarqué dans les assets de l'APK, puis copié automatiquement au premier démarrage sans téléchargement réseau ni bouton dédié. En mode Automatique, la passerelle BOZER configurée est utilisée avec Internet et le modèle local prend le relais si elle échoue ; hors connexion, les réponses restent locales. L'intégration doit encore être validée par une compilation APK et un test réel.
 
 Le code expérimental d'entraînement, les corpus et les rapports ci-dessous sont conservés comme archive technique et ne doivent pas être présentés comme un cerveau BOZER entraîné ou opérationnel.
 
