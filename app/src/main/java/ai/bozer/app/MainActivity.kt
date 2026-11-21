@@ -1391,7 +1391,7 @@ private fun BozerTerminalPanel(
                 BozerTerminalItem("Paramètres", "⚙", Modifier.weight(1f)) { onSelect("Paramètres") }
             }
             Text(
-                "Double tap en bas de l'écran pour fermer le terminal.",
+                "Utilise × ou l'icône du terminal pour le refermer.",
                 color = Muted,
                 fontSize = 10.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
