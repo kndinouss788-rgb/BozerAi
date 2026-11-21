@@ -33,12 +33,13 @@ class BozerAlarmTimeTest {
         val next = BozerAlarmTime.nextOccurrence(previous, now, tomorrowMask)
 
         assertNotNull(next)
-        val actual = Calendar.getInstance().apply { timeInMillis = next!! }
+        val actualMillis = requireNotNull(next)
+        val actual = Calendar.getInstance().apply { timeInMillis = actualMillis }
         assertEquals(tomorrow.get(Calendar.YEAR), actual.get(Calendar.YEAR))
         assertEquals(tomorrow.get(Calendar.DAY_OF_YEAR), actual.get(Calendar.DAY_OF_YEAR))
         assertEquals(7, actual.get(Calendar.HOUR_OF_DAY))
         assertEquals(30, actual.get(Calendar.MINUTE))
-        assertTrue(next > now)
+        assertTrue(actualMillis > now)
     }
 
     @Test
@@ -51,11 +52,12 @@ class BozerAlarmTimeTest {
         val next = BozerAlarmTime.nextOccurrence(previous, now, todayMask)
 
         assertNotNull(next)
-        val actual = Calendar.getInstance().apply { timeInMillis = next!! }
+        val actualMillis = requireNotNull(next)
+        val actual = Calendar.getInstance().apply { timeInMillis = actualMillis }
         assertEquals(today.get(Calendar.DAY_OF_WEEK), actual.get(Calendar.DAY_OF_WEEK))
         assertEquals(7, actual.get(Calendar.HOUR_OF_DAY))
         assertEquals(30, actual.get(Calendar.MINUTE))
-        assertTrue(next > now)
+        assertTrue(actualMillis > now)
     }
 
     @Test
