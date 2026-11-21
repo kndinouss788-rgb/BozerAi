@@ -9,11 +9,8 @@ import android.speech.tts.Voice
 import java.util.Locale
 
 /**
- * Provisional Android system-TTS adapter.
- *
- * This uses speech assets installed by Android, not a trained BOZER voice.
- * It prefers an offline French voice and, when Android exposes that metadata,
- * a masculine-labelled option. The status never infers gender from pitch.
+ * Android system-TTS adapter. Sentence-start callbacks keep the visible answer
+ * aligned with the speech actually being played.
  */
 class BozerVoiceOutput(
     context: Context,
@@ -29,15 +26,18 @@ class BozerVoiceOutput(
 
     private var pendingText: String? = null
     private var pendingUtteranceId: String? = null
+    private var pendingSegmentCallback: ((Int, Int) -> Unit)? = null
+    private var pendingCompletedCallback: (() -> Unit)? = null
     private var activeUtteranceId: String? = null
-    private var activeChunkIds = mutableSetOf<String>()
+    private val activeChunkIds = mutableSetOf<String>()
+    private val activeChunkRanges = mutableMapOf<String, BozerSpeechText.Segment>()
+    private var activeSegmentCallback: ((Int, Int) -> Unit)? = null
+    private var activeCompletedCallback: (() -> Unit)? = null
     private var generation = 0L
 
     private fun publishStatus(message: String) {
         currentStatus = message
-        mainHandler.post {
-            if (!released) onStatusChanged(message)
-        }
+        mainHandler.post { if (!released) onStatusChanged(message) }
     }
 
     private fun isExplicitlyMasculine(voice: Voice): Boolean {
@@ -78,28 +78,49 @@ class BozerVoiceOutput(
         ).firstOrNull()
 
         if (selectedVoice != null) engine.voice = selectedVoice
-
         val masculineMetadata = selectedVoice?.let(::isExplicitlyMasculine) == true
         engine.setSpeechRate(0.96f)
-        // A restrained lower pitch is only a timbre preference, never proof of gender.
         engine.setPitch(if (masculineMetadata) 1.0f else 0.93f)
         engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) = Unit
-
-            override fun onDone(utteranceId: String?) {
+            override fun onStart(utteranceId: String?) {
                 if (utteranceId == null) return
-                synchronized(this@BozerVoiceOutput) {
-                    activeChunkIds.remove(utteranceId)
-                    if (activeChunkIds.isEmpty()) activeUtteranceId = null
+                val callbackAndRange = synchronized(this@BozerVoiceOutput) {
+                    activeChunkRanges[utteranceId]?.let { it to activeSegmentCallback }
+                } ?: return
+                val (segment, callback) = callbackAndRange
+                if (callback != null) mainHandler.post {
+                    if (!released) callback(segment.start, segment.endExclusive)
                 }
             }
 
-            override fun onError(utteranceId: String?) {
-                synchronized(this@BozerVoiceOutput) {
-                    if (utteranceId != null) activeChunkIds.remove(utteranceId)
-                    if (activeChunkIds.isEmpty()) activeUtteranceId = null
-                    publishStatus("La synthèse vocale Android a rencontré une erreur.")
+            override fun onDone(utteranceId: String?) {
+                if (utteranceId == null) return
+                val completed = synchronized(this@BozerVoiceOutput) {
+                    activeChunkIds.remove(utteranceId)
+                    activeChunkRanges.remove(utteranceId)
+                    if (activeChunkIds.isEmpty()) {
+                        activeUtteranceId = null
+                        activeSegmentCallback = null
+                        activeCompletedCallback.also { activeCompletedCallback = null }
+                    } else null
                 }
+                completed?.let { callback -> mainHandler.post { if (!released) callback() } }
+            }
+
+            override fun onError(utteranceId: String?) {
+                val completed = synchronized(this@BozerVoiceOutput) {
+                    if (utteranceId != null) {
+                        activeChunkIds.remove(utteranceId)
+                        activeChunkRanges.remove(utteranceId)
+                    }
+                    if (activeChunkIds.isEmpty()) {
+                        activeUtteranceId = null
+                        activeSegmentCallback = null
+                        activeCompletedCallback.also { activeCompletedCallback = null }
+                    } else null
+                }
+                publishStatus("La synthèse vocale Android a rencontré une erreur.")
+                completed?.let { callback -> mainHandler.post { if (!released) callback() } }
             }
         })
 
@@ -107,57 +128,82 @@ class BozerVoiceOutput(
         val voiceName = selectedVoice?.name?.takeIf { it.isNotBlank() }
         val networkLabel = if (selectedVoice?.isNetworkConnectionRequired == true) {
             "connexion Internet possiblement nécessaire"
-        } else {
-            "hors ligne"
-        }
+        } else "hors ligne"
         val genderLabel = when {
             masculineMetadata -> "profil masculin indiqué par Android"
-            selectedVoice == null -> "timbre et genre déterminés par la voix Android par défaut"
+            selectedVoice == null -> "timbre déterminé par la voix Android par défaut"
             else -> "genre non indiqué par Android"
         }
-        val nameLabel = voiceName?.let { " ($it)" }.orEmpty()
-        publishStatus("Voix française Android$nameLabel — $networkLabel ; $genderLabel. Ce n'est pas encore la voix originale BOZER.")
+        publishStatus(
+            "Voix française Android\${voiceName?.let { " ($it)" }.orEmpty()} — $networkLabel ; $genderLabel. Ce n'est pas encore la voix originale BOZER."
+        )
 
         val pending = pendingText
         val pendingId = pendingUtteranceId
+        val pendingProgress = pendingSegmentCallback
+        val pendingDone = pendingCompletedCallback
         pendingText = null
         pendingUtteranceId = null
-        if (!pending.isNullOrBlank()) speak(pending, pendingId ?: "bozer_reply")
+        pendingSegmentCallback = null
+        pendingCompletedCallback = null
+        if (!pending.isNullOrBlank()) {
+            speak(pending, pendingId ?: "bozer_reply", pendingProgress ?: { _, _ -> }, pendingDone ?: {})
+        }
     }
 
     @Synchronized
-    override fun speak(text: String, utteranceId: String) {
+    override fun speak(
+        text: String,
+        utteranceId: String,
+        onSegmentStarted: (Int, Int) -> Unit,
+        onCompleted: () -> Unit
+    ) {
         if (released) return
         val clean = text.trim()
-        if (clean.isBlank()) return
-
+        if (clean.isBlank()) {
+            mainHandler.post { onCompleted() }
+            return
+        }
         if (!ready) {
             pendingText = clean
             pendingUtteranceId = utteranceId
+            pendingSegmentCallback = onSegmentStarted
+            pendingCompletedCallback = onCompleted
             return
         }
 
         generation += 1
         engine.stop()
         activeChunkIds.clear()
+        activeChunkRanges.clear()
         activeUtteranceId = utteranceId
+        activeSegmentCallback = onSegmentStarted
+        activeCompletedCallback = onCompleted
 
-        val chunks = BozerSpeechText.chunks(clean)
-        if (chunks.isEmpty()) {
+        val segments = BozerSpeechText.segments(clean)
+        if (segments.isEmpty()) {
             activeUtteranceId = null
+            activeSegmentCallback = null
+            activeCompletedCallback = null
+            mainHandler.post { if (!released) onCompleted() }
             return
         }
 
-        chunks.forEachIndexed { index, chunk ->
-            val chunkId = utteranceId + "#" + generation + ":" + index
+        segments.forEachIndexed { index, segment ->
+            val chunkId = "$utteranceId#$generation:$index"
             activeChunkIds.add(chunkId)
+            activeChunkRanges[chunkId] = segment
             val queueMode = if (index == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
-            val result = engine.speak(chunk, queueMode, null, chunkId)
+            val result = engine.speak(segment.text, queueMode, null, chunkId)
             if (result == TextToSpeech.ERROR) {
                 engine.stop()
                 activeChunkIds.clear()
+                activeChunkRanges.clear()
                 activeUtteranceId = null
+                activeSegmentCallback = null
+                activeCompletedCallback = null
                 publishStatus("Android a refusé une partie du texte à prononcer.")
+                mainHandler.post { if (!released) onCompleted() }
                 return
             }
         }
@@ -169,18 +215,22 @@ class BozerVoiceOutput(
         if (pendingMatches) {
             pendingText = null
             pendingUtteranceId = null
+            pendingSegmentCallback = null
+            pendingCompletedCallback = null
         }
         val activeMatches = utteranceId == null || activeUtteranceId == utteranceId
         if (ready && activeMatches) {
             generation += 1
             engine.stop()
             activeChunkIds.clear()
+            activeChunkRanges.clear()
             activeUtteranceId = null
+            activeSegmentCallback = null
+            activeCompletedCallback = null
         }
     }
 
     override fun isReady(): Boolean = ready && !released
-
     fun status(): String = currentStatus
 
     @Synchronized
@@ -188,15 +238,19 @@ class BozerVoiceOutput(
         if (released) return
         pendingText = null
         pendingUtteranceId = null
+        pendingSegmentCallback = null
+        pendingCompletedCallback = null
         activeUtteranceId = null
         activeChunkIds.clear()
+        activeChunkRanges.clear()
+        activeSegmentCallback = null
+        activeCompletedCallback = null
         ready = false
         released = true
         engine.stop()
         engine.shutdown()
     }
 
-    /** Kept temporarily for compatibility with older callers. */
     @Deprecated("Use release()")
     fun shutdown() = release()
 }
