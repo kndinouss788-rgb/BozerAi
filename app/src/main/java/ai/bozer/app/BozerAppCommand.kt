@@ -154,6 +154,7 @@ object BozerAppCommandParser {
         Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
             .replace(Regex("\\p{Mn}+"), "")
             .replace(Regex("[’']"), " ")
+            .replace(Regex("[-_]"), " ")
             .replace(Regex("[.!?]+$"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
