@@ -174,6 +174,21 @@ private fun BozerChat(
         context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
             .edit().putString("brain_mode", mode.name).apply()
     }
+
+    fun toggleTerminal() {
+        terminalOpen = !terminalOpen
+        if (soundEffectsEnabled) {
+            BozerInteractionSound.play(
+                if (terminalOpen) BozerInteractionSound.Event.OPEN else BozerInteractionSound.Event.CLOSE
+            )
+        }
+    }
+
+    fun closeTerminal() {
+        if (!terminalOpen) return
+        terminalOpen = false
+        if (soundEffectsEnabled) BozerInteractionSound.play(BozerInteractionSound.Event.CLOSE)
+    }
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
     LaunchedEffect(voiceText.value) { voiceText.value?.let { draft = it; voiceText.value = null } }
@@ -187,6 +202,9 @@ private fun BozerChat(
     var terminalOpen by remember { mutableStateOf(false) }
     var animationsEnabled by remember {
         mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("animations_enabled", true))
+    }
+    var soundEffectsEnabled by remember {
+        mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("sound_effects_enabled", true))
     }
     var activeSpeechMessageAt by remember { mutableStateOf<Long?>(null) }
     var activeSpeechRange by remember { mutableStateOf<IntRange?>(null) }
@@ -408,7 +426,7 @@ private fun BozerChat(
                             )
                         }
                         Spacer(Modifier.weight(1f))
-                        GlassIconButton("⌘", "Ouvrir le terminal BOZER") { terminalOpen = true }
+                        GlassIconButton("⌘", "Ouvrir le terminal BOZER") { toggleTerminal() }
                     }
 
                     if (messages.isEmpty()) {
@@ -496,7 +514,7 @@ private fun BozerChat(
                     Box(
                         Modifier.fillMaxWidth().height(22.dp)
                             .pointerInput(Unit) {
-                                detectTapGestures(onDoubleTap = { terminalOpen = !terminalOpen })
+                                detectTapGestures(onDoubleTap = { toggleTerminal() })
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -514,9 +532,9 @@ private fun BozerChat(
                     exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(tween(160))
                 ) {
                     BozerTerminalPanel(
-                        onClose = { terminalOpen = false },
+                        onClose = { closeTerminal() },
                         onSelect = { module ->
-                            terminalOpen = false
+                            closeTerminal()
                             when (module) {
                                 "Discussion" -> Unit
                                 "Recherche" -> draft = "Recherche sur Internet : "
@@ -852,6 +870,17 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                         animationsEnabled = enabled
                                         context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
                                             .edit().putBoolean("animations_enabled", enabled).apply()
+                                    })
+                                }
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Effets sonores", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                        Text("Petites signatures sonores du terminal", color = Muted, fontSize = 11.sp)
+                                    }
+                                    Switch(checked = soundEffectsEnabled, onCheckedChange = { enabled ->
+                                        soundEffectsEnabled = enabled
+                                        context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+                                            .edit().putBoolean("sound_effects_enabled", enabled).apply()
                                     })
                                 }
                                 FutureSettingLine("Terminal BOZER", "Double tap en bas de l'écran pour l'ouvrir", "⌘")
