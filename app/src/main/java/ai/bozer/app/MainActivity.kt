@@ -1032,8 +1032,10 @@ private fun AmbientLiquidBackground(animationsEnabled: Boolean) {
     val transition = rememberInfiniteTransition(label = "pearl-drift")
     val drift by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(12000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        targetValue = if (animationsEnabled) 1f else 0f,
+        animationSpec = if (animationsEnabled) {
+            infiniteRepeatable(tween(12000, easing = FastOutSlowInEasing), RepeatMode.Reverse)
+        } else snap(),
         label = "drift"
     )
     Canvas(Modifier.fillMaxSize()) {
@@ -1061,8 +1063,10 @@ private fun BozerSpiralLogo(
     val transition = rememberInfiniteTransition(label = "bozer-spiral")
     val rotation by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(30000, easing = LinearEasing)),
+        targetValue = if (animationsEnabled) 360f else 0f,
+        animationSpec = if (animationsEnabled) {
+            infiniteRepeatable(tween(30000, easing = LinearEasing))
+        } else snap(),
         label = "spiral-rotation"
     )
     Canvas(Modifier.size(size)) {
@@ -1077,7 +1081,7 @@ private fun BozerSpiralLogo(
             radius = radius * 1.42f,
             center = center
         )
-        rotate(if (animationsEnabled) rotation else 0f, pivot = center) {
+        rotate(rotation, pivot = center) {
             repeat(3) { index ->
                 rotate(index * 120f, pivot = center) {
                     val path = androidx.compose.ui.graphics.Path().apply {
