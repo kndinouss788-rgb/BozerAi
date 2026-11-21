@@ -29,6 +29,13 @@ class LocalModelManager(private val context: Context) {
     suspend fun verifiedInstalledModel(): File? =
         if (verifyInstalled()) modelFile else null
 
+    suspend fun deleteModel(): Boolean = withContext(Dispatchers.IO) {
+        val removedModel = !modelFile.exists() || modelFile.delete()
+        val removedPartial = !partialFile.exists() || partialFile.delete()
+        val removedMarker = !verifiedMarker.exists() || verifiedMarker.delete()
+        removedModel && removedPartial && removedMarker
+    }
+
     suspend fun verifyInstalled(): Boolean = withContext(Dispatchers.IO) {
         if (!modelFile.isFile || modelFile.length() != MODEL_BYTES) return@withContext false
         val marker = "$MODEL_SHA256\n$MODEL_BYTES\n${modelFile.lastModified()}"
