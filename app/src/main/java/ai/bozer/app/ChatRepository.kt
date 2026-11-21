@@ -132,21 +132,25 @@ class ChatRepository(
     private fun extractSearchQuery(text: String): String? {
         val clean = text.trim()
         val explicit = Regex(
-            """^(?:(?:s'il te plaît|s'il te plait)\s*)?(?:(?:fais|lance|effectue)\s+)?(?:une\s+)?(?:recherche|cherche|va\s+chercher|trouve|vérifie|verifie|regarde)(?:\s+(?:moi|pour\s+moi))?(?:\s+sur\s+(?:internet|le\s+web))?\s*[:,-]?\s*(.+)$""",
+            """^(?:(?:peux-tu|peux tu|est-ce que tu peux|j'aimerais que tu|je veux que tu)\s*)?(?:(?:s'il te plaît|s'il te plait)\s*)?(?:(?:fais|faire|lance|effectue)\s+)?(?:une\s+)?(?:recherche|recherches|rechercher|cherche|chercher|va\s+chercher|trouve|vérifie|verifie|regarde)(?:\s+(?:moi|pour\s+moi))?(?:\s+sur\s+(?:internet|le\s+web))?\s*[:,-]?\s*(.+)$""",
             RegexOption.IGNORE_CASE
         ).find(clean)
         if (explicit != null) {
-            return explicit.groupValues[1].trim().takeIf { it.length >= 2 }
+            val query = explicit.groupValues[1].trim().removePrefix("sur ").trim()
+            return query.takeIf { it.length >= 2 }
         }
 
         val normalized = clean.lowercase(Locale.ROOT)
         val freshnessSignals = listOf(
             "aujourd'hui", "aujourd’hui", "actuellement", "en ce moment",
-            "dernières nouvelles", "dernieres nouvelles", "actualité", "actualite",
-            "actualités", "actualites", "récent", "recent", "récente", "recente",
+            "dernières nouvelles", "dernieres nouvelles", "dernières informations",
+            "dernieres informations", "dernières infos", "dernieres infos",
+            "actualité", "actualite", "actualités", "actualites",
+            "récent", "recent", "récente", "recente", "plus récent", "plus recente",
             "dernier", "dernière", "derniere", "à jour", "a jour",
-            "prix actuel", "taux de change", "cours actuel", "cette semaine",
-            "cette année", "cette annee", "en 2026"
+            "mise à jour", "mise a jour", "prix", "taux de change", "cours actuel",
+            "météo", "meteo", "cette semaine", "cette année", "cette annee",
+            "résultat", "resultat", "score", "classement", "en 2026"
         )
         val asksForFreshFacts = freshnessSignals.any(normalized::contains) ||
             Regex("""\b(?:qui\s+est|quel\s+est|quelle\s+est)\b.*\b(?:actuel|actuelle|maintenant)\b""")
