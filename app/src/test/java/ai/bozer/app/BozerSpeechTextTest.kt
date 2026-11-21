@@ -46,6 +46,18 @@ class BozerSpeechTextTest {
     }
 
     @Test
+    fun aLongWordIsSplitWithoutBreakingItsSourceOffsets() {
+        val source = "X".repeat(91)
+        val segments = BozerSpeechText.segments(source, maxCharacters = 24)
+
+        assertEquals(source, segments.joinToString("") { it.text })
+        assertTrue(segments.all { it.text.length <= 24 })
+        segments.forEach { segment ->
+            assertEquals(segment.text, source.substring(segment.start, segment.endExclusive))
+        }
+    }
+
+    @Test
     fun emptyTextProducesNoUtterances() {
         assertTrue(BozerSpeechText.chunks("   ").isEmpty())
     }
