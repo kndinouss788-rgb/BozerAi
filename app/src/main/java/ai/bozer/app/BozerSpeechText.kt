@@ -25,8 +25,12 @@ internal object BozerSpeechText {
             while (finish > start && text[finish - 1].isWhitespace()) finish--
             while (start < finish) {
                 val limit = minOf(finish, start + maxCharacters)
-                var cut = if (limit == finish) finish else text.lastIndexOf(' ', limit)
-                if (cut <= start) cut = text.indexOf(' ', limit).takeIf { it > start && it <= finish } ?: finish
+                val previousSpace = if (limit == finish) -1 else text.lastIndexOf(' ', limit)
+                val cut = when {
+                    limit == finish -> finish
+                    previousSpace > start -> previousSpace
+                    else -> limit // A single long token is split without losing source offsets.
+                }
                 var segmentEnd = cut.coerceIn(start + 1, finish)
                 while (segmentEnd > start && text[segmentEnd - 1].isWhitespace()) segmentEnd--
                 if (segmentEnd > start) result += Segment(text.substring(start, segmentEnd), start, segmentEnd)
