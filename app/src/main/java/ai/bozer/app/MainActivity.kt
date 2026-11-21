@@ -226,7 +226,7 @@ private fun BozerChat(
     var pendingAndroidAction by remember { mutableStateOf<String?>(null) }
     var modelReady by remember { mutableStateOf(false) }
     var modelBusy by remember { mutableStateOf(false) }
-    var modelStatus by remember { mutableStateOf("Le cerveau local BOZER n'est pas encore installé.") }
+    var modelStatus by remember { mutableStateOf("Cerveau hors ligne non téléchargé (≈491 Mo). Le téléchargement est facultatif et se fait une seule fois.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var actionPermissionDialogOpen by remember { mutableStateOf(false) }
@@ -355,21 +355,53 @@ private fun BozerChat(
     }
 
     LaunchedEffect(Unit) {
-        modelBusy = true
+        // Do not download a 491 MB model automatically at app launch.
+        // If it is already present (for example after an app update), load it.
         try {
-            val installed = modelManager.installBundledModel { copied, total ->
-                withContext(Dispatchers.Main) {
-                    downloadProgress = if (total > 0L) copied.toFloat() / total.toFloat() else 0f
-                    modelStatus = "Préparation du cerveau intégré : ${copied / 1048576L} / ${total / 1048576L} Mo"
-                }
+            val installed = withContext(Dispatchers.IO) { modelManager.verifiedInstalledModel() }
+            if (installed == null) {
+                modelStatus = "Cerveau hors ligne non installé (≈491 Mo). Télécharge-le une fois depuis ces paramètres pour discuter sans Internet."
+            } else {
+                modelBusy = true
+                modelStatus = "Démarrage du cerveau local BOZER…"
+                withContext(Dispatchers.IO) { engine.load(installed.absolutePath) }
+                modelReady = true
+                modelStatus = "Cerveau local prêt — discussion hors ligne disponible."
             }
-            modelStatus = "Démarrage du cerveau BOZER…"
-            withContext(Dispatchers.IO) { engine.load(installed.absolutePath) }
-            modelReady = true
-            modelStatus = "BOZER est prêt — cerveau local disponible sans Internet."
         } catch (error: Exception) {
             modelStatus = "Préparation du cerveau impossible : ${error.message ?: "erreur inconnue"}"
-        } finally { modelBusy = false }
+        } finally {
+            modelBusy = false
+        }
+    }
+
+    fun installLocalBrain() {
+        if (modelBusy || modelReady) return
+        modelBusy = true
+        downloadProgress = 0f
+        modelStatus = "Préparation du téléchargement du cerveau local…"
+        scope.launch {
+            try {
+                var lastProgress = 0L
+                val installed = modelManager.installModel { downloaded, total ->
+                    if (downloaded == total || downloaded - lastProgress >= 1024L * 1024L) {
+                        lastProgress = downloaded
+                        withContext(Dispatchers.Main) {
+                            downloadProgress = if (total > 0L) downloaded.toFloat() / total.toFloat() else 0f
+                            modelStatus = "Téléchargement du cerveau : ${downloaded / 1048576L} / ${total / 1048576L} Mo"
+                        }
+                    }
+                }
+                modelStatus = "Vérification et démarrage du cerveau local…"
+                withContext(Dispatchers.IO) { engine.load(installed.absolutePath) }
+                modelReady = true
+                modelStatus = "Cerveau local prêt — il restera sur ce téléphone après les mises à jour."
+            } catch (error: Exception) {
+                modelStatus = "Téléchargement/préparation interrompu : ${error.message ?: "erreur inconnue"}. Tu peux reprendre depuis ici."
+            } finally {
+                modelBusy = false
+            }
+        }
     }
 
     fun installPiperVoice() {
@@ -1092,18 +1124,27 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     Text("Gérer / installer les voix françaises", color = Color(0xFF5A7D70))
                                 }
                                 Text(
-                                    if (modelReady) "Cerveau local intégré et prêt — discussion hors ligne disponible."
+                                    if (modelReady) "Cerveau local téléchargé et prêt — discussion hors ligne disponible."
                                     else modelStatus,
                                     color = Color(0xFF77877F),
                                     fontSize = 11.sp,
                                     lineHeight = 16.sp
                                 )
-                                if (modelBusy) LinearProgressIndicator(
-                                    progress = { downloadProgress },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = Color(0xFF7D9F91),
-                                    trackColor = Color(0xFFE4ECE6)
-                                )
+                                if (modelBusy) {
+                                    LinearProgressIndicator(
+                                        progress = { downloadProgress },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = Color(0xFF7D9F91),
+                                        trackColor = Color(0xFFE4ECE6)
+                                    )
+                                } else if (!modelReady) {
+                                    TextButton(
+                                        onClick = { installLocalBrain() },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Télécharger / reprendre le cerveau hors ligne (≈491 Mo)", color = Color(0xFF5A7D70))
+                                    }
+                                }
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
