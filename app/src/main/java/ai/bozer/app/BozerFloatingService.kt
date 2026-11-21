@@ -2,6 +2,13 @@ package ai.bozer.app
 
 import android.animation.ValueAnimator
 import android.app.Service
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.pm.ServiceInfo
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.IntentFilter
@@ -49,6 +56,7 @@ class BozerFloatingService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        startForeground(NOTIFICATION_ID, buildForegroundNotification())
         if (!Settings.canDrawOverlays(this)) {
             stopSelf()
             return
@@ -163,12 +171,72 @@ class BozerFloatingService : Service() {
         spiralBubble = null
         windowManager = null
         isRunning = false
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         super.onDestroy()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        return START_STICKY
+    }
+
+    private fun buildForegroundNotification(): android.app.Notification {
+        val channelId = "bozer_floating_bubble"
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager.getNotificationChannel(channelId) == null) {
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    channelId,
+                    "Bulle flottante BOZER",
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    description = "Indique que la bulle flottante BOZER reste disponible au-dessus des applications."
+                    setShowBadge(false)
+                }
+            )
+        }
+
+        val openIntent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            this, NOTIFICATION_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val stopIntent = Intent(this, BozerFloatingService::class.java).apply { action = ACTION_STOP }
+        val stopPendingIntent = PendingIntent.getService(
+            this, NOTIFICATION_ID + 1, stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("BOZER est actif")
+            .setContentText("La bulle flottante est disponible. Appuie pour ouvrir BOZER.")
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setContentIntent(openPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Désactiver", stopPendingIntent)
+            .build()
+    }
+
+    private fun startForeground(notificationId: Int, notification: android.app.Notification) {
+        val serviceType = if (Build.VERSION.SDK_INT >= 34) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else {
+            0
+        }
+        ServiceCompat.startForeground(this, notificationId, notification, serviceType)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     companion object {
+        private const val NOTIFICATION_ID = 19019
+        const val ACTION_STOP = "ai.bozer.app.action.STOP_FLOATING_BUBBLE"
         const val ACTION_HIDE_BUBBLE = "ai.bozer.app.action.HIDE_FLOATING_BUBBLE"
         const val ACTION_SHOW_BUBBLE = "ai.bozer.app.action.SHOW_FLOATING_BUBBLE"
         const val ACTION_START_VOICE = "ai.bozer.app.action.START_VOICE"
