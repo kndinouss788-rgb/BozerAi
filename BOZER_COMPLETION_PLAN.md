@@ -76,7 +76,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 ## 5. Secretary and personal organization
 
 - [~] SQLite tasks with title, notes, due date, priority, completion, and command parser.
-- [~] Secretary UI supports create/edit/delete/complete, notes, due date/time, priority, filters/search, and overdue labels. Task deletion requires explicit confirmation. Future task deadlines are linked to local alarms; completion/deletion cancels the linked reminder. French command parser supports relative dates, weekdays, month dates, times and durations; past/invalid dates are rejected. Parser, reminder policy and SQLite migration tests are added but not run. Calendar integration, export and device validation remain.
+- [~] Secretary UI supports create/edit/delete/complete, notes, due date/time, priority, filters/search, and overdue labels. Task deletion requires explicit confirmation. Future task deadlines are linked to local alarms; completion/deletion cancels the linked reminder. French command parser supports relative dates, weekdays, month dates, times and durations; past/invalid dates, malformed times and excessive durations are rejected with an explicit message. Natural command, parser, reminder policy and SQLite migration tests are added but not run. Calendar integration, export and device validation remain.
 - [ ] Calendar integration with explicit confirmation and timezone-safe dates.
 - [~] Future Secretary task deadlines now link to one-shot local BOZER alarms; edit replaces, completion/deletion cancels. Recurring routines and Kotlin/device validation remain.
 - [ ] Daily briefing and end-of-day summary with opt-in notification.
