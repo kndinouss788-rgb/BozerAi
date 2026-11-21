@@ -138,6 +138,7 @@ class BozerFloatingService : Service() {
 
     private fun openBozer() {
         val intent = Intent(this, MainActivity::class.java).apply {
+            action = ACTION_START_VOICE
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         startActivity(intent)
@@ -170,6 +171,7 @@ class BozerFloatingService : Service() {
     companion object {
         const val ACTION_HIDE_BUBBLE = "ai.bozer.app.action.HIDE_FLOATING_BUBBLE"
         const val ACTION_SHOW_BUBBLE = "ai.bozer.app.action.SHOW_FLOATING_BUBBLE"
+        const val ACTION_START_VOICE = "ai.bozer.app.action.START_VOICE"
 
         @Volatile
         var isRunning: Boolean = false
