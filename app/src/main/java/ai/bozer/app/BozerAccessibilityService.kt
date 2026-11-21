@@ -55,7 +55,7 @@ class BozerAccessibilityService : AccessibilityService() {
             return
         }
 
-        val root = rootInActiveWindow ?: return
+        val root = findTargetWindow(request.targetPackage) ?: return
         val rootPackage = root.packageName?.toString() ?: return
         if (rootPackage == applicationContext.packageName) return
         if (request.targetPackage != null && rootPackage != request.targetPackage) return
@@ -77,6 +77,21 @@ class BozerAccessibilityService : AccessibilityService() {
                 if (pendingRequest?.id == request.id) processPendingRequest()
             }, STEP_DELAY_MS)
         }
+    }
+
+    private fun findTargetWindow(targetPackage: String?): AccessibilityNodeInfo? {
+        val active = rootInActiveWindow
+        if (active != null) {
+            val activePackage = active.packageName?.toString()
+            if (targetPackage == null || activePackage == targetPackage) return active
+        }
+        if (targetPackage == null) return null
+
+        // The input method can own the active window while the app remains
+        // visible underneath. Prefer the requested app's accessible window.
+        return windows.asSequence()
+            .mapNotNull { window -> runCatching { window.root }.getOrNull() }
+            .firstOrNull { root -> root.packageName?.toString() == targetPackage }
     }
 
     private fun performAction(root: AccessibilityNodeInfo, action: BozerUiAction): Boolean =
