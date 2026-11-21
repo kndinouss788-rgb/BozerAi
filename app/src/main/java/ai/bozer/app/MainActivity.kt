@@ -375,6 +375,7 @@ private fun BozerChat(
     var alarmStatus by remember { mutableStateOf<String?>(null) }
     var alarmDeleteTarget by remember { mutableStateOf<BozerAlarm?>(null) }
     var confirmClearMemory by remember { mutableStateOf(false) }
+    var confirmDeleteBrain by remember { mutableStateOf(false) }
     var confirmClearHistory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -1606,6 +1607,14 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     ) {
                                         Text("Télécharger / reprendre le cerveau hors ligne (≈491 Mo)", color = Color(0xFF5A7D70))
                                     }
+                                } else {
+                                    TextButton(
+                                        onClick = { if (!sending) confirmDeleteBrain = true },
+                                        enabled = !sending,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Supprimer le cerveau hors ligne (libérer ≈491 Mo)", color = Color(0xFFB65E70))
+                                    }
                                 }
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
@@ -1750,6 +1759,48 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                         TextButton(onClick = { actionPermissionDialogOpen = false }) {
                             Text("Pas maintenant", color = DeepBlue)
                         }
+                    }
+                )
+            }
+            if (confirmDeleteBrain) {
+                AlertDialog(
+                    onDismissRequest = { confirmDeleteBrain = false },
+                    containerColor = Color(0xFFF9FCFF),
+                    shape = RoundedCornerShape(26.dp),
+                    title = { Text("Supprimer le cerveau local ?", color = DeepBlue) },
+                    text = {
+                        Text(
+                            "Le modèle hors ligne occupe environ 491 Mo. Le supprimer libérera cet espace, mais BOZER ne pourra plus répondre localement sans le télécharger à nouveau. Les conversations, les tâches et les alarmes ne seront pas supprimées.",
+                            color = Muted
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                confirmDeleteBrain = false
+                                scope.launch {
+                                    modelBusy = true
+                                    try {
+                                        withContext(Dispatchers.IO) { engine.close() }
+                                        val removed = modelManager.deleteModel()
+                                        modelReady = false
+                                        modelStatus = if (removed) {
+                                            "Cerveau hors ligne supprimé. Tu pourras le télécharger à nouveau depuis les paramètres."
+                                        } else {
+                                            "Je n'ai pas pu supprimer tous les fichiers du cerveau local."
+                                        }
+                                    } catch (error: Exception) {
+                                        modelStatus = "Suppression impossible : ${error.message ?: "erreur inconnue"}."
+                                    } finally {
+                                        modelBusy = false
+                                    }
+                                }
+                            },
+                            enabled = !sending && !modelBusy
+                        ) { Text("Supprimer", color = Color(0xFFB65E70)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmDeleteBrain = false }) { Text("Conserver", color = DeepBlue) }
                     }
                 )
             }
