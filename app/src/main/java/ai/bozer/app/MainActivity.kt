@@ -1318,7 +1318,7 @@ private fun BozerChat(
                     onDismissRequest = { alarmDeleteTarget = null },
                     containerColor = Color(0xFFF9FCFF),
                     shape = RoundedCornerShape(26.dp),
-                    title = { Text("Annuler cette alarme ?", color = DeepBlue) },
+                    title = { Text("Supprimer cette alarme ?", color = DeepBlue) },
                     text = { Text("« ${target.label} » ne sonnera plus.", color = Muted) },
                     confirmButton = {
                         TextButton(onClick = {
@@ -1331,7 +1331,7 @@ private fun BozerChat(
                                 alarmItems.removeAll { it.id == target.id }
                                 alarmStatus = "Alarme supprimée."
                             }
-                        }) { Text("Annuler l'alarme", color = Color(0xFFB65E70)) }
+                        }) { Text("Supprimer définitivement", color = Color(0xFFB65E70)) }
                     },
                     dismissButton = {
                         TextButton(onClick = { alarmDeleteTarget = null }) {
