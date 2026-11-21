@@ -57,7 +57,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [ ] Evaluate true on-device ASR package/model size, language quality, battery, and offline behavior.
 - [ ] Wake-word “BOZER” service only with explicit opt-in, clear foreground notification, battery controls, and reliable pause/disable.
 - [ ] Test locked-screen, background, reboot, microphone permission denial, and manufacturer battery restrictions.
-- [ ] Voice response interruption, barge-in, and no duplicate audio playback.
+- [~] TTS chunks preserve source character offsets and system TTS exposes range callbacks; Piper captions currently advance by spoken segment, not word-level timing. Interruption, barge-in and duplicate-playback validation remain.
 
 ## 4. Intelligent alarm and notifications
 
@@ -78,7 +78,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [~] SQLite tasks with title, notes, due date, priority, completion, and command parser.
 - [~] Secretary UI supports create/edit/delete/complete, notes, due date/time, priority, filters/search, and overdue labels. Task deletion requires explicit confirmation. Future task deadlines are linked to local alarms; completion/deletion cancels the linked reminder. SQLite migration and policy tests are added but not run. Calendar integration, natural-language date parsing, export, and device validation remain.
 - [ ] Calendar integration with explicit confirmation and timezone-safe dates.
-- [ ] Task-to-alarm/reminder linking and recurring routines.
+- [~] Future Secretary task deadlines now link to one-shot local BOZER alarms; edit replaces, completion/deletion cancels. Recurring routines and Kotlin/device validation remain.
 - [ ] Daily briefing and end-of-day summary with opt-in notification.
 - [ ] Natural-language date/time extraction tested in French.
 - [ ] Backup, restore, export, and deletion controls.
@@ -96,7 +96,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 ## 7. Interface and accessibility
 
 - [~] Compose chat screen, terminal gesture, live voice-text submission, floating overlay, Secretary and alarm-management foundations.
-- [ ] Final single-screen white/pearl Liquid Glass design aligned with product brief.
+- [~] Single-screen white/pearl Liquid Glass design direction and Compose chat surface are present; final visual fidelity, motion, and usability still require build and device review.
 - [ ] Responsive layout for small screens, keyboard, large text, and accessibility services.
 - [ ] Message streaming, copy/share, regenerate, conversation history, and clear empty/loading/error states.
 - [~] Settings already expose voice, brain mode, themes, animation/sounds, bubble, permissions, and memory controls; privacy/export/storage controls and full settings validation remain.
