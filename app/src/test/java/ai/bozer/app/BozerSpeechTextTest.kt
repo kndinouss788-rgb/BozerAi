@@ -20,6 +20,32 @@ class BozerSpeechTextTest {
     }
 
     @Test
+    fun speechSegmentsKeepExactTextAndSourceOffsets() {
+        val source = "Salut.  Voici BOZER !\nOn avance."
+        val segments = BozerSpeechText.segments(source, maxCharacters = 40)
+
+        assertEquals(listOf("Salut.", "Voici BOZER !", "On avance."), segments.map { it.text })
+        segments.forEach { segment ->
+            assertEquals(segment.text, source.substring(segment.start, segment.endExclusive))
+        }
+        assertTrue(segments.zipWithNext().all { (first, second) ->
+            first.endExclusive <= second.start
+        })
+    }
+
+    @Test
+    fun longSpeechSegmentsStayWithinTheConfiguredLimit() {
+        val source = "BOZER avance avec méthode et simplicité. ".repeat(8)
+        val segments = BozerSpeechText.segments(source, maxCharacters = 36)
+
+        assertTrue(segments.size > 1)
+        assertTrue(segments.all { it.text.length <= 36 })
+        segments.forEach { segment ->
+            assertEquals(segment.text, source.substring(segment.start, segment.endExclusive))
+        }
+    }
+
+    @Test
     fun emptyTextProducesNoUtterances() {
         assertTrue(BozerSpeechText.chunks("   ").isEmpty())
     }
