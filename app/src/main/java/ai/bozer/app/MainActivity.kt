@@ -485,10 +485,16 @@ private fun BozerChat(
         }
     }
 
-    SideEffect {
+    DisposableEffect(actionText) {
         BozerAccessibilityService.setResultListener { _, message ->
             actionText.value = message
         }
+        onDispose {
+            BozerAccessibilityService.setResultListener(null)
+        }
+    }
+
+    SideEffect {
         actionExecutor.setBozerAppCommandHandler { command ->
             when (command) {
                 BozerAppCommand.OpenAccessibilitySettings -> {
