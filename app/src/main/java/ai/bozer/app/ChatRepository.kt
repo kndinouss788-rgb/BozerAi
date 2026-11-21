@@ -7,7 +7,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 enum class BrainMode(val label: String, val description: String) {
-    AUTO("Automatique", "Utilise le cerveau Qwen local en priorité : gratuit, sans clé API et utilisable hors ligne."),
+    AUTO("Automatique", "Utilise le cerveau local hors ligne et la passerelle BOZER gratuite lorsqu'Internet est disponible."),
     ONLINE("En ligne", "Utilise la passerelle distante BOZER. Une connexion Internet est nécessaire."),
     OFFLINE("Hors ligne", "Utilise le cerveau Qwen installé sur le téléphone, sans Internet.");
 
@@ -49,7 +49,7 @@ class ChatRepository(
             return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
         }
         if (selectedMode != BrainMode.ONLINE && !model.isLoaded) {
-            return@withLock "Le cerveau local BOZER n'est pas encore installé ou chargé. Installe-le une seule fois dans les paramètres pour discuter gratuitement, même hors ligne."
+            return@withLock "Le cerveau local BOZER intégré à l'application n'est pas encore prêt. Patiente pendant son initialisation puis réessaie."
         }
         if (selectedMode == BrainMode.ONLINE && remoteBrain?.isConfigured != true) {
             return@withLock "La passerelle distante BOZER n'est pas configurée. Repasse en Automatique pour utiliser le cerveau local gratuit."
@@ -74,16 +74,21 @@ class ChatRepository(
             database.rememberedFacts().takeLast(20), searchResults
         )
         try {
-            // The downloaded Qwen model is the default foundation brain.
-            // Remote inference is opt-in only, so ordinary chat never incurs API usage.
-            val useRemote = selectedMode == BrainMode.ONLINE && remoteBrain?.isConfigured == true
+            // AUTO: use the configured free BOZER gateway when online, then fall back
+            // to the bundled local Qwen brain. OFFLINE never makes a network request.
+            val useRemote = selectedMode == BrainMode.ONLINE ||
+                (selectedMode == BrainMode.AUTO && onlineAvailable && remoteBrain?.isConfigured == true)
             val answer = if (useRemote) {
                 try {
                     remoteBrain!!.reply(history, extraContext)
                 } catch (remoteError: Exception) {
-                    "Le moteur distant BOZER n'est pas joignable : " +
-                        (remoteError.message ?: "erreur réseau") +
-                        ". Repasse en Automatique pour continuer avec le cerveau local."
+                    if (selectedMode == BrainMode.ONLINE) {
+                        "Le moteur distant BOZER n'est pas joignable : " +
+                            (remoteError.message ?: "erreur réseau") +
+                            ". Repasse en Automatique pour continuer avec le cerveau local."
+                    } else {
+                        model.generate(prompt)
+                    }
                 }
             } else {
                 model.generate(prompt)
