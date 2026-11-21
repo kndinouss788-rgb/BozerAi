@@ -360,6 +360,7 @@ private fun BozerChat(
     var secretaryEditDueAt by remember { mutableStateOf<Long?>(null) }
     var secretaryEditPriority by remember { mutableStateOf(SecretaryPriority.NORMAL) }
     var secretaryEditError by remember { mutableStateOf<String?>(null) }
+    var secretaryDeleteTarget by remember { mutableStateOf<SecretaryTask?>(null) }
     var confirmClearMemory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -1508,12 +1509,9 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                             secretaryEditPriority = task.priority
                                             secretaryEditError = null
                                         }) { Text("✎", color = Color(0xFF5A7D70), fontSize = 17.sp) }
-                                        TextButton(onClick = {
-                                            scope.launch {
-                                                withContext(Dispatchers.IO) { secretary.deleteTask(task.id) }
-                                                secretaryTasks.removeAll { it.id == task.id }
-                                            }
-                                        }) { Text("×", color = Color(0xFFB65F70), fontSize = 20.sp) }
+                                        TextButton(onClick = { secretaryDeleteTarget = task }) {
+                                            Text("×", color = Color(0xFFB65F70), fontSize = 20.sp)
+                                        }
                                     }
                                 }
                             }
@@ -1523,6 +1521,30 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                         }
                     }
                 }
+            }
+            if (secretaryDeleteTarget != null) {
+                val target = secretaryDeleteTarget!!
+                AlertDialog(
+                    onDismissRequest = { secretaryDeleteTarget = null },
+                    containerColor = Color(0xFFF9FCFF),
+                    shape = RoundedCornerShape(26.dp),
+                    title = { Text("Supprimer cette tâche ?", color = DeepBlue) },
+                    text = { Text("« ${target.title} » sera supprimée définitivement de la liste BOZER SECRETARY.", color = Muted) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            secretaryDeleteTarget = null
+                            scope.launch {
+                                val deleted = withContext(Dispatchers.IO) { secretary.deleteTask(target.id) }
+                                if (deleted) secretaryTasks.removeAll { it.id == target.id }
+                            }
+                        }) { Text("Supprimer", color = Color(0xFFB65E70)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { secretaryDeleteTarget = null }) {
+                            Text("Annuler", color = DeepBlue)
+                        }
+                    }
+                )
             }
             if (secretaryEditingTask != null) {
                 AlertDialog(
