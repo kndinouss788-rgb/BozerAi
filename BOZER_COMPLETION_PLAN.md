@@ -31,7 +31,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [~] AUTO uses local inference only; ONLINE is an explicit remote-provider choice; OFFLINE is local-only. Remote health/authentication and failure behavior still need validation.
 - [ ] Streaming responses, stop generation, retry, timeout handling, and clear offline/error messages.
 - [ ] Conversation quality suite: factual questions, French, ambiguity, refusal/safety, multi-turn context, and hallucination checks.
-- [~] Bound local context to recent turns, a small set of explicit memory facts, and a limited number of search results; memory deletion exists. Conversation export, complete data controls, and token-level budget validation remain.
+- [~] Bound local context to recent turns, explicit memory facts, and limited search results; separate confirmed deletion of remembered facts and conversation history. Conversation export, full data controls, and token-level budget measurement remain.
 - [ ] Stable model/provider settings and user-visible cost controls.
 
 ## 2. BOZER ACTION — phone actions and missions
@@ -76,7 +76,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 ## 5. Secretary and personal organization
 
 - [~] SQLite tasks with title, notes, due date, priority, completion, and command parser.
-- [~] Secretary UI supports create/edit/delete/complete, notes, due date/time, priority, filters/search, and overdue labels. Calendar integration, reminders, export, and migration tests remain.
+- [~] Secretary UI supports create/edit/delete/complete, notes, due date/time, priority, filters/search, and overdue labels. Task deletion requires explicit confirmation from the UI or voice flow. Calendar integration, automatic reminders, export, and migration tests remain.
 - [ ] Calendar integration with explicit confirmation and timezone-safe dates.
 - [ ] Task-to-alarm/reminder linking and recurring routines.
 - [ ] Daily briefing and end-of-day summary with opt-in notification.
