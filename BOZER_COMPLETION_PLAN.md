@@ -66,7 +66,7 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 - [~] Daily, weekday and user-selected weekday recurrence in the alarm screen, with automatic rescheduling after a firing.
 - [~] Ten-minute snooze action from the alarm notification.
 - [ ] Validate migration from every previous database version and recurrence behavior over daylight-saving/timezone changes.
-- [~] Alarm manager screen can create one-shot/daily alarms, list them, and cancel with confirmation. A full ringing/dismiss UI and screen-locked validation remain.
+- [~] Alarm manager screen can create one-shot/daily/custom-weekday alarms, list all alarms, pause/resume and delete with confirmation. A full ringing/dismiss UI, edit controls and screen-locked validation remain.
 - [ ] Progressive wake-up, configurable snooze duration, alarm tones, vibration patterns, volume guidance, and test-alarm action.
 - [~] Voice commands support daily and weekday recurrence; the alarm screen supports one-shot, daily, and custom selected weekdays, listing, and cancellation. Edit/pause controls and a full ringing screen remain.
 - [ ] Priority notification categories, quiet hours, notification grouping, and user-controlled channels.
