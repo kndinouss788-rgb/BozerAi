@@ -1897,3 +1897,20 @@ private fun SettingsAction(title: String, subtitle: String, onClick: () -> Unit)
         Text("›", color=Color(0xFF6F9585), fontSize=23.sp)
     }
 }
+
+
+@Composable
+private fun PermissionStatusLine(title: String, status: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, color = DeepBlue, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text(
+            status,
+            color = if (status == "Autorisé") Color(0xFF5C806F) else Color(0xFF9A7953),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
