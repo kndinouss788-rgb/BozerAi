@@ -83,13 +83,19 @@ class BozerPiperVoiceOutput(
         publishStatus("Voix française locale chargée — profil candidat 55 — hors ligne ; timbre à confirmer par écoute.")
     }
 
-    override fun speak(text: String, utteranceId: String) {
+    override fun speak(
+        text: String,
+        utteranceId: String,
+        onSegmentStarted: (Int, Int) -> Unit,
+        onCompleted: () -> Unit
+    ) {
         if (released) return
         val clean = text.trim()
         if (clean.isEmpty()) return
         val engine = tts
         if (engine == null) {
             publishStatus("La voix locale n'est pas chargée. La voix Android peut prendre le relais.")
+            mainHandler.post { onCompleted() }
             return
         }
 
@@ -98,14 +104,19 @@ class BozerPiperVoiceOutput(
         playbackJob?.cancel()
         playbackJob = scope.launch {
             try {
-                val pieces = BozerSpeechText.chunks(clean, maxCharacters = 220)
+                val pieces = BozerSpeechText.segments(clean, maxCharacters = 220)
                 for (piece in pieces) {
                     if (generation.get() != request) break
                     val audio = synchronized(engineLock) {
                         if (generation.get() != request || released) null
-                        else engine.generate(piece, sid = MALE_SPEAKER_ID, speed = SPEECH_SPEED)
+                        else engine.generate(piece.text, sid = MALE_SPEAKER_ID, speed = SPEECH_SPEED)
                     } ?: break
                     if (audio.samples.isNotEmpty() && generation.get() == request) {
+                        mainHandler.post {
+                            if (!released && generation.get() == request) {
+                                onSegmentStarted(piece.start, piece.endExclusive)
+                            }
+                        }
                         playAudio(audio.samples, audio.sampleRate, request)
                     }
                 }
@@ -114,7 +125,10 @@ class BozerPiperVoiceOutput(
                     publishStatus("Erreur de synthèse locale : " + (error.message ?: "inconnue") + ".")
                 }
             } finally {
-                if (generation.get() == request) stopTrack()
+                if (generation.get() == request) {
+                    stopTrack()
+                    mainHandler.post { if (!released && generation.get() == request) onCompleted() }
+                }
             }
         }
     }
