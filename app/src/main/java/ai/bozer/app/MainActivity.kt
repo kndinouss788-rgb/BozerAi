@@ -1024,23 +1024,26 @@ private fun BozerChat(
                                 }
                             }
                             val alarmWeekdays = listOf(
-                                "L" to 2, "M" to 4, "M" to 8, "J" to 16,
-                                "V" to 32, "S" to 64, "D" to 1
+                                "Lun" to 2, "Mar" to 4, "Mer" to 8, "Jeu" to 16,
+                                "Ven" to 32, "Sam" to 64, "Dim" to 1
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                alarmWeekdays.forEach { (label, bit) ->
-                                    FilterChip(
-                                        selected = alarmRepeatDaysMask and bit != 0,
-                                        onClick = {
-                                            alarmRepeatDaysMask = if (alarmRepeatDaysMask and bit != 0) {
-                                                alarmRepeatDaysMask and bit.inv()
-                                            } else {
-                                                alarmRepeatDaysMask or bit
-                                            }
-                                        },
-                                        label = { Text(label, fontSize = 11.sp) },
-                                        modifier = Modifier.weight(1f)
-                                    )
+                            listOf(alarmWeekdays.take(4), alarmWeekdays.drop(4)).forEach { dayRow ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    dayRow.forEach { (label, bit) ->
+                                        FilterChip(
+                                            selected = alarmRepeatDaysMask and bit != 0,
+                                            onClick = {
+                                                alarmRepeatDaysMask = if (alarmRepeatDaysMask and bit != 0) {
+                                                    alarmRepeatDaysMask and bit.inv()
+                                                } else {
+                                                    alarmRepeatDaysMask or bit
+                                                }
+                                            },
+                                            label = { Text(label, fontSize = 10.sp) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    if (dayRow.size < 4) Spacer(Modifier.weight((4 - dayRow.size).toFloat()))
                                 }
                             }
                             Text(
