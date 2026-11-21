@@ -508,9 +508,11 @@ private fun BozerChat(
         scope.launch {
             try {
                 val directory = piperModelManager.install { downloaded, total ->
-                    piperProgress = if (total > 0L) {
-                        (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-                    } else 0f
+                    scope.launch {
+                        piperProgress = if (total > 0L) {
+                            (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                        } else 0f
+                    }
                 }
                 piperModelInstalled = true
                 withContext(Dispatchers.IO) { piperVoiceOutput.initialize(directory) }
