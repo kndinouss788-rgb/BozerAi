@@ -147,11 +147,40 @@ class MainActivity : ComponentActivity() {
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
+    override fun onResume() {
+        super.onResume()
+        isVisible = true
+        notifyFloatingBubbleVisibility(appVisible = true)
+    }
+
+    override fun onPause() {
+        isVisible = false
+        notifyFloatingBubbleVisibility(appVisible = false)
+        super.onPause()
+    }
+
+    private fun notifyFloatingBubbleVisibility(appVisible: Boolean) {
+        if (!BozerFloatingService.isRunning) return
+        val action = if (appVisible) {
+            BozerFloatingService.ACTION_HIDE_BUBBLE
+        } else {
+            BozerFloatingService.ACTION_SHOW_BUBBLE
+        }
+        sendBroadcast(Intent(action).setPackage(packageName))
+    }
+
     override fun onDestroy() {
+        isVisible = false
         speechInput?.stop()
         speechInput = null
         if (::engine.isInitialized) engine.close()
         super.onDestroy()
+    }
+
+    companion object {
+        @Volatile
+        var isVisible: Boolean = false
+            private set
     }
 }
 
