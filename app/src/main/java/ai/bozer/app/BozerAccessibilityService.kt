@@ -36,6 +36,7 @@ class BozerAccessibilityService : AccessibilityService() {
         if (packageName !in request.targetPackages) return
 
         val root = rootInActiveWindow ?: return
+        if (root.packageName?.toString() !in request.targetPackages) return
         if (clickVisibleControl(root, request.labels)) {
             clearRequest(request.id, "CLICK_REQUESTED")
         }
@@ -74,17 +75,19 @@ class BozerAccessibilityService : AccessibilityService() {
 
             if (labelMatches && node.isVisibleToUser && node.isEnabled) {
                 var clickable: AccessibilityNodeInfo? = node
-                repeat(MAX_CLICKABLE_ANCESTORS) {
-                    val candidate = clickable ?: return@repeat
+                var depth = 0
+                while (clickable != null && depth < MAX_CLICKABLE_ANCESTORS) {
+                    val candidate = clickable
                     if (candidate.isVisibleToUser && candidate.isEnabled &&
                         candidate.isClickable && candidate.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                     ) return true
                     clickable = candidate.parent
+                    depth += 1
                 }
             }
 
             for (index in 0 until node.childCount) {
-                node.getChild(index)?.let(queue::addLast)
+                node.getChild(index)?.let { child -> queue.addLast(child) }
             }
         }
         return false
