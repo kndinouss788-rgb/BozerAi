@@ -52,7 +52,11 @@ class SecretaryRepository(private val database: ChatDatabase) {
 
 
 sealed interface SecretaryCommand {
-    data class Add(val title: String, val dueAtMillis: Long? = null) : SecretaryCommand
+    data class Add(
+        val title: String,
+        val dueAtMillis: Long? = null,
+        val dateWarning: String? = null
+    ) : SecretaryCommand
     data class Complete(val title: String) : SecretaryCommand
     data class Delete(val title: String) : SecretaryCommand
     data object ListOpen : SecretaryCommand
@@ -75,7 +79,7 @@ object SecretaryCommandParser {
             ).find(text)?.groupValues?.get(1)?.trim()
             val details = SecretaryDateTimeParser.parse(originalTitle ?: add)
             if (details.title.isBlank()) return null
-            return SecretaryCommand.Add(details.title, details.dueAtMillis)
+            return SecretaryCommand.Add(details.title, details.dueAtMillis, details.dateWarning)
         }
 
         val complete = Regex("^(?:termine|terminer|acheve|achever|coche)\\s+(?:(?:la tâche|la tache)\\s+)?(.+)$", RegexOption.IGNORE_CASE)
