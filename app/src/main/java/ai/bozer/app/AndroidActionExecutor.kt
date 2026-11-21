@@ -171,8 +171,8 @@ class AndroidActionExecutor(private val activity: Activity) {
         userConfirmed: Boolean
     ): String {
         if (!BozerAccessibilityService.isConnected()) {
-            activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            return "Pour agir dans les applications, active le service BOZER ACTION dans les paramètres d'accessibilité Android, puis redis ta commande."
+            return bozerAppCommandHandler?.invoke(BozerAppCommand.RequestAccessibilityConsent)
+                ?: "L'accès BOZER ACTION doit d'abord être expliqué et autorisé dans les paramètres Android."
         }
         val resolvedTarget = targetPackage ?: BozerAccessibilityService.lastUsedExternalPackage()
         if (resolvedTarget.isNullOrBlank()) {
@@ -216,8 +216,8 @@ class AndroidActionExecutor(private val activity: Activity) {
         val intent = activity.packageManager.getLaunchIntentForPackage(selected.first)
             ?: return "L'application « ${selected.second} » ne peut pas être ouverte depuis son icône."
         if (!BozerAccessibilityService.isConnected()) {
-            activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            return "J'ai trouvé ${selected.second}. Pour exécuter les étapes vocales dans son écran, active d'abord BOZER ACTION dans les paramètres d'accessibilité Android, puis redis ta commande."
+            return bozerAppCommandHandler?.invoke(BozerAppCommand.RequestAccessibilityConsent)
+                ?: "L'accès BOZER ACTION doit d'abord être expliqué et autorisé dans les paramètres Android."
         }
         val requestId = BozerAccessibilityService.requestActions(
             actions = actions,
