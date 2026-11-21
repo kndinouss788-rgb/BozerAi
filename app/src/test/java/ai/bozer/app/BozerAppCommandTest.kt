@@ -8,6 +8,7 @@ class BozerAppCommandTest {
     @Test
     fun parsesInternalSettingsAndSilentMode() {
         assertEquals(BozerAppCommand.OpenSettings, BozerAppCommandParser.parse("BOZER, ouvre tes paramètres"))
+        assertEquals(BozerAppCommand.OpenAccessibilitySettings, BozerAppCommandParser.parse("Ouvre les paramètres d'accessibilité Android"))
         assertEquals(BozerAppCommand.SetSilentMode(true), BozerAppCommandParser.parse("Passe en mode silencieux"))
         assertEquals(BozerAppCommand.SetSilentMode(false), BozerAppCommandParser.parse("Désactive le mode silencieux"))
     }
