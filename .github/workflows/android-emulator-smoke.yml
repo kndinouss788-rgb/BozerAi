@@ -74,6 +74,9 @@ jobs:
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 900
+          # GitHub-hosted Ubuntu runners expose KVM; the action otherwise disables it,
+          # causing current Android Emulator builds to exit before creating an ADB device.
+          disable-linux-hw-accel: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -cores 4
           script: bash .github/scripts/android-emulator-e2e.sh
       - name: Upload emulator screenshot and brain test logs
