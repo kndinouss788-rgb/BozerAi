@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 private val Ink = Color(0xFF1B292E)
@@ -205,7 +206,6 @@ private fun BozerChat(
     }
     val messages = remember { mutableStateListOf<ChatMessage>().apply { addAll(repository.history()) } }
     var draft by remember { mutableStateOf("") }
-    LaunchedEffect(voiceText.value) { voiceText.value?.let { draft = it; voiceText.value = null } }
     var sending by remember { mutableStateOf(false) }
     var pendingAndroidAction by remember { mutableStateOf<String?>(null) }
     var modelReady by remember { mutableStateOf(false) }
@@ -221,6 +221,18 @@ private fun BozerChat(
     }
     var soundEffectsEnabled by remember {
         mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("sound_effects_enabled", true))
+    }
+    var bozerTheme by remember {
+        mutableStateOf(
+            BozerTheme.fromStored(
+                context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getString("theme_mode", "PEARL")
+            )
+        )
+    }
+    fun saveBozerTheme(theme: BozerTheme) {
+        bozerTheme = theme
+        context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+            .edit().putString("theme_mode", theme.name).apply()
     }
     var activeSpeechMessageAt by remember { mutableStateOf<Long?>(null) }
     fun toggleTerminal() {
@@ -433,20 +445,105 @@ private fun BozerChat(
         }
     }
 
+    SideEffect {
+        actionExecutor.setBozerAppCommandHandler { command ->
+            when (command) {
+                BozerAppCommand.OpenSettings -> {
+                    settingsOpen = true
+                    terminalOpen = false
+                    bozerSpaceOpen = false
+                    bozerLabOpen = false
+                    secretaryOpen = false
+                    "J'ouvre les paramètres de BOZER."
+                }
+                is BozerAppCommand.SetSilentMode -> {
+                    voiceRepliesEnabled = !command.enabled
+                    context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+                        .edit().putBoolean("voice_replies", voiceRepliesEnabled).apply()
+                    if (command.enabled) {
+                        voiceOutput.stop()
+                        piperVoiceOutput.stop()
+                        activeSpeechMessageAt = null
+                        activeSpeechRange = null
+                        "Mode silencieux activé. Je continue à comprendre tes commandes, mais je ne lis plus mes réponses à voix haute."
+                    } else {
+                        "Mode silencieux désactivé. Ma voix est de nouveau activée."
+                    }
+                }
+                is BozerAppCommand.SetAnimations -> {
+                    animationsEnabled = command.enabled
+                    context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+                        .edit().putBoolean("animations_enabled", command.enabled).apply()
+                    if (command.enabled) "Animations fluides activées." else "Animations fluides désactivées."
+                }
+                is BozerAppCommand.SetSoundEffects -> {
+                    soundEffectsEnabled = command.enabled
+                    context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+                        .edit().putBoolean("sound_effects_enabled", command.enabled).apply()
+                    if (command.enabled) "Effets sonores activés." else "Effets sonores désactivés."
+                }
+                is BozerAppCommand.SetTheme -> {
+                    saveBozerTheme(command.theme)
+                    "Thème ${command.theme.label} activé."
+                }
+                BozerAppCommand.CycleTheme -> {
+                    val next = bozerTheme.next()
+                    saveBozerTheme(next)
+                    "Nouveau thème activé : ${next.label}."
+                }
+                is BozerAppCommand.SetFloatingBubble -> {
+                    if (command.enabled) {
+                        val alreadyAllowed = Settings.canDrawOverlays(context)
+                        onEnableFloatingBubble()
+                        if (alreadyAllowed) "Bulle flottante BOZER activée."
+                        else "Je lance la demande d'autorisation Android pour afficher la bulle BOZER."
+                    } else {
+                        onDisableFloatingBubble()
+                        "Bulle flottante BOZER désactivée."
+                    }
+                }
+                BozerAppCommand.OpenTikTokForRecording,
+                BozerAppCommand.OpenVideoCamera -> "Cette action doit être traitée par le lanceur Android."
+            }
+        }
+    }
+
+    LaunchedEffect(voiceText.value) {
+        val spoken = voiceText.value?.trim().orEmpty()
+        if (spoken.isNotBlank()) {
+            voiceText.value = null
+            draft = spoken
+            if (actionExecutor.isActionCommand(spoken)) {
+                // Dispatch in the composition scope so clearing voiceText cannot cancel it.
+                scope.launch {
+                    delay(80)
+                    send()
+                }
+            }
+        }
+    }
+
+    val themePalette = BozerThemePalette.forTheme(bozerTheme)
     MaterialTheme(
         colorScheme = lightColorScheme(
-            primary = Color(0xFF5A7D70),
+            primary = Color(themePalette.accent),
             onPrimary = Color.White,
-            secondary = Color(0xFF8BA99B),
-            background = Pearl,
-            surface = Color.White,
+            secondary = Color(themePalette.secondary),
+            background = Color(themePalette.background),
+            surface = Color(themePalette.surface),
             onSurface = Ink
         )
     ) {
-        Surface(Modifier.fillMaxSize(), color = Pearl) {
+        Surface(Modifier.fillMaxSize(), color = Color(themePalette.background)) {
             Box(
                 Modifier.fillMaxSize().background(
-                    Brush.linearGradient(listOf(Color(0xFFF5F7F4), Color(0xFFE9EEEB), Color(0xFFF8F9F7)))
+                    Brush.linearGradient(
+                        listOf(
+                            Color(themePalette.gradientStart),
+                            Color(themePalette.gradientMiddle),
+                            Color(themePalette.gradientEnd)
+                        )
+                    )
                 )
             ) {
                 AmbientLiquidBackground(animationsEnabled)
@@ -800,7 +897,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                 Surface(
                     Modifier.fillMaxWidth().fillMaxHeight(),
                     shape = RoundedCornerShape(24.dp),
-                    color = Color(0xFFF8FAF8),
+                    color = Color(themePalette.surface),
                     shadowElevation = 24.dp
                 ) {
                     Column(Modifier.fillMaxSize().padding(20.dp)) {
@@ -941,6 +1038,19 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("APPARENCE ET INTERFACE", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 FutureSettingLine("Identité BOZER", "Spirale fluide • Verre nacré • Argent", "◉")
+                                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    Text("Thème BOZER", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    Text("Choisis l'ambiance de ton interface", color = Muted, fontSize = 11.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        BozerTheme.entries.forEach { theme ->
+                                            FilterChip(
+                                                selected = bozerTheme == theme,
+                                                onClick = { saveBozerTheme(theme) },
+                                                label = { Text(theme.label, fontSize = 11.sp) }
+                                            )
+                                        }
+                                    }
+                                }
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("Animations fluides", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
