@@ -408,6 +408,14 @@ private fun BozerChat(
         }
     }
 
+    LaunchedEffect(alarmsOpen) {
+        while (alarmsOpen) {
+            notificationPermissionGranted = Build.VERSION.SDK_INT < 33 ||
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            delay(900)
+        }
+    }
+
     LaunchedEffect(voiceRepliesEnabled, piperModelInstalled) {
         if (voiceRepliesEnabled && piperModelInstalled && !piperReady && !piperBusy) {
             piperBusy = true
@@ -1068,6 +1076,56 @@ private fun BozerChat(
                             shape = RoundedCornerShape(15.dp)
                         ) { Text("Enregistrer l'alarme") }
                         alarmStatus?.let { Text(it, color = Muted, fontSize = 11.sp, lineHeight = 15.sp) }
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp))
+                                .background(Color(0xFFF4F6F3)).padding(11.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Text(
+                                if (alarmScheduler.exactAlarmAccessGranted()) "Alarmes précises : autorisées"
+                                else "Alarmes précises : non autorisées (Android peut retarder les rappels)",
+                                color = DeepBlue,
+                                fontSize = 11.sp
+                            )
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmScheduler.exactAlarmAccessGranted()) {
+                                TextButton(
+                                    onClick = {
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent(
+                                                    Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                                    Uri.parse("package:${context.packageName}")
+                                                )
+                                            )
+                                        }.onFailure {
+                                            alarmStatus = "Impossible d'ouvrir le réglage des alarmes précises."
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) { Text("Autoriser les alarmes précises", color = Color(0xFF5A7D70)) }
+                            }
+                            Text(
+                                if (notificationPermissionGranted) "Notifications BOZER : autorisées"
+                                else "Notifications BOZER : bloquées par Android",
+                                color = if (notificationPermissionGranted) DeepBlue else Color(0xFFB65E70),
+                                fontSize = 11.sp
+                            )
+                            if (Build.VERSION.SDK_INT >= 33 && !notificationPermissionGranted) {
+                                TextButton(
+                                    onClick = {
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                            )
+                                        }.onFailure {
+                                            alarmStatus = "Impossible d'ouvrir les réglages des notifications."
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) { Text("Autoriser les notifications BOZER", color = Color(0xFF5A7D70)) }
+                            }
+                        }
                         HorizontalDivider(color = Color(0xFFEAF0F4))
                         Text("ALARMES PROGRAMMÉES", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                         if (alarmItems.isEmpty()) {
