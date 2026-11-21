@@ -589,6 +589,10 @@ private fun BozerChat(
                 appendActionResult("Je n'ai pas pu enregistrer ta demande.")
                 return
             }
+            if (command.dateWarning != null) {
+                appendActionResult(command.dateWarning)
+                return
+            }
             sending = true
             scope.launch {
                 val answer = try {
