@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db", null, 5) {
+class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db", null, 6) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """CREATE TABLE messages (
@@ -25,6 +25,9 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         if (oldVersion < 3) createSecretaryTable(db)
         if (oldVersion < 4) createBozerAlarmTable(db)
         if (oldVersion in 4 until 5) db.execSQL("ALTER TABLE bozer_alarms ADD COLUMN repeat_days_mask INTEGER NOT NULL DEFAULT 0")
+        if (oldVersion >= 3 && oldVersion < 6) {
+            db.execSQL("ALTER TABLE secretary_tasks ADD COLUMN reminder_alarm_id INTEGER")
+        }
     }
 
     private fun createSecretaryTable(db: SQLiteDatabase) {
@@ -37,7 +40,8 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
                 priority INTEGER NOT NULL DEFAULT 1 CHECK(priority BETWEEN 0 AND 2),
                 status TEXT NOT NULL DEFAULT 'OPEN' CHECK(status IN ('OPEN','DONE')),
                 created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
+                updated_at INTEGER NOT NULL,
+                reminder_alarm_id INTEGER
             )"""
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_secretary_tasks_due ON secretary_tasks(status, due_at)")
@@ -147,6 +151,7 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
             put("status", if (task.completed) "DONE" else "OPEN")
             put("created_at", if (task.id == 0L) now else task.createdAtMillis)
             put("updated_at", now)
+            if (task.reminderAlarmId == null) putNull("reminder_alarm_id") else put("reminder_alarm_id", task.reminderAlarmId)
         }
         return if (task.id == 0L) {
             writableDatabase.insertOrThrow("secretary_tasks", null, values)
@@ -163,7 +168,7 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
         val args = if (includeCompleted) null else arrayOf("OPEN")
         readableDatabase.query(
             "secretary_tasks",
-            arrayOf("id", "title", "notes", "due_at", "priority", "status", "created_at"),
+            arrayOf("id", "title", "notes", "due_at", "priority", "status", "created_at", "reminder_alarm_id"),
             selection, args, null, null,
             "CASE WHEN status = 'DONE' THEN 1 ELSE 0 END, CASE WHEN due_at IS NULL THEN 1 ELSE 0 END, due_at ASC, priority DESC, id DESC"
         ).use { cursor ->
@@ -177,7 +182,8 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(context, "bozer_chat.db"
                         dueAtMillis = dueAt,
                         priority = SecretaryPriority.fromLevel(cursor.getInt(4)),
                         completed = cursor.getString(5) == "DONE",
-                        createdAtMillis = cursor.getLong(6)
+                        createdAtMillis = cursor.getLong(6),
+                        reminderAlarmId = if (cursor.isNull(7)) null else cursor.getLong(7)
                     )
                 )
             }
