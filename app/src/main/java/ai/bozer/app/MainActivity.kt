@@ -428,10 +428,17 @@ private fun BozerChat(
         if (voiceRepliesEnabled && piperModelInstalled && !piperReady && !piperBusy) {
             piperBusy = true
             try {
-                withContext(Dispatchers.IO) { piperVoiceOutput.initialize(piperModelManager.modelDirectory()) }
-                piperReady = true
-                voiceTtsStatus = "Voix française locale chargée — profil candidat 55 — hors ligne."
+                val voiceFilesValid = piperModelManager.verifyInstalled()
+                piperModelInstalled = voiceFilesValid
+                if (voiceFilesValid) {
+                    withContext(Dispatchers.IO) { piperVoiceOutput.initialize(piperModelManager.modelDirectory()) }
+                    piperReady = true
+                    voiceTtsStatus = "Voix française locale chargée — profil candidat 55 — hors ligne."
+                } else {
+                    voiceTtsStatus = "Le modèle vocal local est incomplet ou endommagé. Tu peux le réinstaller depuis ces paramètres."
+                }
             } catch (error: Exception) {
+                piperModelInstalled = false
                 voiceTtsStatus = "Chargement de la voix locale impossible : " + (error.message ?: "erreur inconnue")
             } finally {
                 piperBusy = false
@@ -500,23 +507,17 @@ private fun BozerChat(
         }
         scope.launch {
             try {
-                val directory = if (piperModelManager.isInstalled()) {
-                    piperModelManager.modelDirectory()
-                } else {
-                    piperModelManager.install { downloaded, total ->
-                        scope.launch {
-                            piperProgress = if (total > 0L) {
-                                (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-                            } else 0f
-                        }
-                    }
+                val directory = piperModelManager.install { downloaded, total ->
+                    piperProgress = if (total > 0L) {
+                        (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                    } else 0f
                 }
                 piperModelInstalled = true
                 withContext(Dispatchers.IO) { piperVoiceOutput.initialize(directory) }
                 piperReady = true
                 voiceTtsStatus = "Voix française locale chargée — profil candidat 55 — hors ligne ; timbre à confirmer."
             } catch (error: Exception) {
-                piperModelInstalled = piperModelManager.isInstalled()
+                piperModelInstalled = withContext(Dispatchers.IO) { piperModelManager.verifyInstalled() }
                 voiceTtsStatus = "Installation de la voix impossible : " + (error.message ?: "erreur inconnue")
             } finally {
                 piperBusy = false
