@@ -6,7 +6,8 @@ import java.util.Locale
 
 data class ParsedSecretaryTaskDetails(
     val title: String,
-    val dueAtMillis: Long?
+    val dueAtMillis: Long?,
+    val dateWarning: String? = null
 )
 
 /**
@@ -57,14 +58,20 @@ object SecretaryDateTimeParser {
         val datePart = dateMatch?.let(::toDatePart)
         if (datePart != null) {
             title = title.substring(0, dateMatch.range.first).trim()
-            return ParsedSecretaryTaskDetails(
-                title,
-                buildDate(
-                    datePart,
-                    time ?: if (datePart == DatePart.RelativeDays(0)) TimePart(23, 59) else TimePart(9, 0),
-                    nowMillis
-                )
+            val dueAt = buildDate(
+                datePart,
+                time ?: if (datePart == DatePart.RelativeDays(0)) TimePart(23, 59) else TimePart(9, 0),
+                nowMillis
             )
+            return if (dueAt == null) {
+                ParsedSecretaryTaskDetails(
+                    titleInput.trim(),
+                    null,
+                    "La date ou l'heure indiquée est invalide ou déjà passée. Vérifie l'échéance et réessaie."
+                )
+            } else {
+                ParsedSecretaryTaskDetails(title, dueAt)
+            }
         }
 
         if (time != null) {
