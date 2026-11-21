@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bozer_accessibility_service_description">Autorise BOZER à cliquer sur un contrôle visible de TikTok uniquement après une commande explicite et pendant une courte durée. BOZER ne lit pas et ne transmet pas le contenu des autres applications.</string>
+</resources>
