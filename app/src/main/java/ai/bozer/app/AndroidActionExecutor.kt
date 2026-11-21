@@ -18,6 +18,24 @@ import java.util.Calendar
  * action there. BOZER never silently sends messages or places calls.
  */
 class AndroidActionExecutor(private val activity: Activity) {
+    private var bozerAppCommandHandler: ((BozerAppCommand) -> String?)? = null
+
+    fun setBozerAppCommandHandler(handler: ((BozerAppCommand) -> String?)?) {
+        bozerAppCommandHandler = handler
+    }
+
+    fun isActionCommand(command: String): Boolean {
+        val normalized = normalize(command)
+        return BozerAppCommandParser.parse(command) != null ||
+            AndroidCommandParser.parse(command) != null ||
+            normalized in setOf(
+                "annule la prochaine alarme", "annule la prochaine alarme bozer",
+                "annule mon prochain reveil", "annule toutes les alarmes bozer",
+                "supprime toutes les alarmes bozer", "quelles sont mes alarmes",
+                "liste mes alarmes", "mes alarmes bozer"
+            )
+    }
+
     fun requiresUserConfirmation(command: String): Boolean =
         BozerActionSafetyPolicy.requiresUserConfirmation(command)
 
@@ -64,6 +82,22 @@ class AndroidActionExecutor(private val activity: Activity) {
     }
 
     fun execute(command: String): String? {
+        val appCommand = BozerAppCommandParser.parse(command)
+        if (appCommand != null) {
+            return when (appCommand) {
+                BozerAppCommand.OpenTikTokForRecording -> {
+                    if (TikTokPublisher.openTikTok(activity)) {
+                        "J'ouvre TikTok. Je ne peux pas appuyer à ta place sur son bouton Enregistrer : TikTok garde la main sur sa caméra. Tu pourras lancer l'enregistrement dans l'application."
+                    } else {
+                        "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
+                    }
+                }
+                BozerAppCommand.OpenVideoCamera -> openVideoCamera()
+                else -> bozerAppCommandHandler?.invoke(appCommand)
+                    ?: "Cette commande BOZER n'est pas encore reliée à ses paramètres."
+            }
+        }
+
         val normalizedCommand = normalize(command)
         if (normalizedCommand in setOf("annule la prochaine alarme", "annule la prochaine alarme bozer", "annule mon prochain reveil")) {
             return cancelNextBozerAlarm()
@@ -140,6 +174,15 @@ class AndroidActionExecutor(private val activity: Activity) {
     private fun openSettings(): String {
         activity.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
         return "J'ouvre les paramètres du téléphone."
+    }
+
+    private fun openVideoCamera(): String {
+        val intent = Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE)
+        if (intent.resolveActivity(activity.packageManager) == null) {
+            return "Je ne trouve aucune application caméra capable d'enregistrer une vidéo."
+        }
+        activity.startActivity(intent)
+        return "J'ouvre la caméra Android en mode vidéo. L'enregistrement ne démarre qu'après ton appui sur le bouton Enregistrer."
     }
 
     private fun openUrl(value: String): String {
