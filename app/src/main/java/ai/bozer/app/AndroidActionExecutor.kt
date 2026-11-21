@@ -283,7 +283,11 @@ class AndroidActionExecutor(private val activity: Activity) {
     }
 
     private fun openDeviceSettings(action: String, label: String): String {
-        activity.startActivity(Intent(action))
+        val intent = Intent(action)
+        if (action == Settings.ACTION_APP_NOTIFICATION_SETTINGS) {
+            intent.putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
+        }
+        activity.startActivity(intent)
         return "J'ouvre les paramètres Android : $label."
     }
 
