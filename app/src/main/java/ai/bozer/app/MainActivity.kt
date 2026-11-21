@@ -408,12 +408,12 @@ private fun BozerChat(
 
     LaunchedEffect(alarmsOpen) {
         if (alarmsOpen) {
-            val active = withContext(Dispatchers.IO) {
+            val all = withContext(Dispatchers.IO) {
                 alarmScheduler.rescheduleEnabled(alarmRepository)
-                alarmRepository.enabled()
+                alarmRepository.all()
             }
             alarmItems.clear()
-            alarmItems.addAll(active.sortedBy { it.triggerAtMillis })
+            alarmItems.addAll(all.sortedBy { it.triggerAtMillis })
         }
     }
 
@@ -1136,9 +1136,9 @@ private fun BozerChat(
                                                 alarmDraftLabel = ""
                                                 alarmDraftAt = null
                                                 alarmRepeatDaysMask = 0
-                                                val active = withContext(Dispatchers.IO) { alarmRepository.enabled().sortedBy { it.triggerAtMillis } }
+                                                val all = withContext(Dispatchers.IO) { alarmRepository.all() }
                                                 alarmItems.clear()
-                                                alarmItems.addAll(active)
+                                                alarmItems.addAll(all.sortedBy { it.triggerAtMillis })
                                             }
                                         } catch (error: Exception) {
                                             alarmStatus = "Création impossible : ${error.message ?: "erreur inconnue"}."
@@ -1202,9 +1202,9 @@ private fun BozerChat(
                             }
                         }
                         HorizontalDivider(color = Color(0xFFEAF0F4))
-                        Text("ALARMES PROGRAMMÉES", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                        Text("ALARMES ET RAPPELS ENREGISTRÉS", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                         if (alarmItems.isEmpty()) {
-                            Text("Aucune alarme active pour le moment.", color = Muted, fontSize = 13.sp)
+                            Text("Aucune alarme enregistrée pour le moment.", color = Muted, fontSize = 13.sp)
                         } else {
                             alarmItems.forEach { alarm ->
                                 Column(
@@ -1235,9 +1235,75 @@ private fun BozerChat(
                                                     .joinToString(" • ") { it.first }
                                             }
                                             Text(repeatLabel, color = Muted, fontSize = 10.sp)
+                                            Text(
+                                                when {
+                                                    alarm.enabled -> "Active"
+                                                    alarm.repeatDaysMask == 0 && alarm.triggerAtMillis <= System.currentTimeMillis() -> "Terminée"
+                                                    else -> "En pause"
+                                                },
+                                                color = when {
+                                                    alarm.enabled -> Color(0xFF5A7D70)
+                                                    alarm.repeatDaysMask == 0 && alarm.triggerAtMillis <= System.currentTimeMillis() -> Muted
+                                                    else -> Color(0xFF9B7957)
+                                                },
+                                                fontSize = 10.sp
+                                            )
+                                        }
+                                        val canResume = alarm.repeatDaysMask != 0 || alarm.triggerAtMillis > System.currentTimeMillis()
+                                        if (alarm.enabled || canResume) {
+                                            Switch(
+                                                checked = alarm.enabled,
+                                                onCheckedChange = { enable ->
+                                                    scope.launch {
+                                                        val result = withContext(Dispatchers.IO) {
+                                                            var updated = alarmRepository.get(alarm.id)
+                                                            if (updated == null) {
+                                                                false
+                                                            } else if (!enable) {
+                                                                alarmScheduler.cancel(alarm.id)
+                                                                alarmRepository.setEnabled(alarm.id, false)
+                                                            } else {
+                                                                if (updated.triggerAtMillis <= System.currentTimeMillis() && updated.repeatDaysMask != 0) {
+                                                                    val next = BozerAlarmTime.nextOccurrence(
+                                                                        updated.triggerAtMillis,
+                                                                        System.currentTimeMillis(),
+                                                                        updated.repeatDaysMask
+                                                                    )
+                                                                    if (next != null) alarmRepository.updateTrigger(updated.id, next)
+                                                                }
+                                                                updated = alarmRepository.get(alarm.id)
+                                                                if (updated != null &&
+                                                                    updated.triggerAtMillis > System.currentTimeMillis() &&
+                                                                    alarmRepository.setEnabled(alarm.id, true)
+                                                                ) {
+                                                                    val enabledAlarm = alarmRepository.get(alarm.id)
+                                                                    if (enabledAlarm != null && alarmScheduler.schedule(enabledAlarm)) true
+                                                                    else {
+                                                                        alarmRepository.setEnabled(alarm.id, false)
+                                                                        false
+                                                                    }
+                                                                } else false
+                                                            }
+                                                        }
+                                                        val all = withContext(Dispatchers.IO) { alarmRepository.all() }
+                                                        alarmItems.clear()
+                                                        alarmItems.addAll(all.sortedBy { it.triggerAtMillis })
+                                                        alarmStatus = when {
+                                                            !enable && result -> "Alarme mise en pause."
+                                                            enable && result && alarmScheduler.exactAlarmAccessGranted() ->
+                                                                "Alarme réactivée."
+                                                            enable && result ->
+                                                                "Alarme réactivée, mais Android peut retarder son déclenchement."
+                                                            enable && !result ->
+                                                                "Impossible de réactiver cette alarme. Vérifie sa date et les autorisations Android."
+                                                            else -> "Impossible de mettre cette alarme en pause."
+                                                        }
+                                                    }
+                                                }
+                                            )
                                         }
                                         TextButton(onClick = { alarmDeleteTarget = alarm }) {
-                                            Text("Annuler", color = Color(0xFFB65E70))
+                                            Text("Supprimer", color = Color(0xFFB65E70))
                                         }
                                     }
                                 }
@@ -1263,7 +1329,7 @@ private fun BozerChat(
                                     alarmRepository.delete(target.id)
                                 }
                                 alarmItems.removeAll { it.id == target.id }
-                                alarmStatus = "Alarme annulée."
+                                alarmStatus = "Alarme supprimée."
                             }
                         }) { Text("Annuler l'alarme", color = Color(0xFFB65E70)) }
                     },
