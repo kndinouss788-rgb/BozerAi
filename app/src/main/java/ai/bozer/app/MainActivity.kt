@@ -224,6 +224,15 @@ private fun BozerChat(
     var modelStatus by remember { mutableStateOf("Le cerveau local BOZER n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var actionAccessibilityEnabled by remember { mutableStateOf(BozerAccessibilityService.isConnected()) }
+    var overlayPermissionGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
+    var microphonePermissionGranted by remember {
+        mutableStateOf(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+    }
+    var notificationPermissionGranted by remember {
+        mutableStateOf(Build.VERSION.SDK_INT < 33 ||
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+    }
     var terminalOpen by remember { mutableStateOf(false) }
     var bozerSpaceOpen by remember { mutableStateOf(false) }
     var bozerLabOpen by remember { mutableStateOf(false) }
@@ -302,6 +311,20 @@ private fun BozerChat(
     var confirmClearMemory by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    LaunchedEffect(settingsOpen) {
+        if (settingsOpen) {
+            while (true) {
+                actionAccessibilityEnabled = BozerAccessibilityService.isConnected()
+                overlayPermissionGranted = Settings.canDrawOverlays(context)
+                microphonePermissionGranted =
+                    context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                notificationPermissionGranted = Build.VERSION.SDK_INT < 33 ||
+                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                delay(900)
+            }
+        }
+    }
 
     LaunchedEffect(secretaryOpen) {
         if (secretaryOpen) {
@@ -1098,6 +1121,48 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("AUTORISATIONS BOZER ACTION", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                PermissionStatusLine(
+                                    "Contrôle des applications",
+                                    if (actionAccessibilityEnabled) "Autorisé" else "À autoriser"
+                                )
+                                PermissionStatusLine(
+                                    "Microphone",
+                                    if (microphonePermissionGranted) "Autorisé" else "Demandé au premier usage vocal"
+                                )
+                                PermissionStatusLine(
+                                    "Bulle flottante",
+                                    if (overlayPermissionGranted) "Autorisé" else "À autoriser pour utiliser la bulle"
+                                )
+                                PermissionStatusLine(
+                                    "Notifications",
+                                    if (notificationPermissionGranted) "Autorisé" else "Non autorisé"
+                                )
+                                Text(
+                                    "BOZER ne reçoit pas un pouvoir illimité : Android garde des protections et certaines applications bloquent des actions. Les autres autorisations (contacts, agenda, caméra…) seront demandées uniquement quand une fonction les nécessite.",
+                                    color = Muted,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                                TextButton(
+                                    onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        if (actionAccessibilityEnabled) "Gérer le contrôle des applications"
+                                        else "Autoriser le contrôle vocal des applications",
+                                        color = Color(0xFF5A7D70)
+                                    )
+                                }
+                                if (!overlayPermissionGranted) {
+                                    TextButton(
+                                        onClick = { onEnableFloatingBubble() },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Autoriser l'affichage de la bulle BOZER", color = Color(0xFF5A7D70))
+                                    }
+                                }
+
                                 Text("FONCTIONS", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
