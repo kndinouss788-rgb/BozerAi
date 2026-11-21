@@ -1473,7 +1473,10 @@ private fun BozerChat(
                                         val saved = alarmRepository.update(
                                             target.id, newTime, newLabel, alarmEditDaysMask
                                         )
-                                        if (!saved) return@withContext "La modification n'a pas pu être enregistrée."
+                                        if (!saved) {
+                                            if (current.enabled) alarmScheduler.schedule(current)
+                                            return@withContext "La modification n'a pas pu être enregistrée ; l'ancienne programmation a été restaurée."
+                                        }
                                         val updated = alarmRepository.get(target.id)
                                             ?: return@withContext "L'alarme modifiée est introuvable."
                                         if (!updated.enabled) {
