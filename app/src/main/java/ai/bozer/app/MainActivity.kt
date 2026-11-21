@@ -482,7 +482,7 @@ private fun BozerChat(
                                 Modifier.size(45.dp).shadow(8.dp, CircleShape).clip(CircleShape)
                                     .background(Brush.linearGradient(listOf(Color(0xFF526F69), Color(0xFF2D4641))))
                                     .clickable(enabled = !sending && when (brainMode) {
-                                        BrainMode.AUTO -> modelReady || repository.remoteConfigured
+                                        BrainMode.AUTO -> modelReady
                                         BrainMode.ONLINE -> repository.remoteConfigured
                                         BrainMode.OFFLINE -> modelReady
                                     }) { send() },
@@ -760,7 +760,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     lineHeight = 15.sp
                                 )
                                 Text(
-                                    "Voix locale Sherpa-ONNX prioritaire ; moteur Android utilisé en secours. La voix originale BOZER pourra ensuite être entraînée.",
+                                    "Voix française locale si installée ; sinon voix française fournie par Android.",
                                     color = Color(0xFF9AA6B3),
                                     fontSize = 10.sp,
                                     lineHeight = 14.sp
