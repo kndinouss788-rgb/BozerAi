@@ -110,6 +110,16 @@ class SecretaryDateTimeParserTest {
     }
 
     @Test
+    fun excessiveRelativeDurationReturnsWarning() {
+        val now = localTime(2026, Calendar.NOVEMBER, 21, 10, 0)
+        val parsed = SecretaryDateTimeParser.parse("Appeler le garage dans 10001 jours", now)
+
+        assertEquals("Appeler le garage dans 10001 jours", parsed.title)
+        assertNull(parsed.dueAtMillis)
+        assertNotNull(parsed.dateWarning)
+    }
+
+    @Test
     fun invalidTimeIsNotGuessed() {
         val now = localTime(2026, Calendar.NOVEMBER, 21, 10, 0)
         val parsed = SecretaryDateTimeParser.parse("Préparer le dossier à 28h", now)
