@@ -2202,7 +2202,8 @@ private fun BozerSpaceDialog(
     onOrganisation: () -> Unit,
     onSearch: () -> Unit,
     onPhone: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onAlarms: () -> Unit
 ) {
     Dialog(
         onDismissRequest = onClose,
@@ -2249,6 +2250,10 @@ private fun BozerSpaceDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     BozerTerminalItem("Téléphone", "⌘", Modifier.weight(1f), onPhone)
                     BozerTerminalItem("Paramètres", "⚙", Modifier.weight(1f), onSettings)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    BozerTerminalItem("Alarmes", "◷", Modifier.weight(1f), onAlarms)
+                    Spacer(Modifier.weight(1f))
                 }
                 Text(
                     "Les fonctions restent accessibles depuis le terminal, sans encombrer la conversation.",
