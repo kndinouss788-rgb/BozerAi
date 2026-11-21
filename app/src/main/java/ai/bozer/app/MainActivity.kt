@@ -241,17 +241,21 @@ private fun BozerChat(
     }
 
     LaunchedEffect(Unit) {
-        if (modelManager.verifyInstalled()) {
-            modelStatus = "Chargement du cerveau BOZER…"
-            modelBusy = true
-            try {
-                withContext(Dispatchers.IO) { engine.load(modelManager.installedModel()!!.absolutePath) }
-                modelReady = true
-                modelStatus = "Cerveau BOZER prêt."
-            } catch (error: Exception) {
-                modelStatus = "Chargement impossible : ${error.message ?: "erreur inconnue"}"
-            } finally { modelBusy = false }
-        }
+        modelBusy = true
+        try {
+            val installed = modelManager.installBundledModel { copied, total ->
+                withContext(Dispatchers.Main) {
+                    downloadProgress = if (total > 0L) copied.toFloat() / total.toFloat() else 0f
+                    modelStatus = "Préparation du cerveau intégré : ${copied / 1048576L} / ${total / 1048576L} Mo"
+                }
+            }
+            modelStatus = "Démarrage du cerveau BOZER…"
+            withContext(Dispatchers.IO) { engine.load(installed.absolutePath) }
+            modelReady = true
+            modelStatus = "BOZER est prêt — cerveau local disponible sans Internet."
+        } catch (error: Exception) {
+            modelStatus = "Préparation du cerveau impossible : ${error.message ?: "erreur inconnue"}"
+        } finally { modelBusy = false }
     }
 
     fun installPiperVoice() {
@@ -289,31 +293,6 @@ private fun BozerChat(
         }
     }
 
-    fun installAndLoad() {
-        if (modelBusy || modelReady) return
-        modelBusy = true
-        modelStatus = "Téléchargement du cerveau BOZER pré-entraîné (Qwen)…"
-        scope.launch {
-            try {
-                var lastPercent = -1
-                val file = modelManager.download { downloaded, total ->
-                    val percent = if (total > 0L) ((downloaded * 100L) / total).toInt() else 0
-                    if (percent != lastPercent || downloaded == total) {
-                        lastPercent = percent
-                        withContext(Dispatchers.Main) {
-                            downloadProgress = if (total > 0L) downloaded.toFloat() / total else 0f
-                            modelStatus = "Téléchargement : ${downloaded / 1048576L} / ${total / 1048576L} Mo"
-                        }
-                    }
-                }
-                withContext(Dispatchers.IO) { engine.load(file.absolutePath) }
-                modelReady = true
-                modelStatus = "Cerveau BOZER Qwen installé et chargé — prêt à fonctionner hors ligne."
-            } catch (error: Exception) {
-                modelStatus = "Installation impossible : ${error.message ?: "erreur inconnue"}"
-            } finally { modelBusy = false }
-        }
-    }
 
     fun appendActionResult(answer: String) {
         val assistantMessage = ChatMessage(role = "assistant", content = answer)
@@ -763,13 +742,19 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 ) {
                                     Text("Gérer / installer les voix françaises", color = Color(0xFF258DB8))
                                 }
-                                TextButton(onClick = { installAndLoad() }, enabled = !modelBusy && !modelReady) {
-                                    Text(if (modelReady) "Cerveau BOZER prêt" else if (modelBusy) "Installation en cours…" else "Installer le cerveau BOZER (≈491 Mo)", color = Color(0xFF258DB8))
-                                }
-                                if (modelBusy || modelStatus.startsWith("Installation impossible") || modelStatus.startsWith("Chargement impossible")) {
-                                    Text(modelStatus, color = Color(0xFF7D8A9B), fontSize = 11.sp)
-                                    if (modelBusy) LinearProgressIndicator(progress = { downloadProgress }, modifier = Modifier.fillMaxWidth(), color = Color(0xFF53BFEA), trackColor = Color(0xFFE5F5FC))
-                                }
+                                Text(
+                                    if (modelReady) "Cerveau local intégré et prêt — discussion hors ligne disponible."
+                                    else modelStatus,
+                                    color = Color(0xFF7D8A9B),
+                                    fontSize = 11.sp,
+                                    lineHeight = 16.sp
+                                )
+                                if (modelBusy) LinearProgressIndicator(
+                                    progress = { downloadProgress },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = Color(0xFF53BFEA),
+                                    trackColor = Color(0xFFE5F5FC)
+                                )
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
