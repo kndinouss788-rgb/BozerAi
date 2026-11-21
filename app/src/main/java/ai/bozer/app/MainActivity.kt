@@ -875,6 +875,8 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                     onClick = {
                                         voiceOutput.stop()
                                         piperVoiceOutput.stop()
+                                        activeSpeechMessageAt = null
+                                        activeSpeechRange = null
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
