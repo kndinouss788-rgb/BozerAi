@@ -26,6 +26,9 @@ class ChatRepository(
     @Volatile var brainMode: BrainMode = BrainMode.AUTO
     @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
+    /** True when an utterance belongs to EYE_SEARCH rather than an Android browser-launch action. */
+    fun isInternetResearchRequest(text: String): Boolean = extractSearchQuery(text) != null
+
     fun history(): List<ChatMessage> = database.history()
     fun clearHistory() = database.clearHistory()
     fun save(message: ChatMessage) = database.save(message)
