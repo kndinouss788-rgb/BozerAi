@@ -48,7 +48,9 @@ class ChatRepository(
         if (selectedMode == BrainMode.ONLINE && !onlineAvailable) {
             return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
         }
-        if (selectedMode != BrainMode.ONLINE && !model.isLoaded) {
+        val autoCanUseRemote = selectedMode == BrainMode.AUTO &&
+            onlineAvailable && remoteBrain?.isConfigured == true
+        if (selectedMode != BrainMode.ONLINE && !model.isLoaded && !autoCanUseRemote) {
             return@withLock "Le cerveau local BOZER intégré à l'application n'est pas encore prêt. Patiente pendant son initialisation puis réessaie."
         }
         if (selectedMode == BrainMode.ONLINE && remoteBrain?.isConfigured != true) {
