@@ -589,7 +589,9 @@ private fun BozerChat(
                 val answer = when {
                     task == null -> "Je ne trouve pas la tâche « $taskTitle »."
                     withContext(Dispatchers.IO) { secretaryReminders.complete(task, true) } -> {
-                        secretaryTasks.removeAll { it.id == task.id }
+                        val latest = withContext(Dispatchers.IO) { secretary.tasks() }
+                        secretaryTasks.clear()
+                        secretaryTasks.addAll(latest)
                         "C'est fait : « ${task.title} » est terminée. Son rappel BOZER a été annulé."
                     }
                     else -> "Je n'ai pas pu terminer « $taskTitle » ou annuler son rappel."
