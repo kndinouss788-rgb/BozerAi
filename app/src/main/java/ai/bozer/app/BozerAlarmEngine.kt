@@ -50,7 +50,31 @@ class BozerAlarmScheduler(context: Context) {
     fun cancel(id: Long) { alarmPendingIntent(id)?.let(alarmManager::cancel) }
 
     fun rescheduleEnabled(repository: BozerAlarmRepository) {
-        repository.enabled().forEach(::schedule)
+        val now = System.currentTimeMillis()
+        repository.enabled().forEach { alarm ->
+            val restored = when {
+                alarm.triggerAtMillis > now -> alarm
+                alarm.repeatDaysMask != 0 -> {
+                    val next = BozerAlarmTime.nextOccurrence(
+                        alarm.triggerAtMillis, now, alarm.repeatDaysMask
+                    )
+                    if (next == null) {
+                        repository.disable(alarm.id)
+                        null
+                    } else {
+                        repository.updateTrigger(alarm.id, next)
+                        repository.get(alarm.id)
+                    }
+                }
+                else -> {
+                    // A one-shot alarm that expired while the phone was off
+                    // must not be silently scheduled in the past.
+                    repository.disable(alarm.id)
+                    null
+                }
+            }
+            if (restored != null) schedule(restored)
+        }
     }
 
     private fun alarmPendingIntent(id: Long): PendingIntent? {
