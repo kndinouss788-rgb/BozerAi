@@ -160,7 +160,7 @@ class BozerVoiceOutput(
         onCompleted: () -> Unit
     ) {
         if (released) return
-        val clean = text.trim()
+        val clean = text
         if (clean.isBlank()) {
             mainHandler.post { onCompleted() }
             return
