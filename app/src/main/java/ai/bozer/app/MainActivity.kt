@@ -442,7 +442,7 @@ private fun BozerChat(
                             contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
                             verticalArrangement = Arrangement.spacedBy(17.dp)
                         ) {
-                            items(messages, key = { message -> if (message.id != 0L) message.id else message.createdAt }) { message ->
+                            items(messages) { message ->
                                 FutureMessageBubble(
                                     message = message,
                                     speechRange = if (activeSpeechMessageAt == message.createdAt) activeSpeechRange else null,
