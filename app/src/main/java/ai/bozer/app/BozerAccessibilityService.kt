@@ -129,7 +129,11 @@ class BozerAccessibilityService : AccessibilityService() {
             "com.zhiliaoapp.musically",
             "com.zhiliaoapp.musically.go"
         )
-        private val RECORD_LABELS = setOf("enregistrer", "record", "start recording")
+        private val RECORD_LABELS = setOf(
+            "enregistrer une video", "enregistrer video",
+            "commencer l enregistrement", "demarrer l enregistrement",
+            "start recording", "record video", "take video", "record"
+        )
 
         @Volatile
         private var instance: BozerAccessibilityService? = null
