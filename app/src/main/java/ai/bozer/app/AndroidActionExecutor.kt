@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.AlarmClock
+import android.provider.Settings
 import java.text.Normalizer
 import java.util.Locale
 import java.util.Calendar
@@ -87,13 +88,22 @@ class AndroidActionExecutor(private val activity: Activity) {
             return try {
                 when (appCommand) {
                     BozerAppCommand.OpenTikTokForRecording -> {
-                        if (TikTokPublisher.openTikTok(activity)) {
-                            "J'ouvre TikTok. Je ne peux pas appuyer à ta place sur son bouton Enregistrer : TikTok garde la main sur sa caméra. Tu pourras lancer l'enregistrement dans l'application."
-                        } else {
+                        val automationQueued = BozerAccessibilityService.requestTikTokRecordingClick()
+                        val opened = TikTokPublisher.openTikTok(activity)
+                        if (!opened) {
+                            BozerAccessibilityService.cancelPendingRequest()
                             "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
+                        } else if (automationQueued) {
+                            "J'ouvre TikTok et je tente de sélectionner son bouton visible Enregistrer pendant les 30 prochaines secondes. Je ne peux pas confirmer que TikTok l'a accepté : vérifie l'écran et le compteur."
+                        } else {
+                            "J'ouvre TikTok. Pour que BOZER essaie d'appuyer sur Enregistrer, active d'abord le service facultatif BOZER ACTION dans les paramètres d'accessibilité Android. Sans ce service, touche toi-même le bouton Enregistrer."
                         }
                     }
                     BozerAppCommand.OpenVideoCamera -> openVideoCamera()
+                    BozerAppCommand.OpenAccessibilitySettings -> {
+                        activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        "J'ouvre les paramètres d'accessibilité Android. Tu peux y activer BOZER ACTION pour autoriser ses clics visibles dans TikTok."
+                    }
                     else -> bozerAppCommandHandler?.invoke(appCommand)
                         ?: "Cette commande BOZER n'est pas encore reliée à ses paramètres."
                 }
@@ -186,9 +196,6 @@ class AndroidActionExecutor(private val activity: Activity) {
 
     private fun openVideoCamera(): String {
         val intent = Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE)
-        if (intent.resolveActivity(activity.packageManager) == null) {
-            return "Je ne trouve aucune application caméra capable d'enregistrer une vidéo."
-        }
         activity.startActivity(intent)
         return "J'ouvre la caméra Android en mode vidéo. L'enregistrement ne démarre qu'après ton appui sur le bouton Enregistrer."
     }
