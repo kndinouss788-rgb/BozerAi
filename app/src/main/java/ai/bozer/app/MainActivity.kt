@@ -185,6 +185,8 @@ private fun BozerChat(
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var terminalOpen by remember { mutableStateOf(false) }
+    var bozerSpaceOpen by remember { mutableStateOf(false) }
+    var bozerLabOpen by remember { mutableStateOf(false) }
     var animationsEnabled by remember {
         mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("animations_enabled", true))
     }
@@ -537,6 +539,8 @@ private fun BozerChat(
                             closeTerminal()
                             when (module) {
                                 "Discussion" -> Unit
+                                "SPACE" -> bozerSpaceOpen = true
+                                "LAB" -> bozerLabOpen = true
                                 "Recherche" -> draft = "Recherche sur Internet : "
                                 "Téléphone" -> draft = "Aide-moi à utiliser mon téléphone."
                                 "Organisation" -> secretaryOpen = true
@@ -548,6 +552,39 @@ private fun BozerChat(
                     )
                 }
             }
+        }
+
+        if (bozerSpaceOpen) {
+            BozerSpaceDialog(
+                modelReady = modelReady,
+                remoteConfigured = repository.remoteConfigured,
+                voiceEnabled = voiceRepliesEnabled,
+                animationsEnabled = animationsEnabled,
+                onClose = { bozerSpaceOpen = false },
+                onOrganisation = {
+                    bozerSpaceOpen = false
+                    secretaryOpen = true
+                },
+                onSearch = {
+                    bozerSpaceOpen = false
+                    draft = "Recherche sur Internet : "
+                },
+                onPhone = {
+                    bozerSpaceOpen = false
+                    draft = "Aide-moi à utiliser mon téléphone."
+                },
+                onSettings = {
+                    bozerSpaceOpen = false
+                    settingsOpen = true
+                }
+            )
+        }
+
+        if (bozerLabOpen) {
+            BozerLabDialog(
+                animationsEnabled = animationsEnabled,
+                onClose = { bozerLabOpen = false }
+            )
         }
 
         if (tiktokOpen) {
@@ -1306,9 +1343,9 @@ private fun BozerTerminalPanel(
                 BozerTerminalItem("Mémoire", "◈", Modifier.weight(1f)) { onSelect("Mémoire") }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                BozerTerminalItem("BOZER SPACE", "✧", Modifier.weight(1f)) { onSelect("SPACE") }
+                BozerTerminalItem("BOZER LAB", "◌", Modifier.weight(1f)) { onSelect("LAB") }
                 BozerTerminalItem("Paramètres", "⚙", Modifier.weight(1f)) { onSelect("Paramètres") }
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.weight(1f))
             }
             Text(
                 "Double tap en bas de l'écran pour fermer le terminal.",
@@ -1316,6 +1353,181 @@ private fun BozerTerminalPanel(
                 fontSize = 10.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+        }
+    }
+}
+
+@Composable
+private fun BozerSpaceDialog(
+    modelReady: Boolean,
+    remoteConfigured: Boolean,
+    voiceEnabled: Boolean,
+    animationsEnabled: Boolean,
+    onClose: () -> Unit,
+    onOrganisation: () -> Unit,
+    onSearch: () -> Unit,
+    onPhone: () -> Unit,
+    onSettings: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onClose,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            Modifier.fillMaxSize(),
+            color = Color(0xFFF5F8F5),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(17.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("BOZER SPACE", color = DeepBlue, fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                        Text("Ton espace de travail intelligent", color = Muted, fontSize = 12.sp)
+                    }
+                    FutureIconButton("close", onClose, 40.dp)
+                }
+                Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                    BozerSpiralLogo(124.dp, animationsEnabled = animationsEnabled)
+                }
+                Text("ÉTAT DE BOZER", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+                        .background(Color.White).padding(15.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    BozerSpaceStatus("Cerveau local", if (modelReady) "Prêt sur le téléphone" else "Initialisation en cours", modelReady)
+                    BozerSpaceStatus("Passerelle en ligne", if (remoteConfigured) "Configurée" else "Non configurée", remoteConfigured)
+                    BozerSpaceStatus("Voix BOZER", if (voiceEnabled) "Activée" else "Mode silencieux", voiceEnabled)
+                }
+                Text("ACCÈS RAPIDE", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    BozerTerminalItem("Organisation", "▦", Modifier.weight(1f), onOrganisation)
+                    BozerTerminalItem("Recherche", "⌕", Modifier.weight(1f), onSearch)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    BozerTerminalItem("Téléphone", "⌘", Modifier.weight(1f), onPhone)
+                    BozerTerminalItem("Paramètres", "⚙", Modifier.weight(1f), onSettings)
+                }
+                Text(
+                    "Les fonctions restent accessibles depuis le terminal, sans encombrer la conversation.",
+                    color = Muted,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BozerSpaceStatus(title: String, status: String, ready: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(8.dp).clip(CircleShape)
+                .background(if (ready) Color(0xFF79A991) else Color(0xFFC7CFCB))
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(status, color = Muted, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun BozerLabDialog(
+    animationsEnabled: Boolean,
+    onClose: () -> Unit
+) {
+    val experiences = listOf(
+        "Spirale en apesanteur" to "Trois courbes fluides tournent autour d'un même centre.",
+        "Constellation vivante" to "Des points lumineux se rapprochent et forment des connexions.",
+        "Halo de verre" to "Des anneaux de lumière se déploient doucement dans l'espace.",
+        "Prisme mouvant" to "Les reflets changent de position et révèlent une nouvelle profondeur.",
+        "Onde de matière" to "Une ligne souple se propage comme une vibration dans du verre."
+    )
+    val dayIndex = (java.time.LocalDate.now().dayOfYear - 1) % experiences.size
+    val (title, description) = experiences[dayIndex]
+    val transition = rememberInfiniteTransition(label = "daily-discovery")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (animationsEnabled) 360f else 0f,
+        animationSpec = if (animationsEnabled) {
+            infiniteRepeatable(tween(9000, easing = LinearEasing))
+        } else snap(),
+        label = "daily-phase"
+    )
+
+    Dialog(
+        onDismissRequest = onClose,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            Modifier.fillMaxSize(),
+            color = Color(0xFFF5F8F5),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Column(
+                Modifier.fillMaxSize().padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("BOZER LAB", color = DeepBlue, fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                        Text("Une expérience visuelle nouvelle chaque jour", color = Muted, fontSize = 11.sp)
+                    }
+                    FutureIconButton("close", onClose, 40.dp)
+                }
+                Spacer(Modifier.height(20.dp))
+                Canvas(Modifier.fillMaxWidth().height(255.dp)) {
+                    val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
+                    val base = minOf(size.width, size.height) * 0.24f
+                    repeat(4) { index ->
+                        val radius = base * (0.55f + index * 0.28f)
+                        drawCircle(
+                            color = Color(0xFF8BA99B).copy(alpha = 0.10f + index * 0.035f),
+                            radius = radius,
+                            center = center,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.1.dp.toPx())
+                        )
+                        val angle = Math.toRadians((phase + index * 90f).toDouble())
+                        val point = androidx.compose.ui.geometry.Offset(
+                            center.x + kotlin.math.cos(angle).toFloat() * radius,
+                            center.y + kotlin.math.sin(angle).toFloat() * radius
+                        )
+                        drawCircle(Color(0xFF779A8B), radius = (5 - index * 0.6f).dp.toPx(), center = point)
+                    }
+                    val innerPulse = 1f + 0.06f * kotlin.math.sin(Math.toRadians(phase.toDouble())).toFloat()
+                    drawCircle(
+                        color = Color(0x22789A8C),
+                        radius = base * 0.42f * innerPulse,
+                        center = center
+                    )
+                }
+                Text("DÉCOUVERTE DU JOUR  •  \${dayIndex + 1}/5", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text(title, color = DeepBlue, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                Text(description, color = Muted, fontSize = 13.sp, lineHeight = 19.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "Cette expérience est facultative. Pas de notification : BOZER LAB t'attend quand tu as envie de le découvrir.",
+                    color = Muted,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Button(
+                    onClick = onClose,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF536F65)),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text("Revenir à BOZER", color = Color.White)
+                }
+            }
         }
     }
 }
