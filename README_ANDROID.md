@@ -1,40 +1,30 @@
-# BOZER Android — chat local avec llama.cpp
+# BOZER Android — cerveau local pré-entraîné
 
-Cette version ajoute un vrai chemin d'inférence local dans le processus Android :
+BOZER utilise désormais un modèle de langage déjà pré-entraîné comme cerveau de conversation principal :
 
-- interface de chat Jetpack Compose ;
-- historique des messages conservé dans SQLite sur l'appareil ;
-- runtime natif llama.cpp appelé depuis Kotlin par JNI ;
-- modèle Qwen2.5-0.5B-Instruct GGUF téléchargé à la demande ;
-- stockage du fichier dans `filesDir/models`, privé à l'application ;
-- vérification SHA-256 avant de charger le modèle ;
-- chargement au démarrage si le modèle est déjà installé ;
-- réponses générées localement, sans clé API ni serveur distant.
+- **Modèle :** Qwen2.5-0.5B-Instruct (GGUF, quantification Q4_K_M).
+- **Licence du modèle :** Apache-2.0.
+- **Taille du fichier :** 491 400 032 octets (environ 491 Mo).
+- **Exécution :** llama.cpp natif via JNI, directement sur Android.
+- **Coût d'inférence :** aucun appel API nécessaire pour les conversations ordinaires.
+- **Installation :** téléchargement unique à la demande, puis stockage privé dans l'application.
+- **Intégrité :** SHA-256 contrôlé avant chargement.
 
-## Modèle embarqué à la demande
+Le modèle est la base linguistique pré-entraînée. BOZER ajoute sa propre identité, son ton, sa mémoire locale, ses règles de fiabilité et son système d'actions Android autour de ce modèle. La passerelle distante reste une option explicite « En ligne » et n'est plus utilisée par défaut.
 
-- Modèle : Qwen2.5-0.5B-Instruct, quantification Q4_K_M.
-- Taille annoncée : environ 491 Mo.
-- Licence indiquée par l'éditeur : Apache-2.0.
-- Révision Hugging Face épinglée dans le code pour rendre le téléchargement reproductible.
-- Empreinte SHA-256 vérifiée : `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db`.
+## Pourquoi ce modèle
 
-Le téléchargement nécessite Internet la première fois. Après installation, le modèle et l'inférence restent locaux. Le fichier temporaire `.part` n'est jamais chargé comme modèle et est supprimé si le téléchargement ou la vérification échoue.
+Qwen2.5-0.5B-Instruct est choisi pour son format GGUF, sa licence Apache-2.0, son faible encombrement et sa compatibilité avec le moteur llama.cpp déjà présent dans le projet. Il est adapté à un premier déploiement sur téléphones Android modestes. Ce n'est pas un modèle de niveau ChatGPT : sa qualité, sa vitesse et sa consommation RAM doivent être mesurées sur les appareils réels.
 
-## Runtime natif
+## Moteur natif
 
-Le module CMake récupère llama.cpp à une révision Git immuable et compile une bibliothèque JNI `bozer_llama` pour `arm64-v8a` et `x86_64`. Le moteur charge le GGUF depuis le stockage privé, prépare un contexte de 2048 tokens et génère jusqu'à 256 tokens par réponse.
+Le module CMake récupère llama.cpp à une révision Git immuable et compile `bozer_llama` pour `arm64-v8a` et `x86_64`. Le modèle est chargé depuis le stockage privé de l'application. Le prompt ChatML applique l'identité et les règles BOZER.
 
-Le modèle choisi est un petit modèle de démarrage, pas un cerveau de niveau ChatGPT. La vitesse et la mémoire consommée dépendront du téléphone. Aucun test réel d'inférence sur le TECNO de l'utilisateur n'a encore été effectué.
+## État de validation
 
-## Vérification et limites actuelles
+- Le code de téléchargement et de vérification SHA-256 existe.
+- Le modèle est configuré pour devenir le cerveau local par défaut.
+- **Aucune validation réelle de génération sur le TECNO de l'utilisateur n'est revendiquée.**
+- La compilation Android/APK et le test sur téléphone restent à effectuer lorsque l'utilisateur demandera explicitement cette étape.
 
-Le workflow GitHub existant `BOZER core tests` valide uniquement les tests Python du noyau BOZER. Il ne compile pas le module Android, CMake/JNI ou l'APK. Il est donc incorrect de présenter le runtime comme déjà validé sur appareil.
-
-La compilation APK reste volontairement différée. Étapes restantes avant de considérer le chat comme opérationnel :
-1. compiler le module Android et la bibliothèque native avec le SDK/NDK ;
-2. installer sur un téléphone Android et télécharger le modèle ;
-3. confirmer le chargement GGUF et une vraie génération en français ;
-4. mesurer la RAM, la vitesse et la stabilité sur le téléphone cible.
-
-Ouvrir la racine du dépôt dans Android Studio. SDK cible : Android 35, minimum Android 8.0 (API 26), Java 17.
+Le chantier expérimental d'entraînement du modèle BOZER NEURAL 1B est arrêté. Son code et ses données sont conservés dans l'historique Git pour archivage, mais ils ne sont plus la voie active du cerveau Android.
