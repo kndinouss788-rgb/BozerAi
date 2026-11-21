@@ -11,6 +11,7 @@ BOZER sépare l'application Android de son cerveau linguistique local afin de ga
 - **Persistance :** le modèle est stocké dans le répertoire privé de l'application et n'est pas retéléchargé lors d'une mise à jour normale de l'application.
 - **Reprise :** les téléchargements interrompus conservent leur fichier partiel et reprennent via HTTP Range lorsque le serveur le permet.
 - **Intégrité :** taille attendue et SHA-256 contrôlés avant chargement.
+- **Contexte local :** le moteur accepte 1 024 à 2 048 tokens ; le prompt conserve six échanges récents au maximum, quatre faits mémorisés et trois résultats de recherche.
 
 Le cerveau local est facultatif au premier lancement : BOZER ne consomme pas automatiquement environ 491 Mo de données mobiles. Le mode Automatique utilise le cerveau local et n'appelle aucun fournisseur distant en arrière-plan. Le mode En ligne utilise explicitement la passerelle distante ; ses fournisseurs peuvent appliquer des quotas et des frais selon leurs comptes. Pour disposer du mode Automatique/Hors ligne sans réseau, l'utilisateur doit télécharger le modèle une seule fois. Le fichier reste présent après les mises à jour de l'application, mais sera supprimé si l'application est désinstallée ou si ses données sont effacées.
 
