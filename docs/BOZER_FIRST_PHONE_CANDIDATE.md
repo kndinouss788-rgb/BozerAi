@@ -30,6 +30,7 @@ Aucun de ces points ne peut être remplacé par un succès de tests Python.
 - Une transcription vocale normale est automatiquement envoyée comme tour de conversation.
 - Les refus de microphone et erreurs communes de reconnaissance sont signalés.
 - La synthèse Android suit les segments et, lorsque le moteur le fournit, les plages de caractères. Piper est local et hors ligne ; son alignement visible est au niveau du segment, pas du mot.
+- Le modèle Piper MLS est désormais épinglé sur une révision précise ; le fichier ONNX est vérifié par SHA-256, le fichier de jetons par sa taille exacte, et les téléchargements interrompus peuvent reprendre.
 - Le profil Piper 55 est un candidat technique et n'a pas été validé par écoute humaine.
 
 ### Recherche et actions
