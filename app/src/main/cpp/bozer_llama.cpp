@@ -61,7 +61,7 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
     active_context_size = std::clamp(static_cast<int32_t>(requested_context_size), 1024, 2048);
     llama_context_params context_params = llama_context_default_params();
     context_params.n_ctx = static_cast<uint32_t>(active_context_size);
-    context_params.n_batch = static_cast<uint32_t>(std::min(1024, active_context_size));
+    context_params.n_batch = static_cast<uint32_t>(active_context_size);
     const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
     context_params.n_threads = threads;
     context_params.n_threads_batch = threads;
