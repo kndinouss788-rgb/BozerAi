@@ -329,6 +329,7 @@ private fun BozerChat(
     var piperReady by remember { mutableStateOf(false) }
     var piperBusy by remember { mutableStateOf(false) }
     var piperProgress by remember { mutableFloatStateOf(0f) }
+    var confirmDeletePiperVoice by remember { mutableStateOf(false) }
     val piperVoiceOutput = remember(context) {
         BozerPiperVoiceOutput { status -> voiceTtsStatus = status }
     }
@@ -1605,6 +1606,13 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                         color = Color(0xFF7D9F91),
                                         trackColor = Color(0xFFE4ECE6)
                                     )
+                                } else if (piperModelInstalled || piperReady) {
+                                    TextButton(
+                                        onClick = { confirmDeletePiperVoice = true },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Supprimer la voix locale (libérer ≈77 Mo)", color = Color(0xFFB65E70))
+                                    }
                                 }
                                 Text(
                                     "Modèle MLS : attribution CC BY 4.0 indiquée dans les informations BOZER.",
@@ -1796,6 +1804,51 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                     dismissButton = {
                         TextButton(onClick = { actionPermissionDialogOpen = false }) {
                             Text("Pas maintenant", color = DeepBlue)
+                        }
+                    }
+                )
+            }
+            if (confirmDeletePiperVoice) {
+                AlertDialog(
+                    onDismissRequest = { confirmDeletePiperVoice = false },
+                    containerColor = Color(0xFFF9FCFF),
+                    shape = RoundedCornerShape(26.dp),
+                    title = { Text("Supprimer la voix française locale ?", color = DeepBlue) },
+                    text = {
+                        Text(
+                            "Le modèle vocal facultatif occupe environ 77 Mo. Le supprimer libérera cet espace. BOZER continuera à parler avec la voix Android ; le cerveau local, les conversations, les tâches et les alarmes ne seront pas touchés.",
+                            color = Muted
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                confirmDeletePiperVoice = false
+                                scope.launch {
+                                    piperBusy = true
+                                    try {
+                                        piperVoiceOutput.unload()
+                                        val removed = piperModelManager.deleteAssets()
+                                        piperReady = false
+                                        piperModelInstalled = piperModelManager.isInstalled()
+                                        voiceTtsStatus = if (removed) {
+                                            "Voix locale supprimée. BOZER utilise maintenant la voix Android ; tu peux réinstaller Piper plus tard."
+                                        } else {
+                                            "Je n'ai pas pu supprimer tous les fichiers de la voix locale."
+                                        }
+                                    } catch (error: Exception) {
+                                        voiceTtsStatus = "Suppression de la voix impossible : ${error.message ?: "erreur inconnue"}."
+                                    } finally {
+                                        piperBusy = false
+                                    }
+                                }
+                            },
+                            enabled = !piperBusy
+                        ) { Text("Supprimer", color = Color(0xFFB65E70)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmDeletePiperVoice = false }) {
+                            Text("Conserver", color = DeepBlue)
                         }
                     }
                 )
