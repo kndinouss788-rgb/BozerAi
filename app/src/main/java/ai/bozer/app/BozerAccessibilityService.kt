@@ -1,6 +1,8 @@
 package ai.bozer.app
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
+import android.graphics.Path
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -80,14 +82,20 @@ class BozerAccessibilityService : AccessibilityService() {
     private fun performAction(root: AccessibilityNodeInfo, action: BozerUiAction): Boolean =
         when (action) {
             is BozerUiAction.TapText -> clickVisibleControl(root, action.label)
+            is BozerUiAction.LongPressText -> clickVisibleControl(root, action.label, longPress = true)
             is BozerUiAction.EnterText -> enterText(root, action.value)
+            is BozerUiAction.Swipe -> swipe(action.direction)
             BozerUiAction.ScrollForward -> scrollVisibleContainer(root, forward = true)
             BozerUiAction.ScrollBackward -> scrollVisibleContainer(root, forward = false)
             BozerUiAction.PressBack -> performGlobalAction(GLOBAL_ACTION_BACK)
             BozerUiAction.PressHome -> performGlobalAction(GLOBAL_ACTION_HOME)
         }
 
-    private fun clickVisibleControl(root: AccessibilityNodeInfo, requestedLabel: String): Boolean {
+    private fun clickVisibleControl(
+        root: AccessibilityNodeInfo,
+        requestedLabel: String,
+        longPress: Boolean = false
+    ): Boolean {
         val expected = normalize(requestedLabel)
         if (expected.isBlank()) return false
         val queue = ArrayDeque<AccessibilityNodeInfo>()
@@ -110,8 +118,11 @@ class BozerAccessibilityService : AccessibilityService() {
                 var depth = 0
                 while (candidate != null && depth < MAX_CLICKABLE_ANCESTORS) {
                     val current = candidate
-                    if (current.isVisibleToUser && current.isEnabled && current.isClickable &&
-                        current.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    val canPerform = if (longPress) current.isLongClickable else current.isClickable
+                    val action = if (longPress) AccessibilityNodeInfo.ACTION_LONG_CLICK
+                        else AccessibilityNodeInfo.ACTION_CLICK
+                    if (current.isVisibleToUser && current.isEnabled && canPerform &&
+                        current.performAction(action)
                     ) return true
                     candidate = current.parent
                     depth += 1
@@ -152,6 +163,41 @@ class BozerAccessibilityService : AccessibilityService() {
         }
         // Never guess which of several input fields the user intended.
         return candidates.singleOrNull()
+    }
+
+    private fun swipe(direction: BozerUiAction.Direction): Boolean {
+        val width = resources.displayMetrics.widthPixels.toFloat()
+        val height = resources.displayMetrics.heightPixels.toFloat()
+        val path = Path()
+        val centerX = width * 0.5f
+        val centerY = height * 0.5f
+        val startX: Float
+        val startY: Float
+        val endX: Float
+        val endY: Float
+        when (direction) {
+            BozerUiAction.Direction.LEFT -> {
+                startX = width * 0.82f; startY = centerY
+                endX = width * 0.18f; endY = centerY
+            }
+            BozerUiAction.Direction.RIGHT -> {
+                startX = width * 0.18f; startY = centerY
+                endX = width * 0.82f; endY = centerY
+            }
+            BozerUiAction.Direction.UP -> {
+                startX = centerX; startY = height * 0.78f
+                endX = centerX; endY = height * 0.22f
+            }
+            BozerUiAction.Direction.DOWN -> {
+                startX = centerX; startY = height * 0.22f
+                endX = centerX; endY = height * 0.78f
+            }
+        }
+        path.moveTo(startX, startY)
+        path.lineTo(endX, endY)
+        val stroke = GestureDescription.StrokeDescription(path, 0L, SWIPE_DURATION_MS)
+        val gesture = GestureDescription.Builder().addStroke(stroke).build()
+        return dispatchGesture(gesture, null, mainHandler)
     }
 
     private fun scrollVisibleContainer(root: AccessibilityNodeInfo, forward: Boolean): Boolean {
@@ -207,6 +253,7 @@ class BozerAccessibilityService : AccessibilityService() {
         private const val MAX_CLICKABLE_ANCESTORS = 6
         private const val REQUEST_TIMEOUT_MS = 45_000L
         private const val STEP_DELAY_MS = 450L
+        private const val SWIPE_DURATION_MS = 360L
         private const val PREFERENCES = "bozer_settings"
         private const val KEY_LAST_ACTION_AT = "accessibility_last_action_at"
         private const val KEY_LAST_ACTION_STATUS = "accessibility_last_action_status"
@@ -271,8 +318,12 @@ class BozerAccessibilityService : AccessibilityService() {
         }
 
         fun isSensitiveAction(action: BozerUiAction): Boolean {
-            if (action !is BozerUiAction.TapText) return false
-            val label = Normalizer.normalize(action.label.lowercase(Locale.ROOT), Normalizer.Form.NFD)
+            val requestedLabel = when (action) {
+                is BozerUiAction.TapText -> action.label
+                is BozerUiAction.LongPressText -> action.label
+                else -> return false
+            }
+            val label = Normalizer.normalize(requestedLabel.lowercase(Locale.ROOT), Normalizer.Form.NFD)
                 .replace(Regex("\\p{Mn}+"), "")
                 .trim()
             return SENSITIVE_LABELS.any { label == it || label.startsWith("$it ") }
