@@ -90,8 +90,11 @@ class BozerPiperVoiceOutput(
         onCompleted: () -> Unit
     ) {
         if (released) return
-        val clean = text.trim()
-        if (clean.isEmpty()) return
+        val clean = text
+        if (clean.isBlank()) {
+            mainHandler.post { onCompleted() }
+            return
+        }
         val engine = tts
         if (engine == null) {
             publishStatus("La voix locale n'est pas chargée. La voix Android peut prendre le relais.")
