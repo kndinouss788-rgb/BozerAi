@@ -95,11 +95,11 @@ This is the working acceptance checklist for completing BOZER. A feature is not 
 
 ## 7. Interface and accessibility
 
-- [~] Compose chat screen and floating overlay foundation.
+- [~] Compose chat screen, terminal gesture, live voice-text submission, floating overlay, Secretary and alarm-management foundations.
 - [ ] Final single-screen white/pearl Liquid Glass design aligned with product brief.
 - [ ] Responsive layout for small screens, keyboard, large text, and accessibility services.
 - [ ] Message streaming, copy/share, regenerate, conversation history, and clear empty/loading/error states.
-- [ ] Settings for privacy, voice, model mode, storage, notifications, and permissions.
+- [~] Settings already expose voice, brain mode, themes, animation/sounds, bubble, permissions, and memory controls; privacy/export/storage controls and full settings validation remain.
 - [ ] Floating bubble lifecycle, drag/snap, hide/show, overlay permission education, and process recovery.
 - [ ] Performance, memory, battery, and animation profiling on target devices.
 
