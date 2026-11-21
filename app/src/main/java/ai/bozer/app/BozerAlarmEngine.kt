@@ -19,7 +19,9 @@ class BozerAlarmRepository(private val database: ChatDatabase) {
     fun create(triggerAtMillis: Long, label: String, repeatDaysMask: Int = 0): Long = database.insertBozerAlarm(triggerAtMillis, label, repeatDaysMask)
     fun get(id: Long): BozerAlarm? = database.bozerAlarm(id)
     fun enabled(): List<BozerAlarm> = database.enabledBozerAlarms()
-    fun disable(id: Long): Boolean = database.setBozerAlarmEnabled(id, false)
+    fun all(): List<BozerAlarm> = database.bozerAlarms()
+    fun setEnabled(id: Long, enabled: Boolean): Boolean = database.setBozerAlarmEnabled(id, enabled)
+    fun disable(id: Long): Boolean = setEnabled(id, false)
     fun delete(id: Long): Boolean = database.deleteBozerAlarm(id)
     fun updateTrigger(id: Long, triggerAtMillis: Long): Boolean = database.updateBozerAlarmTrigger(id, triggerAtMillis)
 }
