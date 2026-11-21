@@ -17,6 +17,7 @@ sealed interface BozerAppCommand {
     data class SetSoundEffects(val enabled: Boolean) : BozerAppCommand
     data class SetFloatingBubble(val enabled: Boolean) : BozerAppCommand
     data class SetTheme(val theme: BozerTheme) : BozerAppCommand
+    data class SetBrainMode(val mode: BrainMode) : BozerAppCommand
     data object CycleTheme : BozerAppCommand
     data object OpenTikTokForRecording : BozerAppCommand
     data object OpenVideoCamera : BozerAppCommand
@@ -119,6 +120,14 @@ object BozerAppCommandParser {
                 "reactive ta voix", "reactive la voix"
             )
         ) return BozerAppCommand.SetSilentMode(false)
+
+        val brainMode = when {
+            text in setOf("passe en mode automatique", "mode automatique", "active le mode automatique", "utilise le mode automatique") -> BrainMode.AUTO
+            text in setOf("passe en mode en ligne", "mode en ligne", "active le mode en ligne", "connecte toi", "utilise le mode en ligne") -> BrainMode.ONLINE
+            text in setOf("passe en mode hors ligne", "mode hors ligne", "active le mode hors ligne", "deconnecte toi", "utilise le mode hors ligne") -> BrainMode.OFFLINE
+            else -> null
+        }
+        if (brainMode != null) return BozerAppCommand.SetBrainMode(brainMode)
 
         if (text in setOf("change de theme", "change le theme", "theme suivant", "change ton theme")) {
             return BozerAppCommand.CycleTheme
