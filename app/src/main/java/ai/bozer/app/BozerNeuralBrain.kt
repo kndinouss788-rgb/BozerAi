@@ -3,14 +3,15 @@ package ai.bozer.app
 /**
  * Permanent identity and policy layer for every BOZER inference route.
  *
- * This software core is not the trained foundation model. The optional Qwen
- * and remote gateway are auxiliary language-generation backends only. This
- * policy keeps every route under the same identity, memory, evidence and action rules.
+ * This is BOZER's permanent identity, memory, evidence and action-policy layer.
+ * The foundation language model is the pre-trained Qwen2.5-0.5B-Instruct GGUF
+ * running locally through llama.cpp. The remote gateway is an explicit online option.
  */
 internal object BozerNeuralBrain {
-    const val CORE_ID = "bozer_neural"
-    const val FOUNDATION_MODEL_STATUS = "not_trained"
-    const val AUXILIARY_BACKENDS_ROLE = "language_generation_only"
+    const val CORE_ID = "bozer_core"
+    const val FOUNDATION_MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+    const val FOUNDATION_MODEL_STATUS = "pretrained_local"
+    const val AUXILIARY_BACKENDS_ROLE = "remote_provider_opt_in"
     const val CORE_ALWAYS_ACTIVE = true
 
     const val PERSONALITY_PROMPT = """
