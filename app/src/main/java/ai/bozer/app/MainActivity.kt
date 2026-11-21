@@ -25,6 +25,12 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.scale
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,6 +40,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -62,15 +69,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val Ink = Color(0xFF292638)
-private val Muted = Color(0xFF817C91)
-private val DeepBlue = Color(0xFF203B56)
-private val Pearl = Color(0xFFFAF9FE)
-private val Lilac = Color(0xFF6688B8)
-private val SoftLilac = Color(0xFFEAF1F8)
-private val GlassWhite = Color(0xDFFFFFFF)
-private val Ice = Color(0xFFE8F4FA)
-private val Silver = Color(0xFFB8C8D8)
+private val Ink = Color(0xFF1B292E)
+private val Muted = Color(0xFF74848A)
+private val DeepBlue = Color(0xFF2D4247)
+private val Pearl = Color(0xFFF4F6F3)
+private val Lilac = Color(0xFF91BDB2)
+private val SoftLilac = Color(0xFFE7F0EC)
+private val GlassWhite = Color(0xEFFFFFFF)
+private val Ice = Color(0xFFEAF1EE)
+private val Silver = Color(0xFFC8D2CD)
 
 class MainActivity : ComponentActivity() {
     private lateinit var engine: LocalLlamaEngine
@@ -177,7 +184,13 @@ private fun BozerChat(
     var modelStatus by remember { mutableStateOf("Le cerveau local BOZER n'est pas encore installé.") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
-    var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", false)) }
+    var terminalOpen by remember { mutableStateOf(false) }
+    var animationsEnabled by remember {
+        mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("animations_enabled", true))
+    }
+    var activeSpeechMessageAt by remember { mutableStateOf<Long?>(null) }
+    var activeSpeechRange by remember { mutableStateOf<IntRange?>(null) }
+    var voiceRepliesEnabled by remember { mutableStateOf(context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE).getBoolean("voice_replies", true)) }
     var voiceTtsStatus by remember { mutableStateOf("Initialisation du moteur vocal…") }
     val voiceOutput = remember(context) {
         BozerVoiceOutput(context) { status -> voiceTtsStatus = status }
@@ -294,14 +307,30 @@ private fun BozerChat(
     }
 
 
+    fun speakAssistantMessage(message: ChatMessage) {
+        if (!voiceRepliesEnabled) return
+        activeSpeechMessageAt = message.createdAt
+        activeSpeechRange = null
+        val onSegmentStarted: (Int, Int) -> Unit = { start, end ->
+            activeSpeechMessageAt = message.createdAt
+            activeSpeechRange = start until end
+        }
+        val onCompleted: () -> Unit = {
+            if (activeSpeechMessageAt == message.createdAt) {
+                activeSpeechMessageAt = null
+                activeSpeechRange = null
+            }
+        }
+        val utteranceId = "bozer-${message.createdAt}"
+        if (piperReady) piperVoiceOutput.speak(message.content, utteranceId, onSegmentStarted, onCompleted)
+        else voiceOutput.speak(message.content, utteranceId, onSegmentStarted, onCompleted)
+    }
+
     fun appendActionResult(answer: String) {
         val assistantMessage = ChatMessage(role = "assistant", content = answer)
         messages.add(assistantMessage)
         runCatching { repository.save(assistantMessage) }
-        if (voiceRepliesEnabled) {
-            if (piperReady) piperVoiceOutput.speak(answer)
-            else voiceOutput.speak(answer)
-        }
+        speakAssistantMessage(assistantMessage)
         scope.launch { listState.animateScrollToItem(messages.lastIndex) }
     }
 
@@ -349,10 +378,7 @@ private fun BozerChat(
             val assistantMessage = ChatMessage(role = "assistant", content = answer)
             messages.add(assistantMessage)
             runCatching { repository.save(assistantMessage) }
-            if (voiceRepliesEnabled) {
-                if (piperReady) piperVoiceOutput.speak(answer)
-                else voiceOutput.speak(answer)
-            }
+            speakAssistantMessage(assistantMessage)
             sending = false
             listState.animateScrollToItem(messages.lastIndex)
         }
@@ -360,50 +386,56 @@ private fun BozerChat(
 
     MaterialTheme {
         Surface(Modifier.fillMaxSize(), color = Pearl) {
-            Box(Modifier.fillMaxSize().background(
-                Brush.linearGradient(listOf(Color(0xFFF9FCFF), Color(0xFFEAF4FB), Color(0xFFF7FAFF), Color(0xFFFDFEFF)))
-            )) {
-                AmbientLiquidBackground()
-                Column(Modifier.fillMaxSize().padding(horizontal = 17.dp)) {
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.linearGradient(listOf(Color(0xFFF5F7F4), Color(0xFFE9EEEB), Color(0xFFF8F9F7)))
+                )
+            ) {
+                AmbientLiquidBackground(animationsEnabled)
+                Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
                     Row(
-                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 12.dp),
+                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        GlassIconButton("☰", "Ouvrir les paramètres") { settingsOpen = true }
+                        GlassIconButton("⚙", "Ouvrir les paramètres") { settingsOpen = true }
                         Spacer(Modifier.weight(1f))
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("BOZER", color = DeepBlue, fontSize = 19.sp,
-                                fontWeight = FontWeight.ExtraBold, letterSpacing = 3.2.sp)
-                            Text("INTELLIGENCE • ACTIVE", color = Muted.copy(alpha = .85f),
-                                fontSize = 8.sp, letterSpacing = 1.7.sp)
+                            Text("BOZER", color = DeepBlue, fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold, letterSpacing = 3.6.sp)
+                            Text(
+                                if (messages.isEmpty()) "INTELLIGENCE PERSONNELLE" else "CONVERSATION",
+                                color = Muted.copy(alpha = .9f), fontSize = 8.sp, letterSpacing = 1.4.sp
+                            )
                         }
                         Spacer(Modifier.weight(1f))
-                        Box(Modifier.size(46.dp).clip(CircleShape)
-                            .background(Brush.radialGradient(listOf(Color.White, Color(0xFFDDF5FF), Color(0xFFB9D9EE))))
-                            .border(1.dp, Color.White.copy(alpha=.95f), CircleShape)
-                            .clickable { settingsOpen = true }, contentAlignment = Alignment.Center) {
-                            FutureOrb(34.dp)
-                        }
+                        GlassIconButton("⌘", "Ouvrir le terminal BOZER") { terminalOpen = true }
                     }
 
                     if (messages.isEmpty()) {
                         FutureWelcome(
                             onSuggestion = { draft = it },
-                            modifier = Modifier.weight(1f).fillMaxWidth()
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            animationsEnabled = animationsEnabled
                         )
                     } else {
                         LazyColumn(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             state = listState,
-                            contentPadding = PaddingValues(top = 14.dp, bottom = 22.dp),
-                            verticalArrangement = Arrangement.spacedBy(21.dp)
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(17.dp)
                         ) {
-                            items(messages) { message -> FutureMessageBubble(message) }
+                            items(messages, key = { message -> if (message.id != 0L) message.id else message.createdAt }) { message ->
+                                FutureMessageBubble(
+                                    message = message,
+                                    speechRange = if (activeSpeechMessageAt == message.createdAt) activeSpeechRange else null,
+                                    animationsEnabled = animationsEnabled
+                                )
+                            }
                             if (sending) item {
-                                Row(verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(start = 4.dp)) {
-                                    FutureOrb(34.dp)
-                                    Spacer(Modifier.width(12.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(start = 5.dp, top = 2.dp)
+                                ) {
                                     Text("BOZER réfléchit", color = Muted, fontSize = 13.sp)
                                     ThinkingDots()
                                 }
@@ -412,23 +444,23 @@ private fun BozerChat(
                     }
 
                     Row(
-                        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 15.dp)
-                            .shadow(22.dp, RoundedCornerShape(34.dp), ambientColor = Color(0x333E759D), spotColor = Color(0x333E759D))
-                            .clip(RoundedCornerShape(34.dp))
-                            .background(Brush.linearGradient(listOf(Color(0xF7FFFFFF), Color(0xEAF1FAFF), Color(0xF9FFFFFF))))
-                            .border(1.dp, Brush.linearGradient(listOf(Color.White, Color(0x99B9D8EB), Color.White)), RoundedCornerShape(34.dp))
+                        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
+                            .shadow(18.dp, RoundedCornerShape(30.dp), ambientColor = Color(0x222D4742), spotColor = Color(0x222D4742))
+                            .clip(RoundedCornerShape(30.dp))
+                            .background(Brush.linearGradient(listOf(Color(0xF8FFFFFF), Color(0xEAF0F3EF), Color(0xF8FFFFFF))))
+                            .border(1.dp, Color.White.copy(alpha = .95f), RoundedCornerShape(30.dp))
                             .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        GlassIconButton("＋", "Créer une publication TikTok") { tiktokOpen = true }
+                        GlassIconButton("＋", "Ouvrir les outils de création") { tiktokOpen = true }
                         BasicTextField(
                             value = draft,
                             onValueChange = { draft = it },
                             modifier = Modifier.weight(1f).padding(horizontal = 11.dp, vertical = 13.dp),
-                            textStyle = TextStyle(color = Ink, fontSize = 15.sp, lineHeight = 21.sp),
-                            cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF65A9D0)),
+                            textStyle = TextStyle(color = Ink, fontSize = 15.sp, lineHeight = 22.sp),
+                            cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF6C9B91)),
                             decorationBox = { inner ->
-                                if (draft.isEmpty()) Text("Écris à BOZER…", color = Color(0xFF8D9AAA), fontSize = 15.sp)
+                                if (draft.isEmpty()) Text("Écris à BOZER…", color = Color(0xFF89969A), fontSize = 15.sp)
                                 inner()
                             },
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -436,25 +468,66 @@ private fun BozerChat(
                             singleLine = false
                         )
                         if (draft.isBlank()) {
-                            Box(Modifier.size(46.dp).clip(CircleShape)
-                                .background(Brush.linearGradient(listOf(Color(0xFFECF8FF), Color(0xFFDCECF8))))
-                                .border(1.dp, Color.White, CircleShape)
-                                .clickable { onStartVoiceInput() }, contentAlignment = Alignment.Center) {
-                                Text("⌁", color = DeepBlue, fontSize = 26.sp, fontWeight = FontWeight.Light)
+                            Box(
+                                Modifier.size(45.dp).clip(CircleShape)
+                                    .background(Color(0xFFE6EFEB))
+                                    .border(1.dp, Color.White, CircleShape)
+                                    .clickable { onStartVoiceInput() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⌁", color = DeepBlue, fontSize = 25.sp, fontWeight = FontWeight.Light)
                             }
                         } else {
-                            Box(Modifier.size(46.dp).shadow(9.dp, CircleShape)
-                                .clip(CircleShape)
-                                .background(Brush.linearGradient(listOf(Color(0xFF294E70), Color(0xFF102B49))))
-                                .clickable(enabled = !sending && when (brainMode) {
-                                    BrainMode.AUTO -> modelReady
-                                    BrainMode.ONLINE -> repository.remoteConfigured
-                                    BrainMode.OFFLINE -> modelReady
-                                }) { send() }, contentAlignment = Alignment.Center) {
-                                Text("↑", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Medium)
+                            Box(
+                                Modifier.size(45.dp).shadow(8.dp, CircleShape).clip(CircleShape)
+                                    .background(Brush.linearGradient(listOf(Color(0xFF526F69), Color(0xFF2D4641))))
+                                    .clickable(enabled = !sending && when (brainMode) {
+                                        BrainMode.AUTO -> modelReady || repository.remoteConfigured
+                                        BrainMode.ONLINE -> repository.remoteConfigured
+                                        BrainMode.OFFLINE -> modelReady
+                                    }) { send() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("↑", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                     }
+
+                    Box(
+                        Modifier.fillMaxWidth().height(22.dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(onDoubleTap = { terminalOpen = !terminalOpen })
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            Modifier.width(38.dp).height(3.dp).clip(CircleShape)
+                                .background(Color(0x66859A94))
+                        )
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = terminalOpen,
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(tween(220)),
+                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(tween(160))
+                ) {
+                    BozerTerminalPanel(
+                        onClose = { terminalOpen = false },
+                        onSelect = { module ->
+                            terminalOpen = false
+                            when (module) {
+                                "Discussion" -> Unit
+                                "Recherche" -> draft = "Recherche sur Internet : "
+                                "Téléphone" -> draft = "Aide-moi à utiliser mon téléphone."
+                                "Organisation" -> secretaryOpen = true
+                                "Applications" -> draft = "Ouvre l'application "
+                                "Mémoire" -> settingsOpen = true
+                                "Paramètres" -> settingsOpen = true
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -624,23 +697,31 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
         }
 
         if (settingsOpen) {
-            Dialog(onDismissRequest = { settingsOpen = false }) {
-                Surface(Modifier.fillMaxWidth().widthIn(max = 440.dp), shape = RoundedCornerShape(30.dp), color = Color(0xF8FFFFFF), shadowElevation = 24.dp) {
-                    Column(Modifier.padding(20.dp)) {
+            Dialog(
+                onDismissRequest = { settingsOpen = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Surface(
+                    Modifier.fillMaxWidth().fillMaxHeight(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color(0xFFF8FAF8),
+                    shadowElevation = 24.dp
+                ) {
+                    Column(Modifier.fillMaxSize().padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text("Paramètres", color = Color(0xFF172538), fontSize = 23.sp, fontWeight = FontWeight.SemiBold)
-                                Text("Personnalise ton expérience BOZER", color = Color(0xFF7D8A9B), fontSize = 12.sp)
+                                Text("Paramètres", color = DeepBlue, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Ton expérience BOZER", color = Muted, fontSize = 12.sp)
                             }
                             FutureIconButton("close", { settingsOpen = false }, 38.dp)
                         }
                         Spacer(Modifier.height(18.dp))
-                        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(17.dp)) {
+                        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(17.dp)) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(onClick = { secretaryOpen = true; settingsOpen = false }, modifier = Modifier.fillMaxWidth()) {
                                     Text("Ouvrir BOZER SECRETARY  →", color = Color(0xFF258DB8), fontWeight = FontWeight.SemiBold)
                                 }
-                                Text("INTELLIGENCE", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                Text("INTELLIGENCE", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 Text("Mode du moteur de réponse", color = Color(0xFF172538), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                 BrainMode.entries.forEach { mode ->
                                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
@@ -657,16 +738,18 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 }
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text("Réponses vocales BOZER", color = Color(0xFF172538), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                                        Text("Lire les réponses à voix haute, directement sur le téléphone", color = Color(0xFF7D8A9B), fontSize = 11.sp)
+                                        Text("Mode silencieux", color = DeepBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                        Text("Activé : BOZER répond par écrit, sans lecture vocale.", color = Muted, fontSize = 11.sp)
                                     }
-                                    Switch(checked = voiceRepliesEnabled, onCheckedChange = {
-                                        voiceRepliesEnabled = it
+                                    Switch(checked = !voiceRepliesEnabled, onCheckedChange = { silent ->
+                                        voiceRepliesEnabled = !silent
                                         context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
-                                            .edit().putBoolean("voice_replies", it).apply()
-                                        if (!it) {
+                                            .edit().putBoolean("voice_replies", voiceRepliesEnabled).apply()
+                                        if (silent) {
                                             voiceOutput.stop()
                                             piperVoiceOutput.stop()
+                                            activeSpeechMessageAt = null
+                                            activeSpeechRange = null
                                         }
                                     })
                                 }
@@ -758,13 +841,24 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("APPARENCE ET INTERFACE", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                                FutureSettingLine("Interface", "Verre liquide • Blanc nacré", "✧")
-                                FutureSettingLine("Animations", "Effets fluides et lumineux", "◌")
+                                Text("APPARENCE ET INTERFACE", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                FutureSettingLine("Identité BOZER", "Spirale fluide • Verre nacré • Argent", "◉")
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Animations fluides", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                        Text("Mouvements, transitions et logo animé", color = Muted, fontSize = 11.sp)
+                                    }
+                                    Switch(checked = animationsEnabled, onCheckedChange = { enabled ->
+                                        animationsEnabled = enabled
+                                        context.getSharedPreferences("bozer_settings", Context.MODE_PRIVATE)
+                                            .edit().putBoolean("animations_enabled", enabled).apply()
+                                    })
+                                }
+                                FutureSettingLine("Terminal BOZER", "Double tap en bas de l'écran pour l'ouvrir", "⌘")
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("FONCTIONS", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                Text("FONCTIONS", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                                     if (!alarmManager.canScheduleExactAlarms()) {
@@ -783,7 +877,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("DONNÉES ET CONFIDENTIALITÉ", color = Color(0xFF8295A7), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                                Text("DONNÉES ET CONFIDENTIALITÉ", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 TextButton(onClick = { confirmClearMemory = true }, modifier = Modifier.fillMaxWidth()) { Text("Effacer la mémoire", color = Color(0xFFB65E70)) }
                             }
                         }
@@ -905,87 +999,167 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
 }
 
 @Composable
-private fun AmbientLiquidBackground() {
-    val transition = rememberInfiniteTransition(label = "liquid")
-    val drift by transition.animateFloat(initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(9000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
+private fun AmbientLiquidBackground(animationsEnabled: Boolean) {
+    val transition = rememberInfiniteTransition(label = "pearl-drift")
+    val drift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(12000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "drift"
+    )
     Canvas(Modifier.fillMaxSize()) {
-        val w = size.width; val h = size.height
-        drawCircle(Color(0x557FD5F0), radius = w * .48f, center = androidx.compose.ui.geometry.Offset(w * (.12f + .08f * drift), h * .20f))
-        drawCircle(Color(0x337AA8E8), radius = w * .42f, center = androidx.compose.ui.geometry.Offset(w * (.94f - .06f * drift), h * .58f))
-        drawCircle(Color(0x22B8E9E8), radius = w * .55f, center = androidx.compose.ui.geometry.Offset(w * .18f, h * (.94f - .04f * drift)))
+        val w = size.width
+        val h = size.height
+        val subtle = if (animationsEnabled) 1f else 0.45f
+        drawCircle(
+            Color(0x187E9D92).copy(alpha = 0.055f * subtle),
+            radius = w * 0.43f,
+            center = androidx.compose.ui.geometry.Offset(w * (0.06f + 0.035f * drift), h * 0.14f)
+        )
+        drawCircle(
+            Color(0x1B899C9A).copy(alpha = 0.045f * subtle),
+            radius = w * 0.38f,
+            center = androidx.compose.ui.geometry.Offset(w * (0.96f - 0.025f * drift), h * 0.72f)
+        )
     }
 }
 
 @Composable
-private fun FutureOrb(size: androidx.compose.ui.unit.Dp) {
-    val transition = rememberInfiniteTransition(label = "orb")
-    val pulse by transition.animateFloat(.88f, 1.04f,
-        infiniteRepeatable(tween(2100, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
+private fun BozerSpiralLogo(
+    size: androidx.compose.ui.unit.Dp,
+    animationsEnabled: Boolean = true
+) {
+    val transition = rememberInfiniteTransition(label = "bozer-spiral")
+    val rotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(30000, easing = LinearEasing)),
+        label = "spiral-rotation"
+    )
     Canvas(Modifier.size(size)) {
-        val c = androidx.compose.ui.geometry.Offset(this.size.width/2, this.size.height/2)
-        val r = this.size.minDimension/2
-        drawCircle(Color(0x668BDDF2), r * pulse, c)
-        drawCircle(Color(0xFFEAFBFF), r * .78f, c)
-        drawCircle(Color(0xFF7FB6D6), r * .59f, c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = r*.07f))
-        drawCircle(Color(0xFF234B70), r * .39f, c)
-        drawCircle(Color.White, r * .12f, androidx.compose.ui.geometry.Offset(c.x-r*.14f,c.y-r*.04f))
-        drawCircle(Color(0xFF9DEBFA), r * .09f, androidx.compose.ui.geometry.Offset(c.x+r*.16f,c.y-r*.04f))
-        drawCircle(Color(0xFFB7F4FF), r * .045f, androidx.compose.ui.geometry.Offset(c.x+r*.48f,c.y-r*.48f))
-        drawCircle(Color(0xFFB7F4FF), r * .035f, androidx.compose.ui.geometry.Offset(c.x-r*.49f,c.y+r*.18f))
+        val center = androidx.compose.ui.geometry.Offset(this.size.width / 2f, this.size.height / 2f)
+        val radius = this.size.minDimension * 0.43f
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color(0x66FFFFFF), Color(0x2298B7AD), Color.Transparent),
+                center = center,
+                radius = radius * 1.5f
+            ),
+            radius = radius * 1.42f,
+            center = center
+        )
+        rotate(if (animationsEnabled) rotation else 0f, pivot = center) {
+            repeat(3) { index ->
+                rotate(index * 120f, pivot = center) {
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(center.x - radius * 0.08f, center.y - radius * 0.10f)
+                        cubicTo(
+                            center.x - radius * 0.02f, center.y - radius * 0.79f,
+                            center.x + radius * 0.96f, center.y - radius * 0.82f,
+                            center.x + radius * 0.91f, center.y - radius * 0.18f
+                        )
+                        cubicTo(
+                            center.x + radius * 0.88f, center.y + radius * 0.26f,
+                            center.x + radius * 0.28f, center.y + radius * 0.42f,
+                            center.x + radius * 0.12f, center.y + radius * 0.12f
+                        )
+                        cubicTo(
+                            center.x + radius * 0.02f, center.y - radius * 0.09f,
+                            center.x + radius * 0.22f, center.y - radius * 0.36f,
+                            center.x + radius * 0.47f, center.y - radius * 0.26f
+                        )
+                        cubicTo(
+                            center.x + radius * 0.67f, center.y - radius * 0.17f,
+                            center.x + radius * 0.52f, center.y + radius * 0.05f,
+                            center.x + radius * 0.37f, center.y + radius * 0.04f
+                        )
+                        cubicTo(
+                            center.x + radius * 0.49f, center.y - radius * 0.18f,
+                            center.x + radius * 0.13f, center.y - radius * 0.42f,
+                            center.x - radius * 0.08f, center.y - radius * 0.10f
+                        )
+                        close()
+                    }
+                    drawPath(
+                        path,
+                        brush = Brush.linearGradient(
+                            listOf(Color(0xFF617A74), Color(0xFFE8EEEA), Color(0xFF9FB8B0)),
+                            start = androidx.compose.ui.geometry.Offset(center.x - radius, center.y - radius),
+                            end = androidx.compose.ui.geometry.Offset(center.x + radius, center.y + radius)
+                        )
+                    )
+                    drawPath(
+                        path,
+                        color = Color.White.copy(alpha = 0.70f),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = radius * 0.018f)
+                    )
+                }
+            }
+        }
+        drawCircle(Color(0xFF829D94), radius * 0.075f, center)
+        drawCircle(Color.White.copy(alpha = 0.85f), radius * 0.026f,
+            androidx.compose.ui.geometry.Offset(center.x - radius * 0.02f, center.y - radius * 0.04f))
     }
 }
 
 @Composable
 private fun GlassIconButton(label: String, description: String, onClick: () -> Unit) {
-    Box(Modifier.size(43.dp).clip(CircleShape)
-        .background(Color.White.copy(alpha=.78f))
-        .border(1.dp, Color.White.copy(alpha=.95f), CircleShape)
-        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Text(label, color = DeepBlue, fontSize = 21.sp)
+    Box(
+        Modifier.size(42.dp).clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.74f))
+            .border(1.dp, Color.White.copy(alpha = 0.96f), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = DeepBlue, fontSize = 19.sp)
     }
 }
 
 @Composable
 private fun FutureIconButton(label: String, onClick: () -> Unit, size: androidx.compose.ui.unit.Dp) {
-    Box(Modifier.size(size).clip(CircleShape)
-        .background(Color(0xFFEAF4FA)).border(1.dp, Color.White, CircleShape)
-        .clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier.size(size).clip(CircleShape)
+            .background(Color(0xFFE9F0EC))
+            .border(1.dp, Color.White, CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
         Text(if (label == "close") "×" else label, color = DeepBlue, fontSize = 21.sp)
     }
 }
 
 @Composable
-private fun FutureWelcome(onSuggestion: (String) -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Box(Modifier.size(178.dp), contentAlignment = Alignment.Center) {
-            val transition = rememberInfiniteTransition(label = "welcome")
-            val rotation by transition.animateFloat(0f, 360f,
-                infiniteRepeatable(tween(18000, easing = LinearEasing)), label = "rotation")
-            Canvas(Modifier.fillMaxSize()) {
-                val center = androidx.compose.ui.geometry.Offset(size.width/2,size.height/2)
-                drawCircle(Color(0x2283CDE8), size.minDimension*.48f, center,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width=1.2.dp.toPx()))
-                drawCircle(Color(0x4485BDE0), size.minDimension*.39f, center,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width=1.dp.toPx()))
-                val angle = Math.toRadians(rotation.toDouble())
-                drawCircle(Color(0xFF77CDE7), 4.dp.toPx(),
-                    androidx.compose.ui.geometry.Offset(center.x + kotlin.math.cos(angle).toFloat()*size.minDimension*.48f,
-                        center.y + kotlin.math.sin(angle).toFloat()*size.minDimension*.48f))
-            }
-            FutureOrb(112.dp)
-        }
+private fun FutureWelcome(
+    onSuggestion: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    animationsEnabled: Boolean = true
+) {
+    Column(
+        modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        BozerSpiralLogo(154.dp, animationsEnabled)
         Spacer(Modifier.height(12.dp))
-        Text("L'intelligence en mouvement.", color = DeepBlue, fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        Text("Une idée, une question, une action. Commençons.",
-            color = Muted, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier.padding(top=7.dp, bottom=22.dp))
+        Text(
+            "Une intelligence qui prend forme.",
+            color = DeepBlue,
+            fontSize = 21.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Text(
+            "Une idée, une question, une action. Commençons.",
+            color = Muted,
+            fontSize = 13.sp,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(top = 7.dp, bottom = 22.dp)
+        )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            FutureSuggestion("✧", "Organiser ma journée", Modifier.weight(1f)) {
+            FutureSuggestion("◌", "Organiser ma journée", Modifier.weight(1f)) {
                 onSuggestion("Aide-moi à organiser ma journée.")
             }
-            FutureSuggestion("◈", "Faire avancer un projet", Modifier.weight(1f)) {
+            FutureSuggestion("⌁", "Faire avancer un projet", Modifier.weight(1f)) {
                 onSuggestion("Aide-moi à faire avancer mon projet.")
             }
         }
@@ -993,39 +1167,144 @@ private fun FutureWelcome(onSuggestion: (String) -> Unit, modifier: Modifier = M
 }
 
 @Composable
-private fun FutureSuggestion(icon: String, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Column(modifier.clip(RoundedCornerShape(22.dp))
-        .background(Color.White.copy(alpha=.68f))
-        .border(1.dp, Color.White, RoundedCornerShape(22.dp))
-        .clickable(onClick=onClick).padding(15.dp)) {
-        Text(icon, color = Color(0xFF5D9ABD), fontSize=22.sp)
-        Spacer(Modifier.height(10.dp))
-        Text(label, color=DeepBlue, fontSize=12.sp, lineHeight=17.sp, fontWeight=FontWeight.SemiBold)
+private fun FutureSuggestion(
+    icon: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier.clip(RoundedCornerShape(20.dp))
+            .background(Color.White.copy(alpha = 0.72f))
+            .border(1.dp, Color.White, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .padding(15.dp)
+    ) {
+        Text(icon, color = Color(0xFF63877D), fontSize = 22.sp)
+        Spacer(Modifier.height(9.dp))
+        Text(label, color = DeepBlue, fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
-private fun FutureMessageBubble(message: ChatMessage) {
+private fun FutureMessageBubble(
+    message: ChatMessage,
+    speechRange: IntRange? = null,
+    animationsEnabled: Boolean = true
+) {
     val isUser = message.role == "user"
-    var visible by remember(message.content) { mutableStateOf(false) }
-    LaunchedEffect(message.content) { visible = true }
-    val alpha by animateFloatAsState(if (visible) 1f else 0f, tween(420), label="messageFade")
-    if (isUser) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Box(Modifier.widthIn(max=310.dp).clip(RoundedCornerShape(24.dp,24.dp,8.dp,24.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFFE7F2FA), Color(0xFFDCECF7))))
-                .border(1.dp, Color.White.copy(alpha=.9f), RoundedCornerShape(24.dp,24.dp,8.dp,24.dp))
-                .padding(horizontal=17.dp, vertical=13.dp)) {
-                Text(message.content, color=Ink, fontSize=15.sp, lineHeight=22.sp, modifier=Modifier.alpha(alpha))
+    var visible by remember(message.createdAt, message.role) { mutableStateOf(!animationsEnabled) }
+    LaunchedEffect(message.createdAt, message.role, animationsEnabled) { visible = true }
+
+    AnimatedVisibility(
+        visible = visible || !animationsEnabled,
+        enter = fadeIn(tween(230)) + slideInVertically(initialOffsetY = { it / 12 }, animationSpec = tween(230))
+    ) {
+        if (isUser) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Box(
+                    Modifier.widthIn(max = 310.dp)
+                        .clip(RoundedCornerShape(23.dp, 23.dp, 7.dp, 23.dp))
+                        .background(Brush.linearGradient(listOf(Color(0xFFEAF0EC), Color(0xFFDDE7E1))))
+                        .border(1.dp, Color.White.copy(alpha = 0.94f), RoundedCornerShape(23.dp, 23.dp, 7.dp, 23.dp))
+                        .padding(horizontal = 17.dp, vertical = 13.dp)
+                ) {
+                    Text(message.content, color = Ink, fontSize = 15.sp, lineHeight = 22.sp)
+                }
             }
+        } else {
+            val annotated = buildAnnotatedString {
+                append(message.content)
+                if (speechRange != null && message.content.isNotEmpty()) {
+                    val start = speechRange.first.coerceIn(0, message.content.length)
+                    val end = (speechRange.last + 1).coerceIn(start, message.content.length)
+                    if (end > start) addStyle(
+                        SpanStyle(
+                            background = Color(0xFFE1ECE6),
+                            color = Ink,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        start,
+                        end
+                    )
+                }
+            }
+            Text(
+                annotated,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 3.dp),
+                color = Ink,
+                fontSize = 15.sp,
+                lineHeight = 24.sp
+            )
         }
-    } else {
-        Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.Top) {
-            FutureOrb(34.dp)
-            Spacer(Modifier.width(12.dp))
-            Text(message.content, modifier=Modifier.weight(1f).padding(top=4.dp,bottom=5.dp).alpha(alpha),
-                color=Ink, fontSize=15.sp, lineHeight=24.sp)
+    }
+}
+
+@Composable
+private fun BozerTerminalPanel(
+    onClose: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    Surface(
+        Modifier.fillMaxWidth().heightIn(max = 390.dp),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        color = Color(0xF8FAFBF9),
+        shadowElevation = 28.dp
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(13.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("BOZER CONTROL", color = DeepBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                    Text("Ton espace de commande", color = Muted, fontSize = 11.sp)
+                }
+                FutureIconButton("close", onClose, 38.dp)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                BozerTerminalItem("Discussion", "◌", Modifier.weight(1f)) { onSelect("Discussion") }
+                BozerTerminalItem("Recherche", "⌕", Modifier.weight(1f)) { onSelect("Recherche") }
+                BozerTerminalItem("Téléphone", "⌘", Modifier.weight(1f)) { onSelect("Téléphone") }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                BozerTerminalItem("Organisation", "▦", Modifier.weight(1f)) { onSelect("Organisation") }
+                BozerTerminalItem("Applications", "◇", Modifier.weight(1f)) { onSelect("Applications") }
+                BozerTerminalItem("Mémoire", "◈", Modifier.weight(1f)) { onSelect("Mémoire") }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                BozerTerminalItem("Paramètres", "⚙", Modifier.weight(1f)) { onSelect("Paramètres") }
+                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.weight(1f))
+            }
+            Text(
+                "Double tap en bas de l'écran pour fermer le terminal.",
+                color = Muted,
+                fontSize = 10.sp,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         }
+    }
+}
+
+@Composable
+private fun BozerTerminalItem(
+    title: String,
+    glyph: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier.clip(RoundedCornerShape(17.dp))
+            .background(Color.White.copy(alpha = 0.82f))
+            .border(1.dp, Color(0xFFE4EBE7), RoundedCornerShape(17.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 7.dp, vertical = 13.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        Text(glyph, color = Color(0xFF63877D), fontSize = 21.sp)
+        Text(title, color = DeepBlue, fontSize = 10.sp, fontWeight = FontWeight.Medium)
     }
 }
 
