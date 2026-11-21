@@ -262,6 +262,7 @@ private fun BozerChat(
     var draft by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
     var pendingAndroidAction by remember { mutableStateOf<String?>(null) }
+    var pendingSecretaryDelete by remember { mutableStateOf<String?>(null) }
     var modelReady by remember { mutableStateOf(false) }
     var modelBusy by remember { mutableStateOf(false) }
     var modelStatus by remember { mutableStateOf("Cerveau hors ligne non téléchargé (≈491 Mo). Le téléchargement est facultatif et se fait une seule fois.") }
@@ -559,6 +560,17 @@ private fun BozerChat(
             messages.add(userMessage)
             runCatching { repository.save(userMessage) }
             pendingAndroidAction = text
+            scope.launch { listState.animateScrollToItem(messages.lastIndex) }
+            return
+        }
+
+        val secretaryCommand = SecretaryCommandParser.parse(text)
+        if (secretaryCommand is SecretaryCommand.Delete) {
+            draft = ""
+            val userMessage = ChatMessage(role = "user", content = text)
+            messages.add(userMessage)
+            runCatching { repository.save(userMessage) }
+            pendingSecretaryDelete = secretaryCommand.title
             scope.launch { listState.animateScrollToItem(messages.lastIndex) }
             return
         }
@@ -1261,6 +1273,39 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                     }
                 }
             }
+        }
+
+        if (pendingSecretaryDelete != null) {
+            val taskTitle = pendingSecretaryDelete!!
+            AlertDialog(
+                onDismissRequest = { pendingSecretaryDelete = null },
+                containerColor = Color(0xFFF9FCFF),
+                shape = RoundedCornerShape(26.dp),
+                title = { Text("Confirmer la suppression ?", color = DeepBlue) },
+                text = { Text("La tâche « $taskTitle » sera supprimée de BOZER SECRETARY. Cette opération ne peut pas être annulée.", color = Muted) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingSecretaryDelete = null
+                        scope.launch {
+                            val task = withContext(Dispatchers.IO) {
+                                secretary.tasks().firstOrNull { it.title.equals(taskTitle, ignoreCase = true) }
+                            }
+                            val deleted = task != null && withContext(Dispatchers.IO) { secretary.deleteTask(task.id) }
+                            appendActionResult(
+                                if (deleted) "La tâche « ${task!!.title} » a été supprimée."
+                                else "Je n'ai pas trouvé la tâche « $taskTitle » ou elle a déjà été supprimée."
+                            )
+                            if (deleted) secretaryTasks.removeAll { it.id == task!!.id }
+                        }
+                    }) { Text("Supprimer", color = Color(0xFFB65E70)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        pendingSecretaryDelete = null
+                        appendActionResult("D'accord, j'ai conservé cette tâche.")
+                    }) { Text("Conserver", color = DeepBlue) }
+                }
+            )
         }
 
         if (pendingAndroidAction != null) {
