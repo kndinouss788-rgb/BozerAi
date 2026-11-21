@@ -7,6 +7,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.Toast
 import java.text.Normalizer
 import java.util.Locale
 
@@ -101,7 +102,7 @@ class BozerAccessibilityService : AccessibilityService() {
                 node.contentDescription?.toString()
             ).map(::normalize)
             val matches = labels.any { label ->
-                label == expected || label.startsWith("$expected ") || label.contains(expected)
+                label == expected || label.startsWith("$expected ")
             }
 
             if (matches && node.isVisibleToUser && node.isEnabled) {
@@ -136,17 +137,21 @@ class BozerAccessibilityService : AccessibilityService() {
 
     private fun findEditableNode(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         val queue = ArrayDeque<AccessibilityNodeInfo>()
+        val candidates = mutableListOf<AccessibilityNodeInfo>()
         queue.add(root)
         var visited = 0
         while (queue.isNotEmpty() && visited < MAX_NODES) {
             val node = queue.removeFirst()
             visited += 1
-            if (node.isEditable && node.isVisibleToUser && node.isEnabled && !node.isPassword) return node
+            if (node.isEditable && node.isVisibleToUser && node.isEnabled && !node.isPassword) {
+                candidates += node
+            }
             for (index in 0 until node.childCount) {
                 node.getChild(index)?.let { child -> queue.addLast(child) }
             }
         }
-        return null
+        // Never guess which of several input fields the user intended.
+        return candidates.singleOrNull()
     }
 
     private fun scrollVisibleContainer(root: AccessibilityNodeInfo, forward: Boolean): Boolean {
@@ -178,6 +183,7 @@ class BozerAccessibilityService : AccessibilityService() {
             .putString(KEY_LAST_ACTION_RESULT, message)
             .apply()
         resultListener?.invoke(status, message)
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     private fun normalize(value: String): String =
@@ -207,9 +213,13 @@ class BozerAccessibilityService : AccessibilityService() {
         private const val KEY_LAST_ACTION_RESULT = "accessibility_last_action_result"
 
         private val SENSITIVE_LABELS = setOf(
-            "envoyer", "send", "publier", "publish", "poster", "post",
-            "supprimer", "delete", "effacer", "payer", "payer maintenant",
-            "pay", "purchase", "acheter", "confirmer", "confirm", "appeler"
+            "envoyer", "send", "envoyer maintenant", "send now",
+            "publier", "publish", "poster", "post",
+            "supprimer", "delete", "effacer", "vider définitivement",
+            "payer", "payer maintenant", "pay", "purchase", "checkout",
+            "acheter", "commander", "order", "transférer", "transfer",
+            "retirer", "withdraw", "confirmer", "confirm", "valider",
+            "appeler", "call", "s'abonner", "subscribe", "start trial"
         )
 
         @Volatile private var instance: BozerAccessibilityService? = null
