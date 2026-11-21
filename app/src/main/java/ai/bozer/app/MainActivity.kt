@@ -550,6 +550,7 @@ private fun BozerChat(
                     }
                 }
                 BozerAppCommand.OpenVideoCamera,
+                BozerAppCommand.CancelCurrentUiMission,
                 is BozerAppCommand.ControlVisibleUi,
                 is BozerAppCommand.LaunchAppAndUiActions -> "Cette action doit être traitée par le moteur BOZER ACTION."
             }
