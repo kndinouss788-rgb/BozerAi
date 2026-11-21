@@ -46,7 +46,7 @@ class BozerPiperVoiceOutput(
         check(!released) { "Le moteur vocal a été fermé." }
         check(modelDirectory.isDirectory) { "Dossier du modèle vocal introuvable." }
         val model = File(modelDirectory, "fr_FR-mls-medium.onnx")
-        val tokens = File(modelDirectory, "tokens.txt")
+        val tokens = File(modelDirectory, BozerPiperModelManager.TOKENS_FILE_NAME)
         check(model.isFile && tokens.isFile) { "Fichiers du modèle vocal manquants." }
 
         synchronized(engineLock) {
