@@ -30,7 +30,7 @@ class BozerAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val packageName = event?.packageName?.toString() ?: return
-        if (packageName != applicationContext.packageName) {
+        if (packageName != applicationContext.packageName && !isTransientSystemPackage(packageName)) {
             lastExternalPackage = packageName
         }
         processPendingRequest()
@@ -281,6 +281,17 @@ class BozerAccessibilityService : AccessibilityService() {
         }
 
         fun lastUsedExternalPackage(): String? = lastExternalPackage
+
+        private fun isTransientSystemPackage(packageName: String): Boolean =
+            packageName in setOf(
+                "com.android.systemui",
+                "com.android.permissioncontroller",
+                "com.google.android.permissioncontroller",
+                "com.google.android.inputmethod.latin",
+                "com.android.inputmethod.latin",
+                "com.samsung.android.honeyboard",
+                "com.swiftkey.swiftkeyconfigurator"
+            )
 
         /**
          * Queue explicit actions for the current foreground app or a specified
