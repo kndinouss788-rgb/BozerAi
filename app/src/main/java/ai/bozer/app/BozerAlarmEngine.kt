@@ -99,12 +99,17 @@ class BozerAlarmScheduler(context: Context) {
 class BozerAlarmReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_SNOOZE = "ai.bozer.app.action.SNOOZE_ALARM"
+        const val ACTION_DISMISS = "ai.bozer.app.action.DISMISS_ALARM"
         const val SNOOZE_MINUTES = 10L
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getLongExtra(BozerAlarmScheduler.EXTRA_ALARM_ID, -1L)
         if (id <= 0) return
+        if (intent.action == ACTION_DISMISS) {
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(id.toInt())
+            return
+        }
         if (intent.action == ACTION_SNOOZE) {
             val repository = BozerAlarmRepository(ChatDatabase(context))
             val original = repository.get(id) ?: return
@@ -159,6 +164,13 @@ class BozerAlarmReceiver : BroadcastReceiver() {
             context, alarm.id.toInt(), snoozeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val dismissIntent = Intent(context, BozerAlarmReceiver::class.java)
+            .setAction(ACTION_DISMISS)
+            .putExtra(BozerAlarmScheduler.EXTRA_ALARM_ID, alarm.id)
+        val dismissPendingIntent = PendingIntent.getBroadcast(
+            context, alarm.id.toInt() + 1, dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("BOZER — ${alarm.label}")
@@ -166,6 +178,7 @@ class BozerAlarmReceiver : BroadcastReceiver() {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .addAction(android.R.drawable.ic_lock_idle_alarm, "Répéter 10 min", snoozePendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Arrêter", dismissPendingIntent)
             .setAutoCancel(true).setContentIntent(contentIntent).build()
         manager.notify(alarm.id.toInt(), notification)
     }
