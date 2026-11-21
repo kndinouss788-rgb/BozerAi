@@ -557,6 +557,7 @@ private fun BozerChat(
         if (bozerSpaceOpen) {
             BozerSpaceDialog(
                 modelReady = modelReady,
+                localModelStatus = if (modelReady) "Prêt sur le téléphone" else modelStatus.take(72),
                 remoteConfigured = repository.remoteConfigured,
                 voiceEnabled = voiceRepliesEnabled,
                 animationsEnabled = animationsEnabled,
@@ -1360,6 +1361,7 @@ private fun BozerTerminalPanel(
 @Composable
 private fun BozerSpaceDialog(
     modelReady: Boolean,
+    localModelStatus: String,
     remoteConfigured: Boolean,
     voiceEnabled: Boolean,
     animationsEnabled: Boolean,
@@ -1398,7 +1400,7 @@ private fun BozerSpaceDialog(
                         .background(Color.White).padding(15.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    BozerSpaceStatus("Cerveau local", if (modelReady) "Prêt sur le téléphone" else "Initialisation en cours", modelReady)
+                    BozerSpaceStatus("Cerveau local", localModelStatus, modelReady)
                     BozerSpaceStatus("Passerelle en ligne", if (remoteConfigured) "Configurée" else "Non configurée", remoteConfigured)
                     BozerSpaceStatus("Voix BOZER", if (voiceEnabled) "Activée" else "Mode silencieux", voiceEnabled)
                 }
@@ -1486,29 +1488,87 @@ private fun BozerLabDialog(
                 Canvas(Modifier.fillMaxWidth().height(255.dp)) {
                     val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
                     val base = minOf(size.width, size.height) * 0.24f
-                    repeat(4) { index ->
-                        val radius = base * (0.55f + index * 0.28f)
-                        drawCircle(
-                            color = Color(0xFF8BA99B).copy(alpha = 0.10f + index * 0.035f),
-                            radius = radius,
-                            center = center,
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.1.dp.toPx())
-                        )
-                        val angle = Math.toRadians((phase + index * 90f).toDouble())
-                        val point = androidx.compose.ui.geometry.Offset(
-                            center.x + kotlin.math.cos(angle).toFloat() * radius,
-                            center.y + kotlin.math.sin(angle).toFloat() * radius
-                        )
-                        drawCircle(Color(0xFF779A8B), radius = (5 - index * 0.6f).dp.toPx(), center = point)
+                    val angleRadians = Math.toRadians(phase.toDouble())
+                    when (dayIndex) {
+                        0 -> {
+                            // Spiral in weightlessness: three moving curved arms.
+                            rotate(phase, pivot = center) {
+                                repeat(3) { index ->
+                                    rotate(index * 120f, pivot = center) {
+                                        val path = androidx.compose.ui.graphics.Path().apply {
+                                            moveTo(center.x - base * 0.08f, center.y)
+                                            cubicTo(center.x - base * 0.1f, center.y - base * 1.9f,
+                                                center.x + base * 1.8f, center.y - base * 1.7f,
+                                                center.x + base * 1.15f, center.y - base * 0.2f)
+                                            cubicTo(center.x + base * 0.85f, center.y + base * 0.5f,
+                                                center.x + base * 0.25f, center.y + base * 0.35f,
+                                                center.x + base * 0.35f, center.y)
+                                        }
+                                        drawPath(path, Color(0xFF829F91), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.2.dp.toPx()))
+                                    }
+                                }
+                            }
+                        }
+                        1 -> {
+                            // Constellation: six linked nodes and a moving beacon.
+                            val points = (0 until 6).map { index ->
+                                val angle = angleRadians + index * (Math.PI / 3.0)
+                                androidx.compose.ui.geometry.Offset(
+                                    center.x + kotlin.math.cos(angle).toFloat() * base * (0.9f + (index % 2) * 0.45f),
+                                    center.y + kotlin.math.sin(angle).toFloat() * base * (0.9f + (index % 2) * 0.45f)
+                                )
+                            }
+                            points.forEachIndexed { index, point ->
+                                val next = points[(index + 2) % points.size]
+                                drawLine(Color(0x66829F91), point, next, strokeWidth = 1.2.dp.toPx())
+                                drawCircle(Color(0xFF779A8B), 5.dp.toPx(), point)
+                            }
+                            drawCircle(Color(0xFFB5C9BF), 11.dp.toPx(), center)
+                        }
+                        2 -> {
+                            // Glass halo: layered rings breathe at different speeds.
+                            repeat(5) { index ->
+                                val radius = base * (0.55f + index * 0.36f) *
+                                    (1f + 0.035f * kotlin.math.sin(angleRadians + index).toFloat())
+                                drawCircle(
+                                    Color(0xFF8BA99B).copy(alpha = 0.14f + index * 0.025f),
+                                    radius,
+                                    center,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = (1.2f + index * 0.18f).dp.toPx())
+                                )
+                            }
+                        }
+                        3 -> {
+                            // Moving prism: translucent planes rotate in depth.
+                            rotate(phase * 0.55f, pivot = center) {
+                                repeat(4) { index ->
+                                    val width = base * (1.45f - index * 0.13f)
+                                    val height = base * (1.45f - index * 0.13f)
+                                    drawRoundRect(
+                                        color = Color(0x22829F91).copy(alpha = 0.4f + index * 0.08f),
+                                        topLeft = androidx.compose.ui.geometry.Offset(center.x - width / 2f, center.y - height / 2f),
+                                        size = androidx.compose.ui.geometry.Size(width, height),
+                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx())
+                                    )
+                                }
+                            }
+                        }
+                        else -> {
+                            // Matter wave: a smooth travelling line.
+                            val path = androidx.compose.ui.graphics.Path()
+                            val amplitude = base * 0.65f
+                            for (step in 0..80) {
+                                val x = size.width * step / 80f
+                                val normalized = step / 80f
+                                val y = center.y + kotlin.math.sin(normalized * Math.PI * 3.0 + angleRadians).toFloat() * amplitude
+                                if (step == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                            }
+                            drawPath(path, Color(0xFF829F91), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.6.dp.toPx()))
+                            drawCircle(Color(0xFFB5C9BF), 7.dp.toPx(), androidx.compose.ui.geometry.Offset(center.x, center.y))
+                        }
                     }
-                    val innerPulse = 1f + 0.06f * kotlin.math.sin(Math.toRadians(phase.toDouble())).toFloat()
-                    drawCircle(
-                        color = Color(0x22789A8C),
-                        radius = base * 0.42f * innerPulse,
-                        center = center
-                    )
                 }
-                Text("DÉCOUVERTE DU JOUR  •  \${dayIndex + 1}/5", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text("DÉCOUVERTE DU JOUR  •  " + (dayIndex + 1) + "/5", color = Color(0xFF718781), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                 Text(title, color = DeepBlue, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                 Text(description, color = Muted, fontSize = 13.sp, lineHeight = 19.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Spacer(Modifier.weight(1f))
