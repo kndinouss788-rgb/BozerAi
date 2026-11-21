@@ -42,7 +42,7 @@ Aucun de ces points ne peut être remplacé par un succès de tests Python.
 ### Organisation
 - Secretary possède une base SQLite, une interface de création, édition, recherche, filtres, priorités, échéances et suppression confirmée.
 - Les échéances futures peuvent créer une alarme BOZER locale ; modification, complétion et suppression mettent à jour ou annulent le rappel.
-- Les alarmes peuvent être créées, listées, modifiées (nom/date/heure/jours), mises en pause/réactivées et supprimées, avec répétitions quotidiennes et jours choisis.
+- Les alarmes peuvent être créées, listées, modifiées (nom/date/heure/jours), mises en pause/réactivées et supprimées, avec répétitions quotidiennes et jours choisis. Les notifications offrent répétition 10 minutes et arrêt explicite.
 - Les alarmes en retard sont traitées lors de la restauration ; les migrations doivent encore être testées sur les anciennes bases.
 
 ### Interface et stockage
