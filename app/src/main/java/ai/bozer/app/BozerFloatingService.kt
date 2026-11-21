@@ -56,7 +56,7 @@ class BozerFloatingService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        startForeground(NOTIFICATION_ID, buildForegroundNotification())
+        promoteToForeground(NOTIFICATION_ID, buildForegroundNotification())
         if (!Settings.canDrawOverlays(this)) {
             stopSelf()
             return
@@ -223,7 +223,7 @@ class BozerFloatingService : Service() {
             .build()
     }
 
-    private fun startForeground(notificationId: Int, notification: android.app.Notification) {
+    private fun promoteToForeground(notificationId: Int, notification: android.app.Notification) {
         val serviceType = if (Build.VERSION.SDK_INT >= 34) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else {
