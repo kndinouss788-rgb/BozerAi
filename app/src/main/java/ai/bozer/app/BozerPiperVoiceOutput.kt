@@ -164,7 +164,14 @@ class BozerPiperVoiceOutput(
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
 
-        activeTrack.set(track)
+        if (generation.get() != request || !activeTrack.compareAndSet(null, track)) {
+            runCatching { track.release() }
+            return
+        }
+        if (generation.get() != request) {
+            if (activeTrack.compareAndSet(track, null)) releaseTrack(track)
+            return
+        }
         try {
             track.play()
             var offset = 0
