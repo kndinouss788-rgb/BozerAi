@@ -1324,6 +1324,12 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                         }
                                     }
                                 }
+                                Text(
+                                    "Confidentialité : Automatique et Hors ligne utilisent le modèle local. En ligne transmet les 12 derniers échanges utiles à la passerelle BOZER. EYE_SEARCH contacte les moteurs publics uniquement lorsqu'une recherche est demandée.",
+                                    color = Muted,
+                                    fontSize = 10.sp,
+                                    lineHeight = 14.sp
+                                )
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("Mode silencieux", color = DeepBlue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
