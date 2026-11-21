@@ -82,7 +82,15 @@ class ChatRepository(
             val answer = if (selectedMode == BrainMode.ONLINE) {
                 remoteBrain!!.reply(history, extraContext)
             } else {
-                model.generate(prompt)
+                // Short conversational turns should not reserve the same
+                // generation ceiling as a long explanation or web synthesis.
+                val localTokenBudget = when {
+                    searchResults.isNotEmpty() -> 192
+                    latestUserText.length <= 80 -> 96
+                    latestUserText.length <= 240 -> 144
+                    else -> 192
+                }
+                model.generate(prompt, localTokenBudget)
             }
             if (searchResults.isEmpty()) answer else buildString {
                 append(answer)
