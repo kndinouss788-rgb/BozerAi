@@ -7,9 +7,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 enum class BrainMode(val label: String, val description: String) {
-    AUTO("Automatique", "Privilégie le cerveau local. Aucun fournisseur distant n'est appelé automatiquement."),
-    ONLINE("En ligne", "Utilise la passerelle distante BOZER. Les quotas et éventuels frais dépendent des fournisseurs configurés."),
-    OFFLINE("Hors ligne", "Utilise le cerveau Qwen installé sur le téléphone, sans Internet.");
+    AUTO("Automatique", "Utilise le cerveau local. Les recherches Internet explicites restent possibles ; aucun fournisseur IA distant n'est appelé automatiquement."),
+    ONLINE("En ligne", "Envoie les messages récents à la passerelle BOZER. Des quotas ou frais peuvent dépendre des fournisseurs configurés."),
+    OFFLINE("Hors ligne", "Utilise le modèle local sur le téléphone, sans requête Internet.");
 
     companion object {
         fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: AUTO
