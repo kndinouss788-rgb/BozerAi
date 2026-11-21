@@ -38,7 +38,7 @@ class AndroidPublicSearch(
         val collected = mutableListOf<InternetSearchResult>()
         // Providers are independent: one failure must not cancel the other.
         runCatching { searchDuckDuckGo(cleanQuery, limit) }
-            .onSuccess(collected::addAll)
+            .onSuccess { collected.addAll(it) }
             .onFailure { Log.w("BOZER_SEARCH", "DuckDuckGo indisponible", it) }
         if (collected.size < limit) {
             runCatching { searchWikipedia(cleanQuery, minOf(5, limit - collected.size)) }
