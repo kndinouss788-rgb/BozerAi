@@ -61,9 +61,10 @@ class BozerAlarmScheduler(context: Context) {
                     if (next == null) {
                         repository.disable(alarm.id)
                         null
-                    } else {
-                        repository.updateTrigger(alarm.id, next)
+                    } else if (repository.updateTrigger(alarm.id, next)) {
                         repository.get(alarm.id)
+                    } else {
+                        null
                     }
                 }
                 else -> {
