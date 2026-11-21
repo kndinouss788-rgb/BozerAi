@@ -84,17 +84,25 @@ class AndroidActionExecutor(private val activity: Activity) {
     fun execute(command: String): String? {
         val appCommand = BozerAppCommandParser.parse(command)
         if (appCommand != null) {
-            return when (appCommand) {
-                BozerAppCommand.OpenTikTokForRecording -> {
-                    if (TikTokPublisher.openTikTok(activity)) {
-                        "J'ouvre TikTok. Je ne peux pas appuyer à ta place sur son bouton Enregistrer : TikTok garde la main sur sa caméra. Tu pourras lancer l'enregistrement dans l'application."
-                    } else {
-                        "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
+            return try {
+                when (appCommand) {
+                    BozerAppCommand.OpenTikTokForRecording -> {
+                        if (TikTokPublisher.openTikTok(activity)) {
+                            "J'ouvre TikTok. Je ne peux pas appuyer à ta place sur son bouton Enregistrer : TikTok garde la main sur sa caméra. Tu pourras lancer l'enregistrement dans l'application."
+                        } else {
+                            "TikTok n'est pas installé ou ne peut pas être ouvert sur ce téléphone."
+                        }
                     }
+                    BozerAppCommand.OpenVideoCamera -> openVideoCamera()
+                    else -> bozerAppCommandHandler?.invoke(appCommand)
+                        ?: "Cette commande BOZER n'est pas encore reliée à ses paramètres."
                 }
-                BozerAppCommand.OpenVideoCamera -> openVideoCamera()
-                else -> bozerAppCommandHandler?.invoke(appCommand)
-                    ?: "Cette commande BOZER n'est pas encore reliée à ses paramètres."
+            } catch (_: ActivityNotFoundException) {
+                "Aucune application compatible n'a été trouvée pour cette action."
+            } catch (_: SecurityException) {
+                "Android a refusé cette action. Vérifie les autorisations de BOZER."
+            } catch (error: Exception) {
+                "Je n'ai pas pu effectuer cette action : ${error.message ?: "erreur inconnue"}."
             }
         }
 
