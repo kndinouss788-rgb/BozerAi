@@ -11,6 +11,7 @@ import java.util.Locale
  */
 sealed interface BozerAppCommand {
     data object OpenSettings : BozerAppCommand
+    data object OpenAccessibilitySettings : BozerAppCommand
     data class SetSilentMode(val enabled: Boolean) : BozerAppCommand
     data class SetAnimations(val enabled: Boolean) : BozerAppCommand
     data class SetSoundEffects(val enabled: Boolean) : BozerAppCommand
@@ -73,6 +74,13 @@ object BozerAppCommandParser {
             .removePrefix("bozer ")
             .trim()
         if (text.isBlank()) return null
+
+        if (text in setOf(
+                "ouvre les parametres d accessibilite", "ouvre les reglages d accessibilite",
+                "ouvre les parametres accessibilite", "configure bozer action",
+                "configure l automatisation des applications"
+            )
+        ) return BozerAppCommand.OpenAccessibilitySettings
 
         if (text in setOf(
                 "ouvre tes parametres", "affiche tes parametres",
