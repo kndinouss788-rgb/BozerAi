@@ -34,7 +34,7 @@ Aucun de ces points ne peut être remplacé par un succès de tests Python.
 - Le profil Piper 55 est un candidat technique et n'a pas été validé par écoute humaine.
 
 ### Recherche et actions
-- EYE_SEARCH agrège des extraits publics de DuckDuckGo, Wikipédia français et Wikidata ; les sources sont jointes à la réponse.
+- EYE_SEARCH agrège des extraits publics de DuckDuckGo, Wikipédia français et Wikidata ; les sources sont jointes à la réponse. Les demandes reconnues comme recherches sont routées vers EYE_SEARCH avant les intents d'ouverture du navigateur.
 - Le mode hors ligne annonce l'absence d'accès Internet.
 - BOZER ACTION propose le lancement d'applications, réglages, intents Android, et contrôle d'interface explicite via accessibilité avec consentement, limite d'étapes et confirmations sensibles.
 - Le contrôle d'interface ne garantit pas la réussite dans toutes les applications tierces.
