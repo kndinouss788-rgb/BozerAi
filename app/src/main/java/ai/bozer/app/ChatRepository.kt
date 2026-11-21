@@ -7,9 +7,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 enum class BrainMode(val label: String, val description: String) {
-    AUTO("Automatique", "Moteur distant d’appoint si disponible, sinon modèle local auxiliaire pré-entraîné."),
-    ONLINE("En ligne", "Utilise uniquement le moteur distant auxiliaire derrière la passerelle BOZER."),
-    OFFLINE("Hors ligne", "Utilise le modèle Qwen local auxiliaire, pas le modèle original BOZER NEURAL.");
+    AUTO("Automatique", "Utilise le cerveau Qwen local en priorité : gratuit, sans clé API et utilisable hors ligne."),
+    ONLINE("En ligne", "Utilise la passerelle distante BOZER. Une connexion Internet est nécessaire."),
+    OFFLINE("Hors ligne", "Utilise le cerveau Qwen installé sur le téléphone, sans Internet.");
 
     companion object {
         fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: AUTO
@@ -48,11 +48,11 @@ class ChatRepository(
         if (selectedMode == BrainMode.ONLINE && !onlineAvailable) {
             return@withLock "Tu as forcé le mode En ligne, mais aucune connexion Internet n'est disponible. Passe en Automatique ou Hors ligne pour continuer."
         }
-        if (selectedMode == BrainMode.OFFLINE && !model.isLoaded) {
-            return@withLock "Le modèle local auxiliaire n'est pas encore installé ou chargé. Installe-le une première fois pour utiliser le mode Hors ligne."
+        if (selectedMode != BrainMode.ONLINE && !model.isLoaded) {
+            return@withLock "Le cerveau local BOZER n'est pas encore installé ou chargé. Installe-le une seule fois dans les paramètres pour discuter gratuitement, même hors ligne."
         }
-        if (selectedMode == BrainMode.AUTO && !onlineAvailable && !model.isLoaded) {
-            return@withLock "Internet est indisponible et le cerveau local n'est pas encore prêt. Connecte-toi pour utiliser BOZER ou installe le modèle auxiliaire local."
+        if (selectedMode == BrainMode.ONLINE && remoteBrain?.isConfigured != true) {
+            return@withLock "La passerelle distante BOZER n'est pas configurée. Repasse en Automatique pour utiliser le cerveau local gratuit."
         }
 
         val searchQuery = if (selectedMode == BrainMode.OFFLINE || !onlineAvailable) null else extractSearchQuery(latestUserText)
@@ -74,22 +74,16 @@ class ChatRepository(
             database.rememberedFacts().takeLast(20), searchResults
         )
         try {
-            val useRemote = when (selectedMode) {
-                BrainMode.AUTO -> onlineAvailable && remoteBrain?.isConfigured == true
-                BrainMode.ONLINE -> remoteBrain?.isConfigured == true
-                BrainMode.OFFLINE -> false
-            }
+            // The downloaded Qwen model is the default foundation brain.
+            // Remote inference is opt-in only, so ordinary chat never incurs API usage.
+            val useRemote = selectedMode == BrainMode.ONLINE && remoteBrain?.isConfigured == true
             val answer = if (useRemote) {
                 try {
                     remoteBrain!!.reply(history, extraContext)
                 } catch (remoteError: Exception) {
-                    if (selectedMode == BrainMode.AUTO && model.isLoaded) {
-                        model.generate(prompt)
-                    } else {
-                        "Le moteur distant auxiliaire n'est pas joignable : " +
-                            (remoteError.message ?: "erreur réseau") +
-                            if (selectedMode == BrainMode.AUTO) ". Réessaie quand la connexion sera rétablie." else ". Vérifie Internet ou passe en Automatique."
-                    }
+                    "Le moteur distant BOZER n'est pas joignable : " +
+                        (remoteError.message ?: "erreur réseau") +
+                        ". Repasse en Automatique pour continuer avec le cerveau local."
                 }
             } else {
                 model.generate(prompt)
@@ -103,7 +97,7 @@ class ChatRepository(
                 }
             }
         } catch (error: Exception) {
-            "Je rencontre un problème avec mon moteur local auxiliaire : " + (error.message ?: "erreur inconnue") + ". Réessaie dans un instant."
+            "Je rencontre un problème avec le cerveau local BOZER : " + (error.message ?: "erreur inconnue") + ". Réessaie dans un instant."
         }
     }
 
