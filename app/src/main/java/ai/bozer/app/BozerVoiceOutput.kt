@@ -93,6 +93,31 @@ class BozerVoiceOutput(
                 }
             }
 
+            // Android 8+ TTS engines can report the character range they are
+            // currently speaking. Map the utterance-local offsets to the full
+            // assistant message so captions can follow the actual spoken word.
+            override fun onRangeStart(
+                utteranceId: String?,
+                start: Int,
+                end: Int,
+                frame: Int
+            ) {
+                if (utteranceId == null) return
+                val callbackAndRange = synchronized(this@BozerVoiceOutput) {
+                    activeChunkRanges[utteranceId]?.let { it to activeSegmentCallback }
+                } ?: return
+                val (segment, callback) = callbackAndRange
+                if (callback != null) {
+                    val absoluteStart = (segment.start + start).coerceIn(segment.start, segment.endExclusive)
+                    val absoluteEnd = (segment.start + end).coerceIn(absoluteStart, segment.endExclusive)
+                    mainHandler.post {
+                        if (!released && absoluteEnd > absoluteStart) {
+                            callback(absoluteStart, absoluteEnd)
+                        }
+                    }
+                }
+            }
+
             override fun onDone(utteranceId: String?) {
                 if (utteranceId == null) return
                 val completed = synchronized(this@BozerVoiceOutput) {
