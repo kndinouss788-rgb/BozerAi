@@ -30,7 +30,10 @@ class BozerAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val packageName = event?.packageName?.toString() ?: return
-        if (packageName != applicationContext.packageName && !isTransientSystemPackage(packageName)) {
+        if (packageName != applicationContext.packageName &&
+            !isTransientSystemPackage(packageName) &&
+            packageManager.getLaunchIntentForPackage(packageName) != null
+        ) {
             lastExternalPackage = packageName
         }
         processPendingRequest()
