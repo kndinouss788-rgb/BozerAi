@@ -2,6 +2,7 @@ package ai.bozer.app
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class SecretaryCommandParserTest {
@@ -19,6 +20,28 @@ class SecretaryCommandParserTest {
             SecretaryCommand.Add("appeler maman"),
             SecretaryCommandParser.parse("Note dans ma liste appeler maman!")
         )
+    }
+
+    @Test
+    fun parsesNaturalDeadlineInTaskCommand() {
+        val parsed = SecretaryCommandParser.parse(
+            "Note-moi une tâche appeler maman demain à 18h30"
+        ) as SecretaryCommand.Add
+
+        assertEquals("appeler maman", parsed.title)
+        assertNotNull(parsed.dueAtMillis)
+        assertNull(parsed.dateWarning)
+    }
+
+    @Test
+    fun reportsInvalidDeadlineInTaskCommand() {
+        val parsed = SecretaryCommandParser.parse(
+            "Ajoute une tâche appeler maman demain à 28h"
+        ) as SecretaryCommand.Add
+
+        assertEquals("appeler maman demain à 28h", parsed.title)
+        assertNull(parsed.dueAtMillis)
+        assertNotNull(parsed.dateWarning)
     }
 
     @Test
