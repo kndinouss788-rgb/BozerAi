@@ -28,13 +28,24 @@ object SecretaryDateTimeParser {
         if (title.isBlank()) return ParsedSecretaryTaskDetails(title, null)
 
         val timeMatch = TIME_AT_END.find(normalize(title))
+        var invalidTimeSuffix = false
         val time = timeMatch?.let { match ->
             val hour = match.groupValues[1].toIntOrNull()
             val minute = (match.groupValues[2].ifBlank { match.groupValues[3] }).toIntOrNull() ?: 0
             if (hour != null && hour in 0..23 && minute in 0..59) {
                 title = title.substring(0, match.range.first).trim()
                 TimePart(hour, minute)
-            } else null
+            } else {
+                invalidTimeSuffix = true
+                null
+            }
+        }
+        if (invalidTimeSuffix) {
+            return ParsedSecretaryTaskDetails(
+                titleInput.trim(),
+                null,
+                "L'heure indiquée n'est pas valide. Utilise une heure entre 0 h et 23 h et des minutes entre 00 et 59."
+            )
         }
 
         val durationMatch = DURATION_AT_END.find(normalize(title))
@@ -56,6 +67,13 @@ object SecretaryDateTimeParser {
         val normalizedTitle = normalize(title)
         val dateMatch = DATE_AT_END.find(normalizedTitle)
         val datePart = dateMatch?.let(::toDatePart)
+        if (dateMatch != null && datePart == null) {
+            return ParsedSecretaryTaskDetails(
+                titleInput.trim(),
+                null,
+                "La date indiquée n'est pas reconnue. Vérifie le jour, le mois et l'année."
+            )
+        }
         if (datePart != null) {
             title = title.substring(0, dateMatch.range.first).trim()
             val dueAt = buildDate(
