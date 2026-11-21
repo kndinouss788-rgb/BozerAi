@@ -579,6 +579,60 @@ private fun BozerChat(
         if (text.isEmpty() || sending) return
 
         val secretaryCommand = SecretaryCommandParser.parse(text)
+        if (secretaryCommand is SecretaryCommand.Add) {
+            val command = secretaryCommand
+            draft = ""
+            val userMessage = ChatMessage(role = "user", content = text)
+            messages.add(userMessage)
+            if (runCatching { repository.save(userMessage) }.isFailure) {
+                messages.remove(userMessage)
+                appendActionResult("Je n'ai pas pu enregistrer ta demande.")
+                return
+            }
+            sending = true
+            scope.launch {
+                val answer = try {
+                    val result = withContext(Dispatchers.IO) {
+                        val id = secretary.createTask(
+                            title = command.title,
+                            dueAtMillis = command.dueAtMillis
+                        )
+                        val task = secretary.tasks().firstOrNull { it.id == id }
+                        val reminderReady = when {
+                            command.dueAtMillis == null -> true
+                            task == null -> false
+                            else -> secretaryReminders.synchronize(task)
+                        }
+                        Triple(id, task, reminderReady)
+                    }
+                    val latest = withContext(Dispatchers.IO) { secretary.tasks() }
+                    secretaryTasks.clear()
+                    secretaryTasks.addAll(latest)
+                    when {
+                        result.second == null ->
+                            "J'ai tenté d'ajouter « ${command.title} », mais je n'ai pas pu relire la tâche enregistrée."
+                        command.dueAtMillis == null ->
+                            "C'est noté. J'ai ajouté « ${command.title} » à tes tâches."
+                        result.third -> {
+                            val dueText = java.text.DateFormat.getDateTimeInstance(
+                                java.text.DateFormat.MEDIUM,
+                                java.text.DateFormat.SHORT,
+                                java.util.Locale.FRANCE
+                            ).format(java.util.Date(command.dueAtMillis))
+                            "C'est noté. J'ai ajouté « ${command.title} » avec un rappel BOZER pour le $dueText."
+                        }
+                        else ->
+                            "J'ai ajouté « ${command.title} », mais son rappel n'a pas pu être programmé. Vérifie les autorisations et les notifications Android."
+                    }
+                } catch (error: Exception) {
+                    "Je n'ai pas réussi à ajouter cette tâche : ${error.message ?: "erreur inconnue"}."
+                }
+                appendActionResult(answer)
+                sending = false
+            }
+            return
+        }
+
         if (secretaryCommand is SecretaryCommand.Complete) {
             val taskTitle = secretaryCommand.title
             draft = ""
