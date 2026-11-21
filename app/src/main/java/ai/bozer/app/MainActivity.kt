@@ -1187,21 +1187,6 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 }
                                 TextButton(onClick = { onEnableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Activer la bulle flottante", color = Color(0xFF5A7D70)) }
                                 TextButton(onClick = { onDisableFloatingBubble(); settingsOpen = false }, modifier = Modifier.fillMaxWidth()) { Text("Désactiver la bulle flottante", color = Color(0xFF5A7D70)) }
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text("BOZER ACTION — contrôle vocal des applications", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        "Autorise BOZER à toucher ou maintenir les contrôles visibles, saisir du texte, faire défiler, glisser et revenir en arrière dans les applications. L'écran n'est examiné que pendant une mission vocale explicitement demandée. Certaines actions sensibles demanderont une confirmation supplémentaire.",
-                                        color = Muted,
-                                        fontSize = 11.sp,
-                                        lineHeight = 15.sp
-                                    )
-                                    TextButton(
-                                        onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Autoriser le contrôle vocal des applications", color = Color(0xFF5A7D70))
-                                    }
-                                }
                             }
                             HorizontalDivider(color = Color(0xFFEAF0F4))
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
