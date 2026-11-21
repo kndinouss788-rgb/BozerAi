@@ -11,7 +11,7 @@ BOZER ACTION transforme une intention vocale ou écrite en une action contrôlé
 - Les actions Android déjà intégrées comprennent les alarmes et rappels BOZER, minuteurs, composeur téléphonique, préparation de SMS/e-mails, calendrier et partage. Les envois et appels finaux restent à confirmer dans l'application concernée.
 - BOZER peut ouvrir ses propres paramètres et modifier le mode silencieux, le thème visuel (Nacré, Glacier, Sauge), les animations, les effets sonores et la bulle flottante. Les préférences sont persistées dans `bozer_settings`.
 - Une demande vidéo générique ouvre l'application caméra en mode vidéo. L'utilisateur appuie lui-même sur Enregistrer.
-- « Ouvre TikTok et filme-moi » ouvre TikTok. L'application ne fournit pas ici de commande Android publique et fiable permettant à BOZER de déclencher le bouton interne d'enregistrement ; BOZER ne prétend donc pas que l'enregistrement a commencé.
+- « Ouvre TikTok et filme-moi » ouvre TikTok. Si le service d'accessibilité facultatif BOZER ACTION est activé, une tentative limitée de clic sur un bouton visible nommé « Enregistrer » ou « Record » est mise en attente pendant 30 secondes, uniquement dans TikTok. BOZER ne prétend pas que le clic a réussi : l'interface TikTok peut ne pas exposer ce bouton à Android.
 
 ## Contrôles de sécurité
 
@@ -24,7 +24,9 @@ BOZER ACTION transforme une intention vocale ou écrite en une action contrôlé
 
 ## Automatisation à l'intérieur des applications
 
-Le lancement d'une application est disponible. Le contrôle générique des boutons et écrans d'applications tierces n'est pas encore installé. Android ne permet pas à une application ordinaire de piloter librement l'interface privée d'une autre application. Une future automatisation par service d'accessibilité devra être facultative, activée explicitement dans Android, clairement visible et limitée aux actions demandées par l'utilisateur.
+Le service d'accessibilité Android optionnel est déclaré, mais il doit être activé explicitement par l'utilisateur dans les réglages Android. Il ne parcourt pas les écrans en continu : il recherche un contrôle uniquement lorsqu'une demande précise est en attente, uniquement dans les deux paquets TikTok configurés, et uniquement pour le libellé visible « Enregistrer » ou « Record ». La demande expire après 30 secondes. Aucun contenu d'écran n'est copié vers le réseau ou envoyé à BOZER.
+
+Ce pont est un premier connecteur spécialisé, pas encore un automatisme universel pour toutes les applications. Les interfaces tierces changent et peuvent cacher leurs boutons aux services d'accessibilité ; tout clic reste donc à vérifier visuellement par l'utilisateur.
 
 ## Ancien moteur de missions Python
 
