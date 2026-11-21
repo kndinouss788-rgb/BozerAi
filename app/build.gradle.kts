@@ -12,52 +12,9 @@ val gatewayUrl = providers.gradleProperty("BOZER_GATEWAY_URL")
     .orElse(providers.environmentVariable("BOZER_GATEWAY_URL"))
     .getOrElse("https://bozerai.bozerpdg.workers.dev")
 
-// The upstream Apache-2.0 Sherpa-ONNX Android AAR is fetched by Gradle and
-// pinned by SHA-256; it is not copied into the Git repository.
-// The Qwen GGUF is fetched at build time and embedded as an APK asset.
-val bozerBrainAssetDir = layout.buildDirectory.dir("generated/bozerBrainAssets")
-val bozerBrainAsset = bozerBrainAssetDir.map { it.file("bozer/qwen2.5-0.5b-instruct-q4_k_m.gguf") }
-val bozerBrainUrl = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/12145bd1d629190a4d44254073650877954d02c9/qwen2.5-0.5b-instruct-q4_k_m.gguf"
-val bozerBrainSha256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
-val bozerBrainBytes = 491_400_032L
-val downloadBozerBrain = tasks.register("downloadBozerBrain") {
-    val output = bozerBrainAsset.get().asFile
-    outputs.file(output)
-    doLast {
-        fun sha256(file: File): String {
-            val digest = MessageDigest.getInstance("SHA-256")
-            file.inputStream().buffered().use { input ->
-                val buffer = ByteArray(1024 * 1024)
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    digest.update(buffer, 0, count)
-                }
-            }
-            return digest.digest().joinToString("") { "%02x".format(it) }
-        }
-        output.parentFile.mkdirs()
-        if (output.isFile && output.length() == bozerBrainBytes && sha256(output) == bozerBrainSha256) return@doLast
-        val partial = File(output.parentFile, output.name + ".part")
-        partial.delete()
-        val connection = URL(bozerBrainUrl).openConnection().apply {
-            connectTimeout = 30_000
-            readTimeout = 180_000
-        }
-        try {
-            connection.getInputStream().use { input ->
-                partial.outputStream().buffered().use { destination -> input.copyTo(destination) }
-            }
-            check(partial.length() == bozerBrainBytes) { "BOZER brain model size mismatch: ${partial.length()} bytes." }
-            check(sha256(partial) == bozerBrainSha256) { "BOZER brain model SHA-256 mismatch." }
-            if (output.exists()) output.delete()
-            check(partial.renameTo(output)) { "Cannot place bundled BOZER brain asset." }
-        } finally {
-            connection.disconnect()
-            if (partial.exists()) partial.delete()
-        }
-    }
-}
+// Sherpa-ONNX is fetched by Gradle and pinned by SHA-256.
+// The 491 MB Qwen model is downloaded by the Android app only when the user
+// requests the offline brain; it is not embedded in the APK.
 
 val sherpaAar = layout.buildDirectory.file("third_party/sherpa-onnx-2.0.1.aar")
 val sherpaAarUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.1/sherpa-onnx-2.0.1.aar"
@@ -129,8 +86,6 @@ android {
         }
     }
 
-    sourceSets.getByName("main").assets.srcDir(bozerBrainAssetDir)
-    androidResources { noCompress += "gguf" }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -161,7 +116,7 @@ dependencies {
 }
 
 tasks.named("preBuild") {
-    dependsOn(downloadSherpaOnnxAar, downloadBozerBrain)
+    dependsOn(downloadSherpaOnnxAar)
 }
 tasks.matching { it.name.startsWith("compile") || it.name == "checkDebugAarMetadata" }.configureEach {
     dependsOn(downloadSherpaOnnxAar)
