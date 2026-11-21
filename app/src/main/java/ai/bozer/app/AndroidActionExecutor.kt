@@ -58,8 +58,14 @@ class AndroidActionExecutor(private val activity: Activity) {
         if (uiActions.any(BozerAccessibilityService::isSensitiveAction)) {
             val target = (uiCommand as? BozerAppCommand.LaunchAppAndUiActions)?.appName
                 ?.let { "dans $it" } ?: "dans l'application actuellement ciblée"
-            val labels = uiActions.filterIsInstance<BozerUiAction.TapText>().joinToString(" », « ") { it.label }
-            return "BOZER doit toucher « $labels » $target. Cette action peut envoyer, publier, supprimer ou payer. Confirme seulement si c'est bien ce que tu veux."
+            val labels = uiActions.mapNotNull { action ->
+                when (action) {
+                    is BozerUiAction.TapText -> "toucher « ${action.label} »"
+                    is BozerUiAction.LongPressText -> "maintenir « ${action.label} »"
+                    else -> null
+                }
+            }.joinToString(" puis ")
+            return "BOZER doit $labels $target. Cette action peut envoyer, publier, supprimer ou payer. Confirme seulement si c'est bien ce que tu veux."
         }
         val normalized = normalize(command)
         return when (val parsed = AndroidCommandParser.parse(command)) {
