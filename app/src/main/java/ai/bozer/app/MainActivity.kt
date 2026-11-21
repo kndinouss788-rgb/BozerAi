@@ -1186,7 +1186,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text("BOZER ACTION — contrôle vocal des applications", color = DeepBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                     Text(
-                                        "Autorise BOZER à toucher les contrôles visibles, saisir du texte, faire défiler les écrans et revenir en arrière dans les applications. L'écran n'est examiné que pendant une mission vocale explicitement demandée. Certaines actions sensibles demanderont une confirmation supplémentaire.",
+                                        "Autorise BOZER à toucher ou maintenir les contrôles visibles, saisir du texte, faire défiler, glisser et revenir en arrière dans les applications. L'écran n'est examiné que pendant une mission vocale explicitement demandée. Certaines actions sensibles demanderont une confirmation supplémentaire.",
                                         color = Muted,
                                         fontSize = 11.sp,
                                         lineHeight = 15.sp
@@ -1218,7 +1218,7 @@ PROMPT: un prompt vidéo détaillé (scène, sujet, mouvement, ambiance, cadrage
                     title = { Text("Autoriser BOZER ACTION ?", color = DeepBlue) },
                     text = {
                         Text(
-                            "Pour exécuter tes commandes dans les autres applications, BOZER a besoin de l'accès d'accessibilité Android. Cet accès peut voir les libellés des éléments visibles et toucher les contrôles à ta demande. BOZER ne consulte l'écran que pendant une mission explicite ; il n'envoie pas le contenu de l'écran au cerveau distant. Les champs de mot de passe sont ignorés et les actions sensibles demandent encore une confirmation. Tu peux désactiver cet accès à tout moment dans Android.",
+                            "Pour exécuter tes commandes dans les autres applications, BOZER a besoin de l'accès d'accessibilité Android. Cet accès peut voir les libellés des éléments visibles, toucher ou maintenir les contrôles, faire glisser et saisir du texte à ta demande. BOZER ne consulte l'écran que pendant une mission explicite ; il n'envoie pas le contenu de l'écran au cerveau distant. Les champs de mot de passe sont ignorés et les actions sensibles demandent encore une confirmation. Tu peux désactiver cet accès à tout moment dans Android.",
                             color = Muted
                         )
                     },
