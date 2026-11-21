@@ -134,8 +134,9 @@ class BozerVoiceOutput(
             selectedVoice == null -> "timbre déterminé par la voix Android par défaut"
             else -> "genre non indiqué par Android"
         }
+        val voiceLabel = voiceName?.let { " ($it)" }.orEmpty()
         publishStatus(
-            "Voix française Android\${voiceName?.let { " ($it)" }.orEmpty()} — $networkLabel ; $genderLabel. Ce n'est pas encore la voix originale BOZER."
+            "Voix française Android" + voiceLabel + " — $networkLabel ; $genderLabel. Ce n'est pas encore la voix originale BOZER."
         )
 
         val pending = pendingText
