@@ -85,7 +85,7 @@ object SecretaryDateTimeParser {
         return when {
             value == "aujourd'hui" || value == "aujourd hui" -> DatePart.RelativeDays(0)
             value == "demain" -> DatePart.RelativeDays(1)
-            value == "apres demain" -> DatePart.RelativeDays(2)
+            value == "apres demain" || value == "apres-demain" -> DatePart.RelativeDays(2)
             value == "ce soir" -> DatePart.RelativeDays(0)
             else -> {
                 val weekdayMatch = WEEKDAY_AT_END.find(value)
