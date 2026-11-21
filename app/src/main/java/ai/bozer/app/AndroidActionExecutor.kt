@@ -71,6 +71,8 @@ class AndroidActionExecutor(private val activity: Activity) {
                 "Ouvrir l'itinéraire vers « ${parsed.destination} »."
             AndroidCommand.OpenSettings ->
                 "Ouvrir les paramètres du téléphone."
+            is AndroidCommand.OpenDeviceSettings ->
+                "Ouvrir les paramètres Android : ${parsed.label}."
             null -> when (normalized) {
                 "annule la prochaine alarme",
                 "annule la prochaine alarme bozer",
@@ -143,6 +145,7 @@ class AndroidActionExecutor(private val activity: Activity) {
                 is AndroidCommand.CreateCalendarEvent -> createCalendarEvent(parsed.title, parsed.details, parsed.beginAtMillis)
                 is AndroidCommand.ShareText -> shareText(parsed.text)
                 AndroidCommand.OpenSettings -> openSettings()
+                is AndroidCommand.OpenDeviceSettings -> openDeviceSettings(parsed.action, parsed.label)
             }
         } catch (_: ActivityNotFoundException) {
             "Aucune application compatible n'a été trouvée pour cette action."
@@ -192,6 +195,11 @@ class AndroidActionExecutor(private val activity: Activity) {
     private fun openSettings(): String {
         activity.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
         return "J'ouvre les paramètres du téléphone."
+    }
+
+    private fun openDeviceSettings(action: String, label: String): String {
+        activity.startActivity(Intent(action))
+        return "J'ouvre les paramètres Android : $label."
     }
 
     private fun openVideoCamera(): String {
@@ -391,6 +399,7 @@ sealed interface AndroidCommand {
     data class CreateCalendarEvent(val title: String, val details: String, val beginAtMillis: Long) : AndroidCommand
     data class ShareText(val text: String) : AndroidCommand
     data object OpenSettings : AndroidCommand
+    data class OpenDeviceSettings(val action: String, val label: String) : AndroidCommand
 }
 
 object AndroidCommandParser {
@@ -398,6 +407,22 @@ object AndroidCommandParser {
         val text = input.trim().removeSuffix(".").removeSuffix("!").trim()
         val normalized = normalize(text)
         if (normalized in setOf("ouvre les parametres", "ouvre les reglages", "ouvre les parametres du telephone")) return AndroidCommand.OpenSettings
+        when (normalized) {
+            "ouvre les parametres wifi", "ouvre les reglages wifi", "ouvre les parametres du wi fi", "ouvre les reglages du wifi" ->
+                return AndroidCommand.OpenDeviceSettings(Settings.ACTION_WIFI_SETTINGS, "Wi-Fi")
+            "ouvre les parametres bluetooth", "ouvre les reglages bluetooth" ->
+                return AndroidCommand.OpenDeviceSettings(Settings.ACTION_BLUETOOTH_SETTINGS, "Bluetooth")
+            "ouvre les parametres de son", "ouvre les reglages de son", "ouvre le son" ->
+                return AndroidCommand.OpenDeviceSettings(Settings.ACTION_SOUND_SETTINGS, "Son")
+            "ouvre les parametres d affichage", "ouvre les reglages d affichage", "ouvre l affichage" ->
+                return AndroidCommand.OpenDeviceSettings(Settings.ACTION_DISPLAY_SETTINGS, "Affichage")
+            "ouvre les parametres de localisation", "ouvre les reglages de localisation", "ouvre la localisation" ->
+                return AndroidCommand.OpenDeviceSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS, "Localisation")
+            "ouvre les parametres de notifications", "ouvre les reglages de notifications" ->
+                return AndroidCommand.OpenDeviceSettings(Settings.ACTION_APP_NOTIFICATION_SETTINGS, "Notifications")
+            "ouvre les parametres des applications", "ouvre les applications" ->
+                return AndroidCommand.OpenDeviceSettings(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS, "Applications")
+        }
 
         Regex("""^(?:appelle|telephone)\s+(?:le\s+)?([+0-9][+0-9() .-]{5,})$""", RegexOption.IGNORE_CASE)
             .find(text)?.let { return AndroidCommand.Dial(it.groupValues[1].trim()) }
