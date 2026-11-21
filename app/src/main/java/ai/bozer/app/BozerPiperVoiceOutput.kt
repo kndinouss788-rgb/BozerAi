@@ -232,9 +232,8 @@ class BozerPiperVoiceOutput(
         }
     }
 
-    override fun release() {
-        if (released) return
-        released = true
+    /** Stop playback and unload the native voice while keeping this wrapper reusable. */
+    fun unload() {
         generation.incrementAndGet()
         playbackJob?.cancel()
         stopTrack()
@@ -242,6 +241,13 @@ class BozerPiperVoiceOutput(
             tts?.release()
             tts = null
         }
+        publishStatus("Voix française locale déchargée.")
+    }
+
+    override fun release() {
+        if (released) return
+        released = true
+        unload()
         scope.cancel()
     }
 
