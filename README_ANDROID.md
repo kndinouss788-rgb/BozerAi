@@ -9,7 +9,7 @@ BOZER sépare l'application Android de son cerveau linguistique local afin de ga
 - **Coût d'inférence locale :** aucun appel API nécessaire pour les conversations exécutées par le modèle local.
 - **Distribution :** le GGUF n'est pas embarqué dans l'APK. L'utilisateur choisit de télécharger le cerveau hors ligne depuis les paramètres BOZER.
 - **Bulle flottante :** le service fonctionne au premier plan avec une notification persistante et une action d'arrêt ; Android et Google Play imposent une déclaration spécifique pour le type `specialUse`, qui reste à examiner avant publication.
-- **Voix française Piper :** le modèle ONNX de 76 733 935 octets est épinglé sur une révision Hugging Face et vérifié par SHA-256 ; le fichier de jetons de 954 octets est épinglé lui aussi. Les téléchargements partiels peuvent reprendre avec HTTP Range.
+- **Voix française Piper :** le modèle ONNX de 76 733 935 octets est épinglé sur une révision Hugging Face et vérifié par SHA-256 ; le fichier de jetons de 954 octets est épinglé lui aussi. Les téléchargements partiels peuvent reprendre avec HTTP Range et les fichiers vocaux peuvent être supprimés depuis les paramètres pour libérer de l'espace.
 - **Persistance :** le modèle est stocké dans le répertoire privé de l'application et n'est pas retéléchargé lors d'une mise à jour normale de l'application.
 - **Reprise :** les téléchargements interrompus conservent leur fichier partiel et reprennent via HTTP Range lorsque le serveur le permet.
 - **Secrétaire :** une échéance future de tâche crée une alarme locale BOZER ; modifier l'échéance remplace le rappel, et terminer/supprimer la tâche l'annule.
