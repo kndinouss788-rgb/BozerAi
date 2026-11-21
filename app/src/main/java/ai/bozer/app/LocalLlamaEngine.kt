@@ -18,10 +18,11 @@ class LocalLlamaEngine {
     val isLoaded: Boolean get() = loaded
 
     @Synchronized
-    fun load(modelPath: String) {
+    fun load(modelPath: String, contextSize: Int = 2048) {
         if (loaded) return
+        require(contextSize in 1024..2048) { "La taille du contexte local doit être comprise entre 1 024 et 2 048 tokens." }
         nativeAttempted = true
-        check(nativeLoadModel(modelPath, 1024)) {
+        check(nativeLoadModel(modelPath, contextSize)) {
             "Le moteur n'a pas réussi à charger le modèle."
         }
         loaded = true
