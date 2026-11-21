@@ -544,7 +544,6 @@ private fun BozerChat(
                         "Bulle flottante BOZER désactivée."
                     }
                 }
-                BozerAppCommand.OpenTikTokForRecording,
                 BozerAppCommand.OpenVideoCamera,
                 is BozerAppCommand.ControlVisibleUi,
                 is BozerAppCommand.LaunchAppAndUiActions -> "Cette action doit être traitée par le moteur BOZER ACTION."
