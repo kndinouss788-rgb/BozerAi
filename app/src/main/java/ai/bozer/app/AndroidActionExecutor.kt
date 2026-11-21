@@ -116,6 +116,10 @@ class AndroidActionExecutor(private val activity: Activity) {
             return try {
                 when (appCommand) {
                     BozerAppCommand.OpenVideoCamera -> openVideoCamera()
+                    BozerAppCommand.CancelCurrentUiMission -> {
+                        BozerAccessibilityService.cancelPendingRequest()
+                        "Mission BOZER ACTION annulée. Je n'exécute plus les étapes en attente."
+                    }
                     BozerAppCommand.OpenAccessibilitySettings -> {
                         activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                         "J'ouvre les paramètres d'accessibilité Android. Tu peux y activer BOZER ACTION pour permettre les actions vocales dans les applications."
