@@ -65,6 +65,22 @@ class PhoneActionInstrumentedTest {
     }
 
     @Test
+    fun actionJournalLabelsDoNotIncludePhoneNumbersOrSmsBodies() {
+        val sms = PhoneAction.ComposeSms("+22670123456", "Texte privé du message")
+        assertEquals("PRÉPARER_SMS", PhoneActionExecutor.actionType(sms))
+        assertEquals("Préparer un brouillon SMS", PhoneActionExecutor.actionSummary(sms))
+        assertFalse(PhoneActionExecutor.actionSummary(sms).contains("+226"))
+        assertFalse(PhoneActionExecutor.actionSummary(sms).contains("Texte privé"))
+
+        val alarm = PhoneAction.SetAlarm(6, 30)
+        val handedOff = ActionExecutionResult(
+            launched = true,
+            message = "L'application Horloge a été ouverte pour préparer le réveil."
+        )
+        assertEquals("À CONFIRMER", PhoneActionExecutor.resultStatus(alarm, handedOff))
+    }
+
+    @Test
     fun phoneActionsCannotLaunchWithoutExplicitConfirmation() {
         val actions = listOf(
             PhoneAction.OpenApp("Settings"),
