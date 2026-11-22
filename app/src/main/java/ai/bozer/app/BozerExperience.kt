@@ -98,6 +98,8 @@ internal fun BozerChatExperience(
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var terminalOpen by remember { mutableStateOf(false) }
+    var secretaryOpen by remember { mutableStateOf(false) }
+    var secretaryTasks by remember { mutableStateOf(repository.secretaryTasks()) }
     var memoryOpen by remember { mutableStateOf(false) }
     var memoryFacts by remember { mutableStateOf(repository.rememberedFacts()) }
     var actionRecords by remember { mutableStateOf(repository.actionHistory()) }
@@ -428,11 +430,35 @@ internal fun BozerChatExperience(
                     draft = command
                     terminalOpen = false
                 },
+                onSecretary = {
+                    terminalOpen = false
+                    secretaryTasks = repository.secretaryTasks()
+                    secretaryOpen = true
+                },
                 onMemory = {
                     terminalOpen = false
                     memoryFacts = repository.rememberedFacts()
                     memoryOpen = true
                 }
+            )
+        }
+
+        if (secretaryOpen) {
+            BozerSecretaryScreen(
+                tasks = secretaryTasks,
+                onAdd = { title ->
+                    val id = repository.addSecretaryTask(title)
+                    if (id > 0L) secretaryTasks = repository.secretaryTasks()
+                },
+                onToggle = { task, completed ->
+                    repository.setSecretaryTaskCompleted(task.id, completed)
+                    secretaryTasks = repository.secretaryTasks()
+                },
+                onDelete = { task ->
+                    repository.deleteSecretaryTask(task.id)
+                    secretaryTasks = repository.secretaryTasks()
+                },
+                onClose = { secretaryOpen = false }
             )
         }
 
