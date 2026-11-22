@@ -58,6 +58,8 @@ internal fun BozerSettingsScreen(
     onFloatingBubbleChange: (Boolean) -> Unit,
     rememberedCount: Int,
     actionRecords: List<ActionLogEntry>,
+    scheduledAlarms: List<StoredBozerAlarm>,
+    onCancelAlarm: (StoredBozerAlarm) -> Unit,
     onManageMemory: () -> Unit,
     onClearHistory: () -> Unit,
     onClearMemory: () -> Unit,
@@ -185,6 +187,42 @@ internal fun BozerSettingsScreen(
                     Divider(color = SettingsLine)
                     TextButton(onClick = onClearHistory) { Text("Effacer l'historique", color = Color(0xFF8B5555)) }
                     TextButton(onClick = onClearMemory) { Text("Effacer les souvenirs", color = Color(0xFF8B5555)) }
+                }
+
+                SettingsCard("RÉVEILS PROGRAMMÉS") {
+                    if (scheduledAlarms.isEmpty()) {
+                        Text("Aucun réveil BOZER programmé.", color = SettingsMuted, fontSize = 11.sp)
+                    } else {
+                        scheduledAlarms.sortedBy { it.triggerAtMillis }.forEach { alarm ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        "Réveil BOZER",
+                                        color = SettingsInk,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        java.text.DateFormat.getDateTimeInstance(
+                                            java.text.DateFormat.MEDIUM,
+                                            java.text.DateFormat.SHORT,
+                                            java.util.Locale.FRANCE
+                                        ).format(java.util.Date(alarm.triggerAtMillis)),
+                                        color = SettingsMuted,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                                TextButton(onClick = { onCancelAlarm(alarm) }) {
+                                    Text("Annuler", color = Color(0xFF8B5555))
+                                }
+                            }
+                            Divider(color = SettingsLine)
+                        }
+                    }
                 }
 
                 SettingsCard("JOURNAL DES ACTIONS") {
