@@ -87,7 +87,7 @@ object BozerAppCommandParser {
 
         val actionInput = input.trim().replace(Regex("(?i)^bozer[, ]+"), "")
         val launchAndAct = Regex(
-            """^(?:ouvre|lance|d[eé]marre)\\s+(?:l['’]application\\s+|l application\\s+|l['’]appli\\s+|l appli\\s+|application\\s+)?(.+?)\\s+(?:puis|et ensuite)\\s+(.+)$""",
+            """^(?:ouvre|lance|d[eé]marre)\s+(?:l['’]application\s+|l application\s+|l['’]appli\s+|l appli\s+|application\s+)?(.+?)\s+(?:puis|et ensuite)\s+(.+)$""",
             RegexOption.IGNORE_CASE
         ).find(actionInput)
         if (launchAndAct != null) {
