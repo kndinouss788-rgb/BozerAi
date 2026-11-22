@@ -216,6 +216,22 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
+    fun basicGreetingWorksWhileTheLocalModelIsStillLoading() = runBlocking {
+        val notReadyModel = RecordingConversationModel(isLoaded = false)
+        val earlyRepository = ChatRepository(database, notReadyModel, search).apply {
+            brainMode = BrainMode.AUTO
+            internetAvailable = { false }
+        }
+
+        val answer = earlyRepository.reply(
+            listOf(ChatMessage(role = "user", content = "cc"))
+        )
+
+        assertTrue(answer.startsWith("Salut"))
+        assertTrue("La réponse sociale ne doit pas attendre le chargement GGUF.", notReadyModel.prompts.isEmpty())
+    }
+
+    @Test
     fun automaticModeKeepsConversationLocalEvenWhenGatewayIsConfigured() = runBlocking {
         val remote = RecordingRemoteClient()
         val localRepository = ChatRepository(database, model, search, remote).apply {
@@ -294,8 +310,9 @@ class ChatRepositoryInstrumentedTest {
         }
     }
 
-    private class RecordingConversationModel : ConversationModel {
+    private class RecordingConversationModel(
         override val isLoaded: Boolean = true
+    ) : ConversationModel {
         val prompts = mutableListOf<String>()
         override fun generate(prompt: String): String {
             prompts += prompt
