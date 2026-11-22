@@ -32,6 +32,7 @@ class BozerToolRegistry {
         BozerToolDefinition("memory", "Souvenirs explicites", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("public_search", "Recherche publique multi-sources", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("android_action", "Actions Android de base", BozerToolState.AVAILABLE, true),
+        BozerToolDefinition("secretary", "Liste de tâches locale", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("agent_workflows", "Agent multi-étapes", BozerToolState.PLANNED, true),
         BozerToolDefinition("documents", "Documents PDF/DOCX", BozerToolState.PLANNED, false),
         BozerToolDefinition("business", "Business", BozerToolState.PLANNED, false),
