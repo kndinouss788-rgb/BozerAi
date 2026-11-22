@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,6 +72,7 @@ internal fun BozerSettingsScreen(
                     "‹",
                     modifier = Modifier.clip(RoundedCornerShape(20.dp))
                         .clickable(onClick = onClose)
+                        .testTag("bozer_settings_back")
                         .padding(horizontal = 11.dp, vertical = 4.dp),
                     color = SettingsAccent,
                     fontSize = 31.sp
