@@ -1,7 +1,10 @@
 package ai.bozer.app
 
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -235,8 +238,16 @@ internal fun BozerChatExperience(
             ) {
                 Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
                     BozerTopBar(
+                        showBrand = messages.isEmpty(),
                         voiceEnabled = voiceEnabled,
                         onSettings = { settingsOpen = true },
+                        onTerminal = { terminalOpen = true },
+                        onHistory = {
+                            if (messages.isNotEmpty()) {
+                                scope.launch { listState.animateScrollToItem(0) }
+                            }
+                        },
+                        onNewConversation = { confirmClearHistory = true },
                         onVoiceToggle = {
                             voiceEnabled = !voiceEnabled
                             preferences.edit().putBoolean("voice_enabled", voiceEnabled).apply()
@@ -244,16 +255,32 @@ internal fun BozerChatExperience(
                         }
                     )
 
+                    if (modelBusy || !modelReady) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Text(
+                                modelStatus,
+                                color = BozerMuted,
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (modelBusy) {
+                                LinearProgressIndicator(
+                                    progress = { downloadProgress.coerceIn(0f, 1f) },
+                                    modifier = Modifier.fillMaxWidth().height(2.dp),
+                                    color = BozerAccent,
+                                    trackColor = BozerSilver
+                                )
+                            }
+                        }
+                    }
+
                     if (messages.isEmpty()) {
                         Box(Modifier.weight(1f).fillMaxWidth()) {
-                            BozerWelcome(
-                                onPhone = { prepareCommand("Aide-moi à contrôler mon téléphone : ") },
-                                onApps = { prepareCommand("Ouvre l'application ") },
-                                onCall = { prepareCommand("Appelle ") },
-                                onMessage = { prepareCommand("Envoie un message à ") },
-                                onAlarm = { prepareCommand("Crée un réveil à ") },
-                                onSearch = { prepareCommand("Recherche sur Internet : ") }
-                            )
+                            BozerWelcome()
                         }
                     } else {
                         LazyColumn(
@@ -530,113 +557,126 @@ internal fun BozerChatExperience(
 
 @Composable
 private fun BozerTopBar(
+    showBrand: Boolean,
     voiceEnabled: Boolean,
     onSettings: () -> Unit,
+    onTerminal: () -> Unit,
+    onHistory: () -> Unit,
+    onNewConversation: () -> Unit,
     onVoiceToggle: () -> Unit
 ) {
+    var menuOpen by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 11.dp, bottom = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        BozerRoundButton(kind = "settings", onClick = onSettings, modifier = Modifier.testTag("bozer_settings"))
-        Spacer(Modifier.weight(1f))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            BozerOrb(size = 23.dp, active = false)
-            Text("BOZER", color = BozerInk, fontSize = 17.sp, letterSpacing = 3.1.sp, fontWeight = FontWeight.SemiBold)
+        Box {
+            BozerRoundButton(
+                kind = "menu",
+                onClick = { menuOpen = true },
+                modifier = Modifier.testTag("bozer_settings")
+            )
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text("Historique de cette conversation") },
+                    onClick = { menuOpen = false; onHistory() }
+                )
+                DropdownMenuItem(
+                    text = { Text("Terminal BOZER") },
+                    onClick = { menuOpen = false; onTerminal() }
+                )
+                DropdownMenuItem(
+                    text = { Text("Nouvelle conversation") },
+                    onClick = { menuOpen = false; onNewConversation() }
+                )
+                DropdownMenuItem(
+                    text = { Text("Réglages") },
+                    onClick = { menuOpen = false; onSettings() }
+                )
+            }
         }
         Spacer(Modifier.weight(1f))
-        BozerRoundButton(kind = if (voiceEnabled) "sound" else "mute", active = voiceEnabled, onClick = onVoiceToggle)
+        if (showBrand) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                BozerOrb(size = 23.dp, active = false)
+                Text("BOZER", color = BozerInk, fontSize = 17.sp, letterSpacing = 3.1.sp, fontWeight = FontWeight.SemiBold)
+            }
+        } else {
+            Text("Conversation", color = BozerMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        }
+        Spacer(Modifier.weight(1f))
+        BozerRoundButton(
+            kind = if (voiceEnabled) "sound" else "mute",
+            active = voiceEnabled,
+            onClick = onVoiceToggle
+        )
     }
 }
 
 @Composable
-private fun BozerWelcome(
-    onPhone: () -> Unit,
-    onApps: () -> Unit,
-    onCall: () -> Unit,
-    onMessage: () -> Unit,
-    onAlarm: () -> Unit,
-    onSearch: () -> Unit
-) {
+private fun BozerWelcome() {
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize().padding(bottom = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Spacer(Modifier.height(19.dp))
-        BozerOrb(size = 154.dp, active = false)
-        Spacer(Modifier.height(5.dp))
-        Text("Je suis là.", modifier = Modifier.testTag("bozer_welcome"), color = BozerInk, fontSize = 30.sp, lineHeight = 37.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.height(5.dp))
-        Text("Dis-moi ce que tu veux faire.", color = BozerMuted, fontSize = 14.sp)
-        Spacer(Modifier.height(25.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("ACCÈS RAPIDE", color = BozerMuted, fontSize = 10.sp, letterSpacing = 1.7.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.weight(1f))
-            Text("Touchez pour préparer", color = Color(0xFF9AA6AB), fontSize = 10.sp)
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-            BozerActionTile("Téléphone", "phone", Modifier.weight(1f), onPhone)
-            BozerActionTile("Applications", "apps", Modifier.weight(1f), onApps)
-        }
-        Spacer(Modifier.height(9.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-            BozerActionTile("Appeler", "call", Modifier.weight(1f), onCall)
-            BozerActionTile("Message", "message", Modifier.weight(1f), onMessage)
-        }
-        Spacer(Modifier.height(9.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-            BozerActionTile("Réveil", "alarm", Modifier.weight(1f), onAlarm)
-            BozerActionTile("Recherche", "search", Modifier.weight(1f), onSearch)
-        }
-        Spacer(Modifier.height(19.dp))
-    }
-}
-
-@Composable
-private fun BozerActionTile(title: String, icon: String, modifier: Modifier, onClick: () -> Unit) {
-    Row(
-        modifier = modifier.height(58.dp)
-            .shadow(4.dp, RoundedCornerShape(18.dp))
-            .background(Color.White.copy(alpha = 0.86f), RoundedCornerShape(18.dp))
-            .border(1.dp, BozerLine.copy(alpha = 0.82f), RoundedCornerShape(18.dp))
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier.size(31.dp).background(Color(0xFFF0F3F4), CircleShape).border(1.dp, Color.White, CircleShape),
-            contentAlignment = Alignment.Center
-        ) { QuickActionGlyph(icon, BozerAccent) }
-        Spacer(Modifier.width(9.dp))
-        Text(title, color = BozerInk, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        BozerOrb(size = 132.dp, active = false)
+        Spacer(Modifier.height(17.dp))
+        Text(
+            "Je suis là.",
+            modifier = Modifier.testTag("bozer_welcome"),
+            color = BozerInk,
+            fontSize = 29.sp,
+            lineHeight = 36.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Dis-moi ce que tu veux faire.",
+            color = BozerMuted,
+            fontSize = 14.sp
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "Chaque intention peut devenir une action.",
+            color = Color(0xFFA1ADB1),
+            fontSize = 11.sp
+        )
     }
 }
 
 @Composable
 private fun BozerMessage(message: ChatMessage) {
     val isUser = message.role == "user"
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-        verticalAlignment = Alignment.Bottom
+    AnimatedVisibility(
+        visible = true,
+        enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(230)) +
+            slideInVertically(
+                initialOffsetY = { it / 10 },
+                animationSpec = androidx.compose.animation.core.tween(230)
+            )
     ) {
-        if (!isUser) {
-            BozerOrb(size = 25.dp, active = false)
-            Spacer(Modifier.width(10.dp))
-        }
-        Box(
-            modifier = Modifier.widthIn(max = 318.dp)
-                .then(
-                    if (isUser) Modifier
-                        .background(Color(0xFFE9EEF0).copy(alpha = 0.92f), RoundedCornerShape(22.dp))
-                        .border(1.dp, Color(0xFFDDE5E8), RoundedCornerShape(22.dp))
-                    else Modifier
-                )
-                .padding(horizontal = if (isUser) 15.dp else 0.dp, vertical = if (isUser) 12.dp else 2.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+            verticalAlignment = Alignment.Bottom
         ) {
-            Text(message.content, color = BozerInk, fontSize = 15.sp, lineHeight = 22.sp)
+            if (!isUser) {
+                BozerOrb(size = 25.dp, active = false)
+                Spacer(Modifier.width(10.dp))
+            }
+            Box(
+                modifier = Modifier.widthIn(max = 318.dp)
+                    .then(
+                        if (isUser) Modifier
+                            .background(Color(0xFFE9EEF0).copy(alpha = 0.92f), RoundedCornerShape(22.dp))
+                            .border(1.dp, Color(0xFFDDE5E8), RoundedCornerShape(22.dp))
+                        else Modifier
+                    )
+                    .padding(horizontal = if (isUser) 15.dp else 0.dp, vertical = if (isUser) 12.dp else 2.dp)
+            ) {
+                Text(message.content, color = BozerInk, fontSize = 15.sp, lineHeight = 22.sp)
+            }
         }
     }
 }
