@@ -87,36 +87,23 @@ class BozerBrainEndToEndTest {
     }
 
     private fun isModelReadyInSettings(): Boolean =
-        composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
+        composeRule.onAllNodesWithText("Cerveau BOZER prêt — fonctionnement local.")
             .fetchSemanticsNodes().isNotEmpty()
 
     private fun waitForModelReady() {
         composeRule.onNodeWithTag("bozer_settings").performClick()
         val settingsReady = waitForUiCondition(15_000) {
             isModelReadyInSettings() ||
-                composeRule.onAllNodesWithText("Installer le cerveau local")
+                composeRule.onAllNodesWithText("Préparation", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                composeRule.onAllNodesWithText("Chargement", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                composeRule.onAllNodesWithText("Démarrage", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                composeRule.onAllNodesWithText("Installation impossible", substring = true)
+                composeRule.onAllNodesWithText("n'a pas démarré", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
         }
         assertTrue("Les réglages du cerveau local ne sont pas apparus.", settingsReady)
 
-        if (!isModelReadyInSettings() &&
-            composeRule.onAllNodesWithText("Installer le cerveau local")
-                .fetchSemanticsNodes().isNotEmpty()
-        ) {
-            composeRule.onNodeWithText("Installer le cerveau local").performClick()
-        }
-
         val settled = waitForUiCondition(300_000) {
             isModelReadyInSettings() ||
-                composeRule.onAllNodesWithText("Chargement impossible", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                composeRule.onAllNodesWithText("Installation impossible", substring = true)
+                composeRule.onAllNodesWithText("n'a pas démarré", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
         }
         assertTrue("Le chargement du modèle local n'a pas atteint un état final.", settled)
@@ -133,7 +120,7 @@ class BozerBrainEndToEndTest {
                 !lower.contains("je n'ai pas pas pu générer") &&
                 !lower.contains("je n'ai pas pu terminer cette réponse") &&
                 !lower.contains("le modèle bozer n'est pas chargé") &&
-                !lower.contains("le cerveau local n'est pas encore installé")
+                !lower.contains("le cerveau intégré n'a pas démarré")
         )
     }
 
@@ -153,22 +140,22 @@ class BozerBrainEndToEndTest {
 
     @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
-        val manager = LocalModelManager(
-            context,
-            "http://127.0.0.1:8765/${LocalModelManager.MODEL_FILENAME}"
-        )
-        var downloadedBytes = 0L
+        val manager = LocalModelManager(context)
         runBlocking {
-            manager.download { downloaded, _ -> downloadedBytes = downloaded }
-            assertTrue("Le modèle téléchargé n'a pas passé la vérification SHA-256.", manager.verifyInstalled())
+            assertTrue(
+                "Le modèle intégré à l'APK n'a pas passé la vérification SHA-256.",
+                manager.verifyInstalled()
+            )
         }
+        val installedModel = manager.installedModel()
+        assertTrue("Le fichier du cerveau intégré est introuvable.", installedModel?.isFile == true)
         assertTrue(
-            "Le téléchargement réel du GGUF n'a pas atteint sa taille attendue.",
-            downloadedBytes == LocalModelManager.MODEL_BYTES
+            "Le cerveau intégré est plus petit que prévu.",
+            installedModel!!.length() >= LocalModelManager.MINIMUM_MODEL_BYTES
         )
         Log.i(
             "BOZER_MODEL",
-            "downloaded_bytes=$downloadedBytes; sha256=${LocalModelManager.MODEL_SHA256}; verified=true"
+            "embedded_model_bytes=${installedModel.length()}; verified=true"
         )
 
         assertTrue(
@@ -229,7 +216,7 @@ class BozerBrainEndToEndTest {
         )
         assertTrue(
             "La recherche Android n'a pas joint de source réelle : $searchReply",
-            searchReply.contains("Sources Internet", ignoreCase = true) &&
+            searchReply.contains("Sources consultées", ignoreCase = true) &&
                 searchReply.contains("wikipedia.org", ignoreCase = true)
         )
         val sourceLine = searchReply.lineSequence()
