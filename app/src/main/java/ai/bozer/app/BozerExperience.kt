@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -47,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -92,6 +94,7 @@ internal fun BozerChatExperience(
     var modelStatus by remember { mutableStateOf("Préparation du cerveau intégré…") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var terminalOpen by remember { mutableStateOf(false) }
     var memoryOpen by remember { mutableStateOf(false) }
     var memoryFacts by remember { mutableStateOf(repository.rememberedFacts()) }
     var editingFact by remember { mutableStateOf<String?>(null) }
@@ -275,190 +278,107 @@ internal fun BozerChatExperience(
                         }
                     }
 
-                    BozerComposer(
-                        draft = draft,
-                        sending = sending,
-                        onDraftChange = { draft = it },
-                        onSend = { send() },
-                        onMic = {
-                            activity.startVoiceInput { spoken ->
-                                draft = if (draft.isBlank()) spoken else draft.trimEnd() + " " + spoken
-                            }
-                        },
-                        onPlus = { plusMenuOpen = true },
-                        plusMenuOpen = plusMenuOpen,
-                        onDismissPlus = { plusMenuOpen = false },
-                        onNewConversation = {
-                            plusMenuOpen = false
-                            confirmClearHistory = true
-                        },
-                        onMemory = {
-                            plusMenuOpen = false
-                            memoryFacts = repository.rememberedFacts()
-                            memoryOpen = true
-                        },
-                        onSearch = {
-                            plusMenuOpen = false
-                            prepareCommand("Recherche sur Internet : ")
-                        },
-                        onPhone = {
-                            plusMenuOpen = false
-                            prepareCommand("Aide-moi à contrôler mon téléphone : ")
-                        },
-                        onAlarm = {
-                            plusMenuOpen = false
-                            prepareCommand("Crée un réveil à ")
+                    Box(
+                        modifier = Modifier.fillMaxWidth().pointerInput(Unit) {
+                            detectTapGestures(onDoubleTap = { terminalOpen = true })
                         }
-                    )
+                    ) {
+                        BozerComposer(
+                            draft = draft,
+                            sending = sending || (modelBusy && !modelReady),
+                            onDraftChange = { draft = it },
+                            onSend = { send() },
+                            onMic = {
+                                activity.startVoiceInput { spoken ->
+                                    draft = if (draft.isBlank()) spoken else draft.trimEnd() + " " + spoken
+                                }
+                            },
+                            onPlus = { terminalOpen = true },
+                            plusMenuOpen = false,
+                            onDismissPlus = { terminalOpen = false },
+                            onNewConversation = {
+                                terminalOpen = false
+                                confirmClearHistory = true
+                            },
+                            onMemory = {
+                                terminalOpen = false
+                                memoryFacts = repository.rememberedFacts()
+                                memoryOpen = true
+                            },
+                            onSearch = {
+                                terminalOpen = false
+                                prepareCommand("Recherche sur Internet : ")
+                            },
+                            onPhone = {
+                                terminalOpen = false
+                                prepareCommand("Aide-moi à contrôler mon téléphone : ")
+                            },
+                            onAlarm = {
+                                terminalOpen = false
+                                prepareCommand("Crée un réveil à ")
+                            }
+                        )
+                    }
                 }
             }
         }
 
+        if (terminalOpen) {
+            BozerTerminalSheet(
+                onDismiss = { terminalOpen = false },
+                onCommand = { command ->
+                    draft = command
+                    terminalOpen = false
+                },
+                onMemory = {
+                    terminalOpen = false
+                    memoryFacts = repository.rememberedFacts()
+                    memoryOpen = true
+                }
+            )
+        }
+
         if (settingsOpen) {
-            AlertDialog(
-                onDismissRequest = { settingsOpen = false },
-                containerColor = BozerWhite,
-                title = { Text("Réglages BOZER", color = BozerInk, fontWeight = FontWeight.SemiBold) },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 470.dp).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text("Mode du cerveau", color = BozerInk, fontWeight = FontWeight.Medium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            BrainMode.values().forEach { mode ->
-                                val selected = brainMode == mode
-                                Box(
-                                    modifier = Modifier.weight(1f)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(if (selected) Color(0xFFE6ECEF) else Color(0xFFF7F9FA))
-                                        .border(1.dp, if (selected) Color(0xFFB8C5CA) else BozerLine, RoundedCornerShape(14.dp))
-                                        .clickable { brainMode = mode }
-                                        .padding(vertical = 11.dp, horizontal = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        mode.label,
-                                        color = if (selected) BozerInk else BozerMuted,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                        Text(brainMode.description, color = BozerMuted, fontSize = 12.sp, lineHeight = 17.sp)
-                        Text(
-                            if (repository.remoteConfigured) "Passerelle distante : configurée."
-                            else "Passerelle distante : non configurée.",
-                            color = BozerMuted,
-                            fontSize = 11.sp
-                        )
-                        Divider(color = BozerLine)
-                        Text("Cerveau local", color = BozerInk, fontWeight = FontWeight.Medium)
-                        Text(modelStatus, modifier = Modifier.testTag("bozer_model_status"), color = BozerMuted, fontSize = 12.sp)
-                        if (modelBusy && downloadProgress > 0f) {
-                            LinearProgressIndicator(
-                                progress = { downloadProgress },
-                                modifier = Modifier.fillMaxWidth(),
-                                color = BozerAccent,
-                                trackColor = BozerSilver
-                            )
-                        } else if (modelBusy) {
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = BozerAccent,
-                                trackColor = BozerSilver
-                            )
-                        }
-                        if (!modelReady) {
-                            Button(
-                                onClick = { installAndLoad() },
-                                enabled = !modelBusy,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = BozerInk)
-                            ) {
-                                Text(if (modelBusy) "Préparation…" else "Installer le cerveau local")
-                            }
-                        }
-                        Divider(color = BozerLine)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text("Lecture vocale", color = BozerInk, fontWeight = FontWeight.Medium)
-                                Text("Lire les réponses avec la voix Android.", color = BozerMuted, fontSize = 11.sp)
-                            }
-                            Switch(
-                                checked = voiceEnabled,
-                                onCheckedChange = { enabled ->
-                                    voiceEnabled = enabled
-                                    preferences.edit().putBoolean("voice_enabled", enabled).apply()
-                                    if (!enabled) voiceOutput.stop()
-                                }
-                            )
-                        }
-                        Text(
-                            "Le micro utilise le service de reconnaissance vocale Android. BOZER demande le mode hors ligne lorsque disponible ; le fournisseur peut toutefois appliquer ses propres règles réseau.",
-                            color = BozerMuted,
-                            fontSize = 11.sp,
-                            lineHeight = 16.sp
-                        )
-                        Divider(color = BozerLine)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text("Bulle flottante", color = BozerInk, fontWeight = FontWeight.Medium)
-                                Text(
-                                    "Afficher un raccourci déplaçable au-dessus des autres applications. Android demandera une autorisation spéciale.",
-                                    color = BozerMuted,
-                                    fontSize = 11.sp,
-                                    lineHeight = 15.sp
-                                )
-                            }
-                            Switch(
-                                checked = floatingBubbleEnabled,
-                                onCheckedChange = { enabled ->
-                                    activity.setFloatingBubbleEnabled(enabled) { active ->
-                                        floatingBubbleEnabled = active
-                                    }
-                                }
-                            )
-                        }
-                        Divider(color = BozerLine)
-                        Text(
-                            "L'historique et les souvenirs sont stockés sur ce téléphone. En mode En ligne, le texte nécessaire à la réponse est transmis à la passerelle configurée.",
-                            color = BozerMuted,
-                            fontSize = 11.sp,
-                            lineHeight = 16.sp
-                        )
-                        TextButton(onClick = {
-                            memoryFacts = repository.rememberedFacts()
-                            settingsOpen = false
-                            memoryOpen = true
-                        }) {
-                            Text("Gérer les souvenirs (" + repository.rememberedFacts().size + ")", color = BozerInk)
-                        }
-                        TextButton(onClick = {
-                            settingsOpen = false
-                            confirmClearHistory = true
-                        }) { Text("Effacer l'historique", color = Color(0xFF8A5555)) }
-                        TextButton(onClick = {
-                            settingsOpen = false
-                            confirmClearMemory = true
-                        }) { Text("Effacer la mémoire", color = Color(0xFF8A5555)) }
-                        Text("BOZER · Interface perle", color = BozerMuted, fontSize = 10.sp)
+            BozerSettingsScreen(
+                brainMode = brainMode,
+                onBrainModeChange = { brainMode = it },
+                remoteConfigured = repository.remoteConfigured,
+                modelStatus = modelStatus,
+                modelBusy = modelBusy,
+                modelReady = modelReady,
+                modelProgress = downloadProgress,
+                onRetryModel = { installAndLoad() },
+                voiceEnabled = voiceEnabled,
+                onVoiceEnabledChange = { enabled ->
+                    voiceEnabled = enabled
+                    preferences.edit().putBoolean("voice_enabled", enabled).apply()
+                    if (!enabled) voiceOutput.stop()
+                },
+                ttsAvailable = voiceOutput.isReady(),
+                microphoneGranted = activity.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED,
+                floatingBubbleEnabled = floatingBubbleEnabled,
+                overlayPermissionGranted = activity.hasFloatingBubblePermission(),
+                onFloatingBubbleChange = { enabled ->
+                    activity.setFloatingBubbleEnabled(enabled) { active ->
+                        floatingBubbleEnabled = active
                     }
                 },
-                confirmButton = {
-                    TextButton(onClick = { settingsOpen = false }) { Text("Fermer", color = BozerInk) }
-                }
+                rememberedCount = repository.rememberedFacts().size,
+                onManageMemory = {
+                    memoryFacts = repository.rememberedFacts()
+                    settingsOpen = false
+                    memoryOpen = true
+                },
+                onClearHistory = {
+                    settingsOpen = false
+                    confirmClearHistory = true
+                },
+                onClearMemory = {
+                    settingsOpen = false
+                    confirmClearMemory = true
+                },
+                onClose = { settingsOpen = false }
             )
         }
 
