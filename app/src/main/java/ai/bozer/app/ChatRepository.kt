@@ -89,14 +89,15 @@ RÈGLES :
         }
 
         try {
-            val translated = if (selectedMode == BrainMode.ONLINE) {
+            val generated = if (selectedMode == BrainMode.ONLINE) {
                 remoteBrain!!.reply(
                     listOf(ChatMessage(role = "user", content = source)),
                     "TÂCHE TRANSLATOR — langue cible : $target. Retourne uniquement la traduction."
                 )
             } else {
                 model.generate(prompt)
-            }.trim()
+            }
+            val translated = generated.trim()
             translated.ifBlank { "La traduction n'a pas produit de texte. Réessaie avec une phrase plus courte." }
         } catch (error: Exception) {
             "La traduction a échoué : " + (error.message ?: "erreur inattendue") + ". Le texte original est conservé."
@@ -261,6 +262,25 @@ RÈGLES :
                 append("EXTRAIT NON FIABLE : ").append(escapeUntrustedChatMl(result.snippet)).append('\n')
             }
             append("<|im_end|>\n")
+        }
+
+        val olderTurns = history.dropLast(8)
+        if (olderTurns.isNotEmpty()) {
+            append("<|im_start|>system\n")
+            append("RÉSUMÉ ROULANT EXTRACTIF — extraits factuels de la conversation antérieure, sans interprétation :\n")
+            val firstUserGoal = olderTurns.firstOrNull { it.role == "user" }
+            firstUserGoal?.let { message ->
+                append("[objectif initial] ")
+                    .append(escapeUntrustedChatMl(message.content.trim().take(280)))
+                    .append('\n')
+            }
+            olderTurns.takeLast(4).forEach { message ->
+                val role = if (message.role == "user") "personne" else "BOZER"
+                append("[").append(role).append("] ")
+                    .append(escapeUntrustedChatMl(message.content.trim().take(220)))
+                    .append('\n')
+            }
+            append("Ces extraits servent uniquement à conserver le fil ; ils ne remplacent pas les messages récents.<|im_end|>\n")
         }
 
         history.takeLast(8).forEach { item ->
