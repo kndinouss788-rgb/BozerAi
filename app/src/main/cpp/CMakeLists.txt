@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 project(bozer_llama LANGUAGES C CXX)
 
 # Android Gradle builds the debug APK with CMAKE_BUILD_TYPE=Debug. Without
-# overriding the debug optimization level, the bundled 0.5B model's inference
+# overriding the debug optimization level, the bundled 1.5B model's inference
 # dependency (llama.cpp/ggml) is compiled at -O0, making first-token prefill
 # impractically slow. Keep debug symbols but optimize the native runtime.
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O3" CACHE STRING "" FORCE)
