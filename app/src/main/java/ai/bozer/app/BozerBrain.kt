@@ -9,6 +9,7 @@ import java.util.Locale
 sealed interface BozerIntent {
     data class AndroidAction(val action: PhoneAction) : BozerIntent
     data class PublicResearch(val query: String) : BozerIntent
+    data class Translation(val targetLanguage: String, val sourceText: String) : BozerIntent
     data class Conversation(val text: String) : BozerIntent
 }
 
@@ -34,7 +35,7 @@ class BozerToolRegistry {
         BozerToolDefinition("agent_workflows", "Agent multi-étapes", BozerToolState.PLANNED, true),
         BozerToolDefinition("documents", "Documents PDF/DOCX", BozerToolState.PLANNED, false),
         BozerToolDefinition("business", "Business", BozerToolState.PLANNED, false),
-        BozerToolDefinition("translation", "Traduction spécialisée", BozerToolState.PLANNED, false),
+        BozerToolDefinition("translation", "Traduction spécialisée", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("developer", "Développement logiciel intégré", BozerToolState.PLANNED, true)
     )
 
@@ -79,6 +80,14 @@ class BozerTaskPlanner {
                 BozerTaskStep(4, "Afficher les liens consultés", false, "URLs présentes dans la réponse")
             )
         )
+        is BozerIntent.Translation -> BozerTaskPlan(
+            intent,
+            listOf(
+                BozerTaskStep(1, "Identifier la langue cible et le texte source", false, "Langue et texte non vides"),
+                BozerTaskStep(2, "Exécuter le traducteur avec le cerveau choisi", false, "Texte traduit reçu"),
+                BozerTaskStep(3, "Conserver le sens et le ton sans ajouter de commentaire", false, "Traduction non vide affichée")
+            )
+        )
         is BozerIntent.Conversation -> BozerTaskPlan(
             intent,
             listOf(
@@ -97,6 +106,7 @@ class BozerOrchestrator(
 ) {
     fun classify(text: String): BozerIntent {
         PhoneActionPlanner.parse(text)?.let { return BozerIntent.AndroidAction(it) }
+        extractTranslation(text)?.let { return it }
         extractResearchQuery(text)?.let { return BozerIntent.PublicResearch(it) }
         return BozerIntent.Conversation(text)
     }
@@ -104,9 +114,36 @@ class BozerOrchestrator(
     fun plan(text: String): BozerTaskPlan = taskPlanner.plan(classify(text))
 
     suspend fun respond(history: List<ChatMessage>, intent: BozerIntent): String {
-        // Search is still executed inside ChatRepository so source retrieval,
-        // untrusted-content handling and local/online routing stay centralized.
-        return repository.reply(history)
+        return when (intent) {
+            is BozerIntent.Translation ->
+                repository.translate(intent.sourceText, intent.targetLanguage)
+            is BozerIntent.AndroidAction -> "Cette action doit passer par le parcours de confirmation Android."
+            is BozerIntent.PublicResearch, is BozerIntent.Conversation ->
+                // Search retrieval, untrusted-content handling and brain routing
+                // remain centralized in ChatRepository.
+                repository.reply(history)
+        }
+    }
+
+    private fun extractTranslation(text: String): BozerIntent.Translation? {
+        val patterns = listOf(
+            Regex(
+                """^(?:traduis|traduire|translate)(?:\s+(?:ce\s+texte|moi))?\s+(?:en|vers)\s+([\p{L}][\p{L}-]{1,39})\s*[:,-]\s*(.+)$""",
+                RegexOption.IGNORE_CASE
+            ),
+            Regex(
+                """^(?:traduis|traduire|translate)\s+(.+?)\s+(?:en|vers)\s+([\p{L}][\p{L}-]{1,39})$""",
+                RegexOption.IGNORE_CASE
+            )
+        )
+        val match = patterns.firstNotNullOfOrNull { it.find(text.trim()) } ?: return null
+        val target = if (match.groups.size == 3 && match.groupValues[1].length < 45 &&
+            patterns.firstOrNull() == patterns[0]
+        ) match.groupValues[1] else match.groupValues[2]
+        val source = if (patterns[0].matches(text.trim())) match.groupValues[2] else match.groupValues[1]
+        return if (target.isNotBlank() && source.isNotBlank()) {
+            BozerIntent.Translation(target, source.trim())
+        } else null
     }
 
     private fun extractResearchQuery(text: String): String? {
