@@ -1,45 +1,78 @@
-# BOZER AI — Android assistant
+# BOZER AI
 
-BOZER is an Android assistant project under active development. The repository now contains an installable Android application, a native on-device language-model runtime, a local conversation database, public web search, and guarded Android actions. It is **not yet declared complete**: emulator inference, device-specific performance, and physical-device behavior must still pass validation.
+**« Transformer l'intention en action. »**
 
-## Android application
+BOZER AI is a native Android personal assistant being built around one conversational brain, user-controlled memory, voice, web research and guarded Android tools. Its personality is natural, warm, direct and honest. This repository is an active construction branch; it is not yet the finished product.
 
-- **UI:** one Kotlin + Jetpack Compose chat experience, designed around a light pearl/white surface.
-- **Local brain:** llama.cpp is compiled through the Android NDK and called through JNI. The app downloads the pinned Qwen2.5-0.5B-Instruct Q4_K_M GGUF model on first installation; the roughly 491 MB model is not bundled in the APK.
-- **Model integrity:** the downloaded file is checked against a pinned SHA-256 before being installed in BOZER's private internal storage. A verified local copy can then be loaded without downloading it again.
-- **Memory:** conversation history and explicitly requested memories are stored in a local SQLite database. The app exposes controls to correct or forget individual memories and clear history or memories separately.
-- **Internet research:** an explicit “Recherche sur Internet” request invokes the French Wikipedia search API from the Android process. Returned titles and snippets are treated as untrusted evidence and source links are shown in the answer. This is a real network search, but it is currently Wikipedia-only, not a general multi-engine web search.
-- **Phone actions:** supported intents include opening an installed launcher app, opening the Clock app to prepare an alarm, opening the dialer, and opening an SMS composer. BOZER asks for confirmation first; calls are not placed and SMS messages are not sent automatically.
-- **Voice:** speech input uses Android's `RecognizerIntent` after the runtime microphone permission is granted and requests offline recognition when the configured provider supports it. The provider may ignore that preference and apply its own network/privacy rules; BOZER does not store audio. Speech output uses Android TextToSpeech. Availability and language quality depend on the speech services installed on the device. There is no always-listening wake word yet.
-- **Floating bubble:** a user-enabled overlay foreground service displays a movable shortcut that opens the main BOZER activity. It does not record audio or execute phone actions from the overlay.
+## Product rules
 
-## Privacy and model limits
+- A successful APK build is not proof that the brain, voice, search or Android actions work.
+- BOZER must never say an action succeeded unless the responsible Android/API operation returned a success result.
+- Simple conversation defaults to the local brain. The optional remote gateway is used only when the user explicitly selects **En ligne**.
+- Long-term memories require an explicit request and remain separately manageable from chat history.
+- Sensitive actions require a preview and confirmation. Calls open the dialer; SMS opens a draft and is never silently sent.
+- Microphone access is requested when voice input is used. BOZER does not continuously listen for a wake word.
+- No provider API key is packaged in the APK.
+- Model output is a compact local model, not a claim of ChatGPT-level intelligence.
 
-- By default, chat inference runs locally after the model has been installed.
-- The optional HTTPS BOZER gateway is used only when a gateway URL is configured at build time **and the user explicitly selects En ligne**. Automatique and Hors ligne keep conversation inference on the phone. No provider key is embedded in the Android app.
-- Selecting online mode sends the conversation context needed for a response to the configured gateway. Do not configure a gateway unless its operator, privacy policy, and cost are understood.
-- Search requests contact Wikipedia only when the user explicitly asks for a search and the device has validated Internet access.
-- The bundled starter model has 0.5 billion parameters. It is a small local model, not a ChatGPT-equivalent model. Latency, answer quality, RAM, CPU use, heat, and battery impact must be measured on the target phone before making performance claims.
+## Android foundation
 
-## Build and test
+- Kotlin + Jetpack Compose, Android app ID `ai.bozer.app`.
+- llama.cpp native inference through JNI, with the NDK/CMake toolchain pinned in Gradle.
+- SQLite chat history and explicit-memory storage.
+- Local-first brain router (Automatique / Hors ligne) and optional HTTPS gateway mode (En ligne).
+- Android TextToSpeech output and Android speech recognition input.
+- Guarded intents for launching apps, preparing alarms in Clock, opening the dialer and composing SMS.
+- An opt-in floating bubble that opens BOZER; no microphone or action execution from the overlay.
 
-Requirements: JDK 17, Android SDK, Android NDK `27.2.12479018`, CMake `3.22.1`, and Gradle 8.9.
+## Embedded local model
+
+The planned starter model is **Qwen2.5-1.5B-Instruct GGUF Q4_K_M** (approximately 1.1 GB), distributed under its upstream Apache-2.0 license.
+
+The model binary is intentionally not committed to Git. The manual packaging workflow downloads the pinned model source during APK preparation, records its exact byte count and SHA-256 in `bozer-model.sha256`, and adds the model plus license to the Android assets. BOZER copies the embedded asset once into its private app storage, verifies its checksum, and loads it with llama.cpp.
+
+**One APK is intended to contain both the app and its brain.** The installed app should not download a separate model on first launch. Expect the APK to be large, and expect additional internal storage while the bundled model is copied to the app's private directory. No network connection is needed for that model-copy step or for local inference.
+
+The model's French answer quality, first-load time, response latency, RAM use, heat and battery impact are not yet established on target phones. A 1.5B quantized model is a practical local starting point, not a frontier cloud model.
+
+## Current functional boundaries
+
+| Area | Present in recovered Android source | Remaining construction |
+|---|---|---|
+| Conversation | Chat screen, multi-turn local prompt, local/remote routing | Stabilize inference, context window, greeting quality, failure recovery and long-conversation handling |
+| Memory | SQLite history, explicit remembered facts, edit/forget/clear controls, relevance selection | Better semantic retrieval, export, stronger deletion/retention controls |
+| Voice | Android speech recognition request and French TTS | Improve user-visible states, interruption, precise text/audio synchronization and device fallback handling |
+| Phone actions | Confirmed intents for app launch, Clock alarm preparation, dialer and SMS draft | Broader natural-language understanding, action journal and richer result verification |
+| Research | Explicit Wikipedia search with links | Multi-source retrieval, source dates, robust extraction and source-quality handling |
+| Terminal and settings | Existing composer shortcuts and basic preferences | Dedicated double-tap Terminal and a proper full-screen settings area |
+| Seven modules | Design target only | BUSINESS, AGENT, RESEARCH, DOCUMENTS, SECRETARY, TRANSLATOR and DEVELOPER, implemented one by one |
+| Visual identity | Pearl/silver Compose surfaces and orb foundation | Finish white liquid-glass treatment, adaptive animations and final information architecture |
+
+The seven modules are not advertised as complete while their tools and acceptance criteria remain unfinished.
+
+## Model preparation and packaging
+
+Requirements for the eventual manual packaging workflow: JDK 17, Android SDK, NDK `27.2.12479018`, CMake `3.22.1`, and Gradle 8.9.
+
+Prepare the model assets locally or in the controlled packaging runner:
 
 ```bash
-# Python decision-core tests
-python -m unittest discover -s tests -v
-
-# Installable debug APK (arm64-v8a and x86_64)
-gradle :app:assembleDebug --no-daemon
-
-# Instrumented tests on a running API 33+ emulator
-gradle :app:connectedDebugAndroidTest --no-daemon
+scripts/prepare_bundled_model.sh app/src/main/assets
 ```
 
-GitHub Actions runs the Python core tests, native Android APK build, and a dedicated emulator workflow. The emulator workflow downloads and verifies the real GGUF model, installs it into the app's private data directory, runs real local inference and Android network-search tests, and captures logs, a screenshot, memory, CPU and emulator battery diagnostics. It also force-stops and relaunches BOZER to test persistence.
+The final Android package job is deliberately **manual-only**. The APK build and emulator-validation workflows have also been changed to manual dispatch, so editing this construction branch does not automatically compile an APK. Do not dispatch them until the final product implementation is ready.
 
-The installable debug APK is published as the **`bozer-debug-apk`** artifact by the **BOZER Android APK build** workflow. Artifacts are retained for 14 days; download them from the matching successful run's **Actions → Artifacts** section. A debug APK is signed with the Android debug key and is intended for testing, not Play Store release.
+## Privacy and external services
 
-## Current validation boundary
+- The local-first modes keep conversation inference on the phone.
+- In **En ligne** mode, the chat context needed for a reply is sent to the configured BOZER HTTPS gateway. Its provider, policy, reliability and costs must be reviewed before enabling it for users.
+- Search is only called after an explicit search request. Search results are untrusted data, not assistant instructions.
+- The current Android search connector is Wikipedia-only; a general web search is not yet complete.
+- Microphone permission is requested only when the user asks to speak. The current speech provider may apply its own network processing; BOZER requests offline recognition where available but cannot force the provider to honor it.
+- No always-on wake-word listener is implemented.
+- Floating overlay access is optional and user-controlled.
+- Payment, subscription, ads and paid-provider routing are not represented as active product features.
 
-A successful compilation or Python test run alone does not prove the Android brain works. Before calling BOZER complete, the same `main` commit must pass all relevant workflows, including the real-model emulator dialogue, persistent memory/history, actual Android network search, guarded actions, and overlay tests. A physical Android 13 device is still required to validate device-specific performance, speech services, overlay behavior, and battery impact.
+## Progress tracking
+
+See [`docs/BOZER_PROGRESS.md`](docs/BOZER_PROGRESS.md) for the current implementation percentage, phase status, code changes and unresolved work. Progress percentages describe implementation work in the repository, not real-device certification.
