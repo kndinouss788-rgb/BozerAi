@@ -36,6 +36,9 @@ class ChatRepository(
     fun updateRememberedFact(oldContent: String, newContent: String): Boolean =
         database.updateRememberedFact(oldContent, newContent)
     fun clearMemory() = database.clearRememberedFacts()
+    fun actionHistory(limit: Int = 30): List<ActionLogEntry> = database.actionHistory(limit)
+    fun recordAction(entry: ActionLogEntry) = database.recordAction(entry)
+    fun clearActionHistory() = database.clearActionHistory()
 
     suspend fun reply(history: List<ChatMessage>): String = inferenceLock.withLock {
         val latestUserText = history.lastOrNull { it.role == "user" }?.content.orEmpty()
