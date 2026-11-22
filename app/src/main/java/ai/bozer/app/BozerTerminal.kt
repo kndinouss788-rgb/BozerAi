@@ -38,13 +38,14 @@ private val TerminalAccent = Color(0xFF71858D)
 
 /**
  * Intent launcher for the lower BOZER terminal.
- * These entries prepare a natural-language request in the main conversation;
- * they do not represent specialized modules that have not been implemented.
+ * Organiser opens the local Secretary task manager. Other shortcuts prepare
+ * requests in the main conversation until their full modules are implemented.
  */
 @Composable
 internal fun BozerTerminalSheet(
     onDismiss: () -> Unit,
     onCommand: (String) -> Unit,
+    onSecretary: () -> Unit,
     onMemory: () -> Unit
 ) {
     Box(
@@ -114,44 +115,37 @@ internal fun BozerTerminalSheet(
                 TerminalCommandRow(
                     title = "Parler",
                     detail = "Réfléchir, expliquer ou discuter",
-                    prompt = "Aide-moi à réfléchir à ",
-                    onClick = onCommand
+                    onClick = { onCommand("Aide-moi à réfléchir à ") }
                 )
                 TerminalCommandRow(
                     title = "Agir",
                     detail = "Ouvrir une application ou préparer une action",
-                    prompt = "Aide-moi à effectuer cette action : ",
-                    onClick = onCommand
+                    onClick = { onCommand("Aide-moi à effectuer cette action : ") }
                 )
                 TerminalCommandRow(
                     title = "Rechercher",
                     detail = "Chercher des informations sur Internet",
-                    prompt = "Recherche sur Internet : ",
-                    onClick = onCommand
+                    onClick = { onCommand("Recherche sur Internet : ") }
                 )
                 TerminalCommandRow(
                     title = "Créer",
                     detail = "Préparer un texte ou un document",
-                    prompt = "Aide-moi à créer un document sur ",
-                    onClick = onCommand
+                    onClick = { onCommand("Aide-moi à créer un document sur ") }
                 )
                 TerminalCommandRow(
                     title = "Organiser",
                     detail = "Transformer un objectif en étapes",
-                    prompt = "Organise cette tâche en étapes vérifiables : ",
-                    onClick = onCommand
+                    onClick = onSecretary
                 )
                 TerminalCommandRow(
                     title = "Traduire",
                     detail = "Traduire un texte en gardant le ton",
-                    prompt = "Traduis ce texte en ",
-                    onClick = onCommand
+                    onClick = { onCommand("Traduis ce texte en ") }
                 )
                 TerminalCommandRow(
                     title = "Développer",
                     detail = "Comprendre ou améliorer du code",
-                    prompt = "Aide-moi à comprendre ou développer ce code : ",
-                    onClick = onCommand
+                    onClick = { onCommand("Aide-moi à comprendre ou développer ce code : ") }
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -183,15 +177,14 @@ internal fun BozerTerminalSheet(
 private fun TerminalCommandRow(
     title: String,
     detail: String,
-    prompt: String,
-    onClick: (String) -> Unit
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(17.dp))
             .background(Color.White)
             .border(1.dp, TerminalLine, RoundedCornerShape(17.dp))
-            .clickable { onClick(prompt) }
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
