@@ -1,0 +1,66 @@
+name: BOZER final Android package — manual only
+
+# Intentionally manual: no source push or pull request may start an APK build.
+# Do not dispatch this workflow until BOZER's final implementation is ready.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bozer-final-apk
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout BOZER source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install pinned Android native toolchain
+        run: sdkmanager "ndk;27.2.12479018" "cmake;3.22.1"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Prepare the embedded BOZER brain
+        run: |
+          chmod +x scripts/prepare_bundled_model.sh
+          scripts/prepare_bundled_model.sh app/src/main/assets
+
+      - name: Build the native BOZER Android app
+        run: gradle :app:assembleDebug --no-daemon
+
+      - name: Verify the APK and embedded brain payload
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          unzip -l "$APK" | grep -E 'assets/bozer-model.gguf'
+          unzip -l "$APK" | grep -E 'assets/bozer-model.sha256'
+          unzip -l "$APK" | grep -E 'assets/BOZER_MODEL_LICENSE.txt'
+          sha256sum "$APK"
+          ls -lh "$APK"
+
+      - name: Upload BOZER APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozer-final-apk-with-embedded-brain
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
