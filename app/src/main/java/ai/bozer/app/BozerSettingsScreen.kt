@@ -57,9 +57,11 @@ internal fun BozerSettingsScreen(
     overlayPermissionGranted: Boolean,
     onFloatingBubbleChange: (Boolean) -> Unit,
     rememberedCount: Int,
+    actionRecords: List<ActionLogEntry>,
     onManageMemory: () -> Unit,
     onClearHistory: () -> Unit,
     onClearMemory: () -> Unit,
+    onClearActionHistory: () -> Unit,
     onClose: () -> Unit
 ) {
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF6F8F9)) {
@@ -183,6 +185,45 @@ internal fun BozerSettingsScreen(
                     Divider(color = SettingsLine)
                     TextButton(onClick = onClearHistory) { Text("Effacer l'historique", color = Color(0xFF8B5555)) }
                     TextButton(onClick = onClearMemory) { Text("Effacer les souvenirs", color = Color(0xFF8B5555)) }
+                }
+
+                SettingsCard("JOURNAL DES ACTIONS") {
+                    if (actionRecords.isEmpty()) {
+                        Text("Aucune action enregistrée.", color = SettingsMuted, fontSize = 11.sp)
+                    } else {
+                        actionRecords.take(12).forEach { record ->
+                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(record.summary, color = SettingsInk, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    Text(record.status, color = SettingsAccent, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                                Text(record.detail, color = SettingsMuted, fontSize = 10.sp, lineHeight = 14.sp)
+                                Text(
+                                    java.text.DateFormat.getDateTimeInstance(
+                                        java.text.DateFormat.SHORT,
+                                        java.text.DateFormat.SHORT,
+                                        java.util.Locale.FRANCE
+                                    ).format(java.util.Date(record.createdAt)),
+                                    color = SettingsMuted,
+                                    fontSize = 9.sp
+                                )
+                            }
+                            Divider(color = SettingsLine)
+                        }
+                        TextButton(onClick = onClearActionHistory) {
+                            Text("Effacer le journal", color = Color(0xFF8B5555))
+                        }
+                    }
+                    Text(
+                        "Les numéros de téléphone et le contenu des SMS ne sont pas conservés dans ce journal.",
+                        color = SettingsMuted,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
                 }
 
                 SettingsCard("CONFIDENTIALITÉ") {
