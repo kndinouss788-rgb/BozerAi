@@ -100,6 +100,8 @@ class ChatRepository(
                 append("Résultats EYE_SEARCH réellement récupérés :\n")
                 searchResults.forEach { result ->
                     append("- ").append(escapeUntrustedChatMl(result.title))
+                        .append(" | source=").append(escapeUntrustedChatMl(result.source))
+                        .append(" | date=").append(escapeUntrustedChatMl(result.publishedAt ?: "date non fournie"))
                         .append(" | ").append(escapeUntrustedChatMl(result.url))
                         .append(" | ").append(escapeUntrustedChatMl(result.snippet)).append("\n")
                 }
@@ -122,7 +124,9 @@ class ChatRepository(
                 append("\n\nSources consultées :\n")
                 searchResults.forEachIndexed { index, result ->
                     append(index + 1).append(". ").append(result.title)
-                        .append(" — ").append(result.url).append('\n')
+                        .append(" — ").append(result.source)
+                    result.publishedAt?.let { append(" — ").append(it) }
+                    append(" — ").append(result.url).append('\n')
                 }
             }
         } catch (error: Exception) {
