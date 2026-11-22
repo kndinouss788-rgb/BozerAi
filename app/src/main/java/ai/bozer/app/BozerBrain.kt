@@ -10,6 +10,8 @@ sealed interface BozerIntent {
     data class AndroidAction(val action: PhoneAction) : BozerIntent
     data class PublicResearch(val query: String) : BozerIntent
     data class Translation(val targetLanguage: String, val sourceText: String) : BozerIntent
+    data class SecretaryAddTask(val title: String) : BozerIntent
+    data object SecretaryListTasks : BozerIntent
     data class Conversation(val text: String) : BozerIntent
 }
 
@@ -89,6 +91,21 @@ class BozerTaskPlanner {
                 BozerTaskStep(3, "Conserver le sens et le ton sans ajouter de commentaire", false, "Traduction non vide affichée")
             )
         )
+        is BozerIntent.SecretaryAddTask -> BozerTaskPlan(
+            intent,
+            listOf(
+                BozerTaskStep(1, "Valider le titre de la tâche", false, "Titre non vide"),
+                BozerTaskStep(2, "Enregistrer la tâche dans SQLite", false, "Identifiant de tâche retourné"),
+                BozerTaskStep(3, "Confirmer l'enregistrement réel", false, "Tâche relue depuis SQLite")
+            )
+        )
+        is BozerIntent.SecretaryListTasks -> BozerTaskPlan(
+            intent,
+            listOf(
+                BozerTaskStep(1, "Lire la liste locale", false, "Résultats retournés par SQLite"),
+                BozerTaskStep(2, "Présenter les états réels", false, "Tâches actives et terminées affichées")
+            )
+        )
         is BozerIntent.Conversation -> BozerTaskPlan(
             intent,
             listOf(
@@ -107,7 +124,9 @@ class BozerOrchestrator(
 ) {
     fun classify(text: String): BozerIntent {
         PhoneActionPlanner.parse(text)?.let { return BozerIntent.AndroidAction(it) }
+        extractSecretaryTask(text)?.let { return it }
         extractTranslation(text)?.let { return it }
+        if (isSecretaryListRequest(text)) return BozerIntent.SecretaryListTasks
         extractResearchQuery(text)?.let { return BozerIntent.PublicResearch(it) }
         return BozerIntent.Conversation(text)
     }
@@ -118,6 +137,33 @@ class BozerOrchestrator(
         return when (intent) {
             is BozerIntent.Translation ->
                 repository.translate(intent.sourceText, intent.targetLanguage)
+            is BozerIntent.SecretaryAddTask -> {
+                val id = repository.addSecretaryTask(intent.title)
+                if (id > 0L) {
+                    val saved = repository.secretaryTasks().firstOrNull { it.id == id }
+                    if (saved != null) "C'est noté. J'ai ajouté « ${saved.title} » à ta liste SECRETARY."
+                    else "La tâche a reçu l'identifiant $id, mais je n'ai pas pu la relire. Vérifie la liste SECRETARY."
+                } else {
+                    "Je n'ai pas pu enregistrer cette tâche. Le titre est vide ou le stockage a refusé l'écriture."
+                }
+            }
+            BozerIntent.SecretaryListTasks -> {
+                val tasks = repository.secretaryTasks()
+                if (tasks.isEmpty()) {
+                    "Ta liste SECRETARY est vide. Tu peux dire : « Ajoute à ma liste : … »."
+                } else {
+                    buildString {
+                        append("Voici ta liste SECRETARY :\n")
+                        tasks.forEachIndexed { index, task ->
+                            append(index + 1).append(". ")
+                                .append(if (task.isCompleted) "✓ " else "• ")
+                                .append(task.title)
+                                .append(if (task.isCompleted) " — terminée" else " — à faire")
+                                .append('\n')
+                        }
+                    }.trim()
+                }
+            }
             is BozerIntent.AndroidAction -> "Cette action doit passer par le parcours de confirmation Android."
             is BozerIntent.PublicResearch, is BozerIntent.Conversation ->
                 // Search retrieval, untrusted-content handling and brain routing
@@ -125,6 +171,21 @@ class BozerOrchestrator(
                 repository.reply(history)
         }
     }
+
+    private fun extractSecretaryTask(text: String): BozerIntent.SecretaryAddTask? {
+        val match = Regex(
+            """^(?:ajoute|ajouter|note|inscris)\s+(?:à\s+ma\s+liste|une\s+tâche|une\s+tache|comme\s+tâche)\s*[:,-]?\s*(.+)$""",
+            RegexOption.IGNORE_CASE
+        ).find(text.trim()) ?: return null
+        val title = match.groupValues[1].trim().trimEnd('.', '!', '?')
+        return title.takeIf { it.length in 2..180 }?.let(BozerIntent::SecretaryAddTask)
+    }
+
+    private fun isSecretaryListRequest(text: String): Boolean =
+        Regex(
+            """^(?:montre|affiche|liste|quelles\s+sont)\s+(?:moi\s+)?(?:mes\s+)?(?:tâches|taches|choses\s+à\s+faire|ma\s+liste)\??$""",
+            RegexOption.IGNORE_CASE
+        ).matches(text.trim())
 
     private fun extractTranslation(text: String): BozerIntent.Translation? {
         val normalized = text.trim()
