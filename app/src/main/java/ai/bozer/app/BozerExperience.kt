@@ -120,6 +120,8 @@ internal fun BozerChatExperience(
 
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    val orchestrator = remember(repository) { BozerOrchestrator(repository) }
+    var activeTaskPlan by remember { mutableStateOf<BozerTaskPlan?>(null) }
 
     LaunchedEffect(brainMode) {
         repository.brainMode = brainMode
@@ -176,21 +178,24 @@ internal fun BozerChatExperience(
 
         // Snapshot Compose state on the UI thread before background inference.
         val historySnapshot = messages.toList()
-        val phoneAction = PhoneActionPlanner.parse(text)
-        if (phoneAction != null) {
-            pendingPhoneAction = phoneAction
+        val intent = orchestrator.classify(text)
+        activeTaskPlan = orchestrator.taskPlanner.plan(intent)
+        if (intent is BozerIntent.AndroidAction) {
+            pendingPhoneAction = intent.action
             return
         }
 
         sending = true
         scope.launch {
             try {
-                val answer = withContext(Dispatchers.IO) { repository.reply(historySnapshot) }
+                val answer = withContext(Dispatchers.IO) { orchestrator.respond(historySnapshot, intent) }
                 val assistantMessage = ChatMessage(role = "assistant", content = answer)
                 messages.add(assistantMessage)
                 repository.save(assistantMessage)
                 if (voiceEnabled) voiceOutput.speak(answer)
+                activeTaskPlan = null
             } catch (error: Exception) {
+                activeTaskPlan = null
                 val failure = ChatMessage(
                     role = "assistant",
                     content = "Je n'ai pas pu terminer cette réponse : " +
@@ -216,6 +221,7 @@ internal fun BozerChatExperience(
             messages.add(status)
             repository.save(status)
             pendingPhoneAction = null
+            activeTaskPlan = null
         }
     }
 
@@ -537,7 +543,19 @@ internal fun BozerChatExperience(
                 onDismissRequest = { cancelPendingPhoneAction() },
                 containerColor = BozerWhite,
                 title = { Text(PhoneActionPlanner.confirmationTitle(action), color = BozerInk) },
-                text = { Text(PhoneActionPlanner.confirmationDescription(action), color = BozerMuted) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(PhoneActionPlanner.confirmationDescription(action), color = BozerMuted)
+                        activeTaskPlan?.steps?.forEach { step ->
+                            Text(
+                                "${step.order}. ${step.label}",
+                                color = BozerMuted,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                },
                 confirmButton = {
                     TextButton(onClick = {
                         val result = PhoneActionExecutor.execute(activity, action, confirmed = true)
@@ -545,6 +563,7 @@ internal fun BozerChatExperience(
                         messages.add(status)
                         repository.save(status)
                         pendingPhoneAction = null
+                        activeTaskPlan = null
                     }) { Text("Confirmer", color = BozerInk) }
                 },
                 dismissButton = {
