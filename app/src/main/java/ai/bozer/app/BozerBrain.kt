@@ -31,7 +31,7 @@ class BozerToolRegistry {
         BozerToolDefinition("memory", "Souvenirs explicites", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("public_search", "Recherche publique Wikipédia", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("android_action", "Actions Android de base", BozerToolState.AVAILABLE, true),
-        BozerToolDefinition("agent_workflows", "Agent multi-étapes", BozerToolState.IN_DEVELOPMENT, true),
+        BozerToolDefinition("agent_workflows", "Agent multi-étapes", BozerToolState.PLANNED, true),
         BozerToolDefinition("documents", "Documents PDF/DOCX", BozerToolState.PLANNED, false),
         BozerToolDefinition("business", "Business", BozerToolState.PLANNED, false),
         BozerToolDefinition("translation", "Traduction spécialisée", BozerToolState.PLANNED, false),
