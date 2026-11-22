@@ -5,90 +5,100 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 import java.security.MessageDigest
 import kotlin.coroutines.coroutineContext
 
-/** Downloads the pinned Qwen GGUF into BOZER's private internal storage. */
-class LocalModelManager(context: Context, private val modelUrl: String = MODEL_URL) {
-    private val modelDir = File(context.filesDir, "models").apply { mkdirs() }
+/**
+ * Installs the model that is already embedded in the APK.
+ *
+ * No model download, account, API key or network connection is required.
+ * The packaged asset is copied once to private app storage because llama.cpp
+ * needs a normal seekable file for memory-mapped GGUF loading.
+ */
+class LocalModelManager(context: Context) {
+    private val appContext = context.applicationContext
+    private val modelDir = File(appContext.filesDir, "models").apply { mkdirs() }
     private val modelFile = File(modelDir, MODEL_FILENAME)
     private val partialFile = File(modelDir, "$MODEL_FILENAME.part")
     private val verifiedMarker = File(modelDir, "$MODEL_FILENAME.sha256")
 
-    fun installedModel(): File? = modelFile.takeIf { it.isFile && it.length() == MODEL_BYTES }
+    fun installedModel(): File? = modelFile.takeIf {
+        it.isFile && it.length() >= MINIMUM_MODEL_BYTES && verifiedMarker.isFile
+    }
 
     suspend fun verifyInstalled(): Boolean = withContext(Dispatchers.IO) {
-        if (!modelFile.isFile || modelFile.length() != MODEL_BYTES) return@withContext false
-        // Checksum is verified after download; this marker avoids hashing 491 MB on every launch.
-        if (verifiedMarker.isFile && verifiedMarker.readText() == MODEL_SHA256) return@withContext true
-        val valid = sha256(modelFile) == MODEL_SHA256
-        if (valid) verifiedMarker.writeText(MODEL_SHA256) else verifiedMarker.delete()
+        val metadata = readBundledMetadata()
+        if (!modelFile.isFile || modelFile.length() != metadata.bytes) return@withContext false
+        if (verifiedMarker.isFile && verifiedMarker.readText().trim() == metadata.sha256) {
+            return@withContext true
+        }
+        val valid = sha256(modelFile) == metadata.sha256
+        if (valid) verifiedMarker.writeText(metadata.sha256) else verifiedMarker.delete()
         valid
     }
 
-    suspend fun download(onProgress: suspend (Long, Long) -> Unit = { _, _ -> }): File =
-        withContext(Dispatchers.IO) {
-            if (verifyInstalled()) return@withContext modelFile
-            val requiredBytes = MODEL_BYTES + MINIMUM_FREE_SPACE_BYTES
-            check(modelDir.usableSpace >= requiredBytes) {
-                "Espace insuffisant : BOZER a besoin d'environ 600 Mo libres pour installer son cerveau."
-            }
-            partialFile.delete()
+    suspend fun installBundled(
+        onProgress: suspend (Long, Long) -> Unit = { _, _ -> }
+    ): File = withContext(Dispatchers.IO) {
+        if (verifyInstalled()) return@withContext modelFile
 
-            val connection = (URL(modelUrl).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 20_000
-                readTimeout = 60_000
-                instanceFollowRedirects = true
-                requestMethod = "GET"
-                setRequestProperty("User-Agent", "BOZER-Android")
-            }
-            try {
-                connection.connect()
-                check(connection.responseCode in 200..299) {
-                    "Téléchargement impossible (HTTP ${connection.responseCode})."
-                }
-                val announced = connection.contentLengthLong
-                if (announced > 0L) check(announced == MODEL_BYTES) {
-                    "Taille inattendue du modèle : $announced octets."
-                }
-
-                var received = 0L
-                connection.inputStream.use { input ->
-                    partialFile.outputStream().buffered().use { output ->
-                        val buffer = ByteArray(256 * 1024)
-                        while (true) {
-                            coroutineContext.ensureActive()
-                            val count = input.read(buffer)
-                            if (count < 0) break
-                            output.write(buffer, 0, count)
-                            received += count
-                            onProgress(received, MODEL_BYTES)
-                            check(received <= MODEL_BYTES) { "Le fichier téléchargé est trop volumineux." }
-                        }
-                        output.flush()
-                    }
-                }
-                check(received == MODEL_BYTES) {
-                    "Téléchargement incomplet : $received / $MODEL_BYTES octets."
-                }
-                check(sha256(partialFile) == MODEL_SHA256) {
-                    "La vérification SHA-256 du modèle a échoué."
-                }
-                if (modelFile.exists()) modelFile.delete()
-                check(partialFile.renameTo(modelFile)) {
-                    "Impossible de finaliser le stockage privé du modèle."
-                }
-                verifiedMarker.writeText(MODEL_SHA256)
-                modelFile
-            } catch (error: Exception) {
-                partialFile.delete()
-                throw error
-            } finally {
-                connection.disconnect()
-            }
+        val metadata = readBundledMetadata()
+        val requiredBytes = metadata.bytes + MINIMUM_FREE_SPACE_BYTES
+        check(modelDir.usableSpace >= requiredBytes) {
+            "Espace insuffisant : libère environ ${(requiredBytes / (1024L * 1024L))} Mo pour préparer le cerveau intégré à BOZER."
         }
+
+        partialFile.delete()
+        try {
+            var copied = 0L
+            appContext.assets.open(MODEL_ASSET).buffered().use { input ->
+                partialFile.outputStream().buffered().use { output ->
+                    val buffer = ByteArray(1024 * 1024)
+                    while (true) {
+                        coroutineContext.ensureActive()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        output.write(buffer, 0, count)
+                        copied += count
+                        onProgress(copied, metadata.bytes)
+                        check(copied <= metadata.bytes) {
+                            "Le cerveau intégré dépasse la taille annoncée."
+                        }
+                    }
+                    output.flush()
+                }
+            }
+
+            check(copied == metadata.bytes) {
+                "Copie incomplète du cerveau intégré : $copied / ${metadata.bytes} octets."
+            }
+            check(sha256(partialFile) == metadata.sha256) {
+                "La vérification du cerveau intégré a échoué. Le fichier n'a pas été installé."
+            }
+
+            if (modelFile.exists()) modelFile.delete()
+            check(partialFile.renameTo(modelFile)) {
+                "Impossible de finaliser l'installation privée du cerveau."
+            }
+            verifiedMarker.writeText(metadata.sha256)
+            modelFile
+        } catch (error: Exception) {
+            partialFile.delete()
+            throw error
+        }
+    }
+
+    private fun readBundledMetadata(): ModelMetadata {
+        val line = appContext.assets.open(MODEL_METADATA_ASSET)
+            .bufferedReader(Charsets.UTF_8).use { it.readLine().orEmpty().trim() }
+        val fields = line.split(Regex("\\s+"))
+        val hash = fields.getOrNull(0).orEmpty().lowercase()
+        val bytes = fields.getOrNull(1)?.toLongOrNull() ?: 0L
+        require(hash.matches(Regex("[a-f0-9]{64}")) && bytes >= MINIMUM_MODEL_BYTES) {
+            "Les informations du cerveau intégré sont absentes ou invalides."
+        }
+        return ModelMetadata(hash, bytes)
+    }
 
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
@@ -103,12 +113,13 @@ class LocalModelManager(context: Context, private val modelUrl: String = MODEL_U
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
+    private data class ModelMetadata(val sha256: String, val bytes: Long)
+
     companion object {
-        const val MODEL_FILENAME = "qwen2.5-0.5b-instruct-q4_k_m.gguf"
-        const val MODEL_BYTES = 491_400_032L
-        const val MINIMUM_FREE_SPACE_BYTES = 128L * 1024L * 1024L
-        const val MODEL_SHA256 = "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
-        const val MODEL_URL =
-            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/12145bd1d629190a4d44254073650877954d02c9/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+        const val MODEL_FILENAME = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+        const val MODEL_ASSET = "bozer-model.gguf"
+        const val MODEL_METADATA_ASSET = "bozer-model.sha256"
+        const val MINIMUM_MODEL_BYTES = 900_000_000L
+        const val MINIMUM_FREE_SPACE_BYTES = 160L * 1024L * 1024L
     }
 }
