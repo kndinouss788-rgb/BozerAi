@@ -89,6 +89,24 @@ class ChatDatabaseInstrumentedTest {
     }
 
     @Test
+    fun secretaryTasksPersistAndCanBeCompletedAndDeleted() {
+        val id = database.addSecretaryTask("Terminer le dossier BOZER")
+        assertTrue("La tâche doit être enregistrée dans SQLite.", id > 0L)
+        var tasks = database.secretaryTasks()
+        assertEquals(1, tasks.size)
+        assertEquals("Terminer le dossier BOZER", tasks.single().title)
+        assertFalse(tasks.single().isCompleted)
+
+        assertTrue(database.setSecretaryTaskCompleted(id, true))
+        tasks = database.secretaryTasks()
+        assertTrue(tasks.single().isCompleted)
+
+        assertTrue(database.setSecretaryTaskCompleted(id, false))
+        assertTrue(database.deleteSecretaryTask(id))
+        assertTrue(database.secretaryTasks().isEmpty())
+    }
+
+    @Test
     fun versionOneMigrationPreservesExistingMessagesAndAddsMemoryTable() {
         database.close()
         context.deleteDatabase(databaseName)
