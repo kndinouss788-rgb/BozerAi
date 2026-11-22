@@ -92,6 +92,7 @@ class BozerBrainEndToEndTest {
 
     private fun waitForModelReady() {
         composeRule.onNodeWithTag("bozer_settings").performClick()
+        composeRule.onNodeWithText("Réglages").performClick()
         val settingsReady = waitForUiCondition(15_000) {
             isModelReadyInSettings() ||
                 composeRule.onAllNodesWithText("Préparation", substring = true)
@@ -108,7 +109,7 @@ class BozerBrainEndToEndTest {
         }
         assertTrue("Le chargement du modèle local n'a pas atteint un état final.", settled)
         assertTrue("Le modèle local n'est pas prêt après son téléchargement et sa vérification.", isModelReadyInSettings())
-        composeRule.onNodeWithText("Fermer").performClick()
+        composeRule.onNodeWithTag("bozer_settings_back").performClick()
     }
 
     private fun assertRealReply(reply: String, turn: Int) {
@@ -168,12 +169,15 @@ class BozerBrainEndToEndTest {
         )
         waitForModelReady()
 
-        val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 1)
+        val (ccReply, ccMs) = sendMessage("cc", 1)
+        assertTrue("Le simple cc n'a pas reçu une réponse naturelle : $ccReply", ccReply.contains("Salut", ignoreCase = true))
+
+        val (greeting, greetingMs) = sendMessage("Salut BOZER ! Comment vas-tu aujourd'hui ?", 2)
         assertTrue("La salutation semble être une erreur", greeting.length >= 2)
 
         val (factReply, factMs) = sendMessage(
             "Quelle est la capitale du Burkina Faso ? Réponds directement.",
-            2
+            3
         )
         assertTrue(
             "BOZER n'a pas répondu correctement à la question factuelle : $factReply",
@@ -185,7 +189,7 @@ class BozerBrainEndToEndTest {
 
         val (memoryReply, memoryMs) = sendMessage(
             "Retiens cette information pour la suite : mon animal préféré est le chat. Réponds uniquement OK.",
-            4
+            5
         )
         assertTrue(
             "BOZER n'a pas confirmé la mémorisation : $memoryReply",
@@ -195,14 +199,14 @@ class BozerBrainEndToEndTest {
 
         val (recallReply, recallMs) = sendMessage(
             "Quel est mon animal préféré ? Réponds en un seul mot.",
-            5
+            6
         )
         assertTrue("BOZER a oublié l'information précédente : $recallReply",
             recallReply.contains("chat", ignoreCase = true))
 
         val (followUpReply, followUpMs) = sendMessage(
             "Et pourquoi ronronnent-ils ? Explique-moi simplement.",
-            6
+            7
         )
         assertTrue("La réponse de suivi est trop courte : $followUpReply", followUpReply.length >= 20)
         assertTrue(
@@ -212,7 +216,7 @@ class BozerBrainEndToEndTest {
 
         val (searchReply, searchMs) = sendMessage(
             "Recherche sur Internet : capitale du Burkina Faso",
-            7
+            8
         )
         assertTrue(
             "La recherche Android n'a pas joint de source réelle : $searchReply",
@@ -224,11 +228,11 @@ class BozerBrainEndToEndTest {
         assertTrue("La source de recherche est absente de la réponse", sourceLine.isNotBlank())
         Log.i("BOZER_E2E", "search_source_verified=true; $sourceLine")
 
-        assertTrue("L'historique local ne contient pas sept réponses", assistantCount() >= 7)
+        assertTrue("L'historique local ne contient pas sept réponses", assistantCount() >= 8)
         assertTrue("La mémoire explicite n'est pas persistante", rememberedFactCount() >= 1)
         Log.i(
             "BOZER_E2E",
-            "LATENCIES_MS greeting=$greetingMs fact=$factMs math=$mathMs memory=$memoryMs " +
+            "LATENCIES_MS cc=$ccMs greeting=$greetingMs fact=$factMs math=$mathMs memory=$memoryMs " +
                 "recall=$recallMs follow_up=$followUpMs search=$searchMs"
         )
         Log.i(
