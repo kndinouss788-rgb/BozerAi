@@ -101,7 +101,7 @@ internal fun BozerChatExperience(
     var pendingPhoneAction by remember { mutableStateOf<PhoneAction?>(null) }
     var plusMenuOpen by remember { mutableStateOf(false) }
     val preferences = remember { activity.getPreferences(Context.MODE_PRIVATE) }
-    var voiceEnabled by remember { mutableStateOf(preferences.getBoolean("voice_enabled", false)) }
+    var voiceEnabled by remember { mutableStateOf(preferences.getBoolean("voice_enabled", true)) }
     var floatingBubbleEnabled by remember {
         mutableStateOf(
             preferences.getBoolean("floating_bubble_enabled", false) &&
