@@ -129,6 +129,42 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
+    fun translatorUsesASeparateLocalPromptAndDoesNotSearchTheWeb() = runBlocking {
+        repository.brainMode = BrainMode.AUTO
+        repository.internetAvailable = { true }
+
+        val translated = repository.translate(
+            sourceText = "Bonjour, comment vas-tu ?",
+            targetLanguage = "anglais"
+        )
+
+        assertEquals("Réponse produite par le moteur de test.", translated)
+        val prompt = model.prompts.single()
+        assertTrue(prompt.contains("langue suivante : anglais"))
+        assertTrue(prompt.contains("Retourne uniquement le texte traduit"))
+        assertTrue(prompt.contains("Bonjour, comment vas-tu ?"))
+        assertTrue("Le traducteur ne doit pas démarrer une recherche web.", search.queries.isEmpty())
+    }
+
+    @Test
+    fun translatorIntentRecognizesBothNaturalLanguageWordOrders() {
+        val orchestrator = BozerOrchestrator(repository)
+        val first = orchestrator.classify("Traduis en anglais : Bonjour tout le monde")
+        assertTrue(first is BozerIntent.Translation)
+        first as BozerIntent.Translation
+        assertEquals("anglais", first.targetLanguage)
+        assertEquals("Bonjour tout le monde", first.sourceText)
+
+        val second = orchestrator.classify("Traduis Bonjour tout le monde en anglais")
+        assertTrue(second is BozerIntent.Translation)
+        second as BozerIntent.Translation
+        assertEquals("anglais", second.targetLanguage)
+        assertEquals("Bonjour tout le monde", second.sourceText)
+
+        assertEquals(BozerToolState.AVAILABLE, orchestrator.tools.find("translation")?.state)
+    }
+
+    @Test
     fun automaticModeKeepsConversationLocalEvenWhenGatewayIsConfigured() = runBlocking {
         val remote = RecordingRemoteClient()
         val localRepository = ChatRepository(database, model, search, remote).apply {
