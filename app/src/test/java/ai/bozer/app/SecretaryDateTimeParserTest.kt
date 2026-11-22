@@ -94,7 +94,7 @@ class SecretaryDateTimeParserTest {
         val now = localTime(2026, Calendar.JANUARY, 1, 10, 0)
         val parsed = SecretaryDateTimeParser.parse("Préparer le dossier le 31 février", now)
 
-        assertEquals("Préparer le dossier le 31 février", parsed.title)
+        assertEquals("Préparer le dossier", parsed.title)
         assertNull(parsed.dueAtMillis)
         assertNotNull(parsed.dateWarning)
     }
