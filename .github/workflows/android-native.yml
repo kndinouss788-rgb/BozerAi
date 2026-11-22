@@ -1,4 +1,4 @@
-name: BOZER Android APK build — final release only
+name: BOZER Android APK — first phone-test candidate
 
 on:
   push:
@@ -37,10 +37,44 @@ jobs:
           gradle-version: "8.9"
       - name: Build final debug APK with native llama.cpp
         run: gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
-      - name: Verify APK output
+      - name: Verify APK output and bundled offline French voice
         run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          sha256sum app/build/outputs/apk/debug/app-debug.apk
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          python - <<'PY'
+          import hashlib
+          import zipfile
+
+          apk = "app/build/outputs/apk/debug/app-debug.apk"
+          voice = "assets/bozer-voice/fr_FR-mls-medium/fr_FR-mls-medium.onnx"
+          tokens = "assets/bozer-voice/fr_FR-mls-medium/tokens.txt"
+          expected_bytes = 76_733_935
+          expected_sha256 = "d869ae962adb97da4d044e263df38d0b012e10bba6d0c3c8a3cb61190d657d9b"
+
+          with zipfile.ZipFile(apk) as archive:
+              names = set(archive.namelist())
+              assert voice in names, "French Piper ONNX model is missing from the APK"
+              assert tokens in names, "French Piper tokens are missing from the APK"
+              model_info = archive.getinfo(voice)
+              assert model_info.file_size == expected_bytes, (
+                  f"Unexpected voice size: {model_info.file_size}"
+              )
+              digest = hashlib.sha256()
+              with archive.open(voice) as stream:
+                  for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              assert digest.hexdigest() == expected_sha256, "Bundled French voice SHA-256 mismatch"
+              assert any(name.startswith("lib/arm64-v8a/") for name in names), (
+                  "ARM64 native libraries are missing from the APK"
+              )
+              print(f"Bundled French voice: verified ({model_info.file_size} bytes)")
+              print(f"Voice SHA-256: {digest.hexdigest()}")
+              print("ARM64 native libraries: present")
+
+          print(f"APK size: {__import__('os').path.getsize(apk)} bytes")
+          PY
+          sha256sum "$APK"
       - name: Upload final installable debug APK
         uses: actions/upload-artifact@v4
         with:
