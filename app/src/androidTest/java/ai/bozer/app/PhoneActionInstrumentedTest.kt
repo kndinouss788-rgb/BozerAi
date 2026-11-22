@@ -84,9 +84,9 @@ class PhoneActionInstrumentedTest {
         val alarm = PhoneAction.SetAlarm(6, 30)
         val handedOff = ActionExecutionResult(
             launched = true,
-            message = "L'application Horloge a été ouverte pour préparer le réveil."
+            message = "Réveil programmé par Android."
         )
-        assertEquals("À CONFIRMER", PhoneActionExecutor.resultStatus(alarm, handedOff))
+        assertEquals("PROGRAMMÉ", PhoneActionExecutor.resultStatus(alarm, handedOff))
     }
 
     @Test
