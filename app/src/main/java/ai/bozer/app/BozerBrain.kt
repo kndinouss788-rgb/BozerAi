@@ -29,7 +29,7 @@ class BozerToolRegistry {
     private val registered = listOf(
         BozerToolDefinition("local_chat", "Conversation locale", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("memory", "Souvenirs explicites", BozerToolState.AVAILABLE, false),
-        BozerToolDefinition("public_search", "Recherche publique Wikipédia", BozerToolState.AVAILABLE, false),
+        BozerToolDefinition("public_search", "Recherche publique multi-sources", BozerToolState.AVAILABLE, false),
         BozerToolDefinition("android_action", "Actions Android de base", BozerToolState.AVAILABLE, true),
         BozerToolDefinition("agent_workflows", "Agent multi-étapes", BozerToolState.PLANNED, true),
         BozerToolDefinition("documents", "Documents PDF/DOCX", BozerToolState.PLANNED, false),
