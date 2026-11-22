@@ -168,6 +168,15 @@ class ChatRepositoryInstrumentedTest {
         )
         assertTrue(listed.contains("terminer le dossier BOZER"))
         assertTrue(listed.contains("à faire"))
+
+        val completeIntent = orchestrator.classify("Termine la tâche 1")
+        assertTrue(completeIntent is BozerIntent.SecretaryCompleteTask)
+        val completed = orchestrator.respond(
+            listOf(ChatMessage(role = "user", content = "Termine la tâche 1")),
+            completeIntent
+        )
+        assertTrue(completed.contains("marquée comme terminée", ignoreCase = true))
+        assertTrue(repository.secretaryTasks().single().isCompleted)
     }
 
     @Test
