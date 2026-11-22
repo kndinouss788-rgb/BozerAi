@@ -41,6 +41,13 @@ class ChatRepository(
         .put("exported_at", System.currentTimeMillis())
         .put("memories", org.json.JSONArray(database.rememberedFacts()))
         .toString(2)
+    fun secretaryTasks(limit: Int = 100): List<SecretaryTask> = database.secretaryTasks(limit)
+    fun addSecretaryTask(title: String, dueAtMillis: Long? = null): Long =
+        database.addSecretaryTask(title, dueAtMillis)
+    fun setSecretaryTaskCompleted(id: Long, completed: Boolean): Boolean =
+        database.setSecretaryTaskCompleted(id, completed)
+    fun deleteSecretaryTask(id: Long): Boolean = database.deleteSecretaryTask(id)
+    fun clearSecretaryTasks() = database.clearSecretaryTasks()
     fun actionHistory(limit: Int = 30): List<ActionLogEntry> = database.actionHistory(limit)
     fun recordAction(entry: ActionLogEntry) = database.recordAction(entry)
     fun clearActionHistory() = database.clearActionHistory()
