@@ -88,7 +88,7 @@ object SecretaryDateTimeParser {
             )
             return if (dueAt == null) {
                 ParsedSecretaryTaskDetails(
-                    titleInput.trim(),
+                    title,
                     null,
                     "La date ou l'heure indiquée est invalide ou déjà passée. Vérifie l'échéance et réessaie."
                 )
