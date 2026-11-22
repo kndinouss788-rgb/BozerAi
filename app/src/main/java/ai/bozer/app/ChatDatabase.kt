@@ -324,16 +324,26 @@ class ChatDatabase(
         return result.asReversed()
     }
 
-    fun save(message: ChatMessage) {
+    fun save(message: ChatMessage): Boolean =
+        save(message, currentConversationId())
+
+    fun save(message: ChatMessage, conversationId: Long): Boolean {
+        if (conversationId <= 0L) return false
         val db = writableDatabase
-        val conversationId = ensureActiveConversation(db)
+        val conversationExists = db.query(
+            "conversations", arrayOf("id"), "id = ?",
+            arrayOf(conversationId.toString()), null, null, null, "1"
+        ).use { it.moveToFirst() }
+        if (!conversationExists) return false
+
         val values = ContentValues().apply {
             put("conversation_id", conversationId)
             put("role", message.role)
             put("content", message.content)
             put("created_at", message.createdAt)
         }
-        db.insert("messages", null, values)
+        val insertedId = db.insert("messages", null, values)
+        if (insertedId <= 0L) return false
 
         val update = ContentValues().apply {
             put("updated_at", System.currentTimeMillis())
@@ -350,6 +360,7 @@ class ChatDatabase(
             }
         }
         db.update("conversations", update, "id = ?", arrayOf(conversationId.toString()))
+        return true
     }
 
     /** Save only facts the user explicitly asks BOZER to remember. */
