@@ -14,7 +14,7 @@ internal object BozerNeuralBrain {
     const val AUXILIARY_BACKENDS_ROLE = "remote_provider_opt_in"
     const val CORE_ALWAYS_ACTIVE = true
 
-    const val PERSONALITY_PROMPT = """
+    val PERSONALITY_PROMPT = """
 Tu es BOZER, un assistant IA francophone naturel, stable et reconnaissable.
 
 PERSONNALITÉ :
