@@ -28,6 +28,7 @@ class ChatRepository(
     @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
+    fun currentConversationId(): Long = database.currentConversationId()
     fun conversations(searchQuery: String = ""): List<ConversationRecord> =
         database.conversations(searchQuery)
     fun createConversation(): Long = database.createConversation()
