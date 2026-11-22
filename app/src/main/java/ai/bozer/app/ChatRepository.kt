@@ -42,6 +42,8 @@ class ChatRepository(
         if (asksToForgetMemory(latestUserText)) database.clearRememberedFacts()
         else extractExplicitMemory(latestUserText)?.let(database::rememberFact)
 
+        quickSocialReply(latestUserText)?.let { return@withLock it }
+
         if (asksForCurrentTime(latestUserText)) {
             return@withLock "Il est " + LocalTime.now().format(
                 DateTimeFormatter.ofPattern("HH 'h' mm", Locale.FRANCE)
@@ -238,6 +240,23 @@ class ChatRepository(
             "oublie tout ce que tu as mémorisé", "oublie tout ce que tu as memorise",
             "efface ta mémoire", "efface ta memoire", "oublie tes souvenirs"
         ).any(normalized::contains)
+    }
+
+    private fun quickSocialReply(text: String): String? {
+        val normalized = text.trim().lowercase(Locale.ROOT)
+            .replace(Regex("[!?.…]+$"), "")
+            .trim()
+        return when {
+            Regex("^(salut|slt|cc|coucou|bonjour|bonsoir|hello|hey)$").matches(normalized) ->
+                "Salut ! Je suis là. Qu'est-ce qu'on fait aujourd'hui ?"
+            Regex("^(merci|merci beaucoup)$").matches(normalized) ->
+                "Avec plaisir !"
+            Regex("^(ok|okay|d'accord|dac)$").matches(normalized) ->
+                "Ça marche."
+            Regex("^(ça va|ca va|tu vas bien)$").matches(normalized) ->
+                "Je suis prêt à t'aider. Et toi, comment ça se passe ?"
+            else -> null
+        }
     }
 
     private fun asksForCurrentTime(text: String): Boolean {
