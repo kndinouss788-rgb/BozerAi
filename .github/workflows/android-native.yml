@@ -1,8 +1,14 @@
 name: BOZER Android APK build — final release only
 
 on:
-  # Deliberately manual: no APK builds on ordinary commits or pull requests.
-  # Run only when the project owner declares BOZER feature-complete.
+  push:
+    branches: [bozer-neural-v0.1]
+    paths:
+      - "app/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/android-native.yml"
   workflow_dispatch:
 
 permissions:
