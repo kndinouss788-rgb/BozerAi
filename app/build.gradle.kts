@@ -51,9 +51,10 @@ val bundleBozerFrenchVoice = tasks.register("bundleBozerFrenchVoice") {
             ) return
             val partial = File(voiceDir, "$name.part")
             partial.delete()
-            val connection = URL(url).openConnection().apply {
+            val connection = (URL(url).openConnection() as java.net.HttpURLConnection).apply {
                 connectTimeout = 30_000
                 readTimeout = 180_000
+                instanceFollowRedirects = true
                 setRequestProperty("User-Agent", "BOZER-Android-Build/0.3")
                 setRequestProperty("Accept-Encoding", "identity")
             }
@@ -70,7 +71,7 @@ val bundleBozerFrenchVoice = tasks.register("bundleBozerFrenchVoice") {
                 if (destination.exists()) check(destination.delete()) { "Cannot replace $name" }
                 check(partial.renameTo(destination)) { "Cannot install bundled asset $name" }
             } finally {
-                connection.getInputStream().close()
+                connection.disconnect()
                 partial.takeIf { it.exists() }?.delete()
             }
         }
