@@ -13,7 +13,7 @@ enum class BrainMode(val label: String, val description: String) {
     OFFLINE("Hors ligne", "Utilise uniquement le cerveau installé sur le téléphone.");
 
     companion object {
-        fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: OFFLINE
+        fun from(value: String?): BrainMode = values().firstOrNull { it.name == value } ?: ONLINE
     }
 }
 
@@ -24,7 +24,7 @@ class ChatRepository(
     private val remoteBrain: RemoteConversationClient? = null
 ) {
     private val inferenceLock = Mutex()
-    @Volatile var brainMode: BrainMode = BrainMode.AUTO
+    @Volatile var brainMode: BrainMode = BrainMode.ONLINE
     @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
