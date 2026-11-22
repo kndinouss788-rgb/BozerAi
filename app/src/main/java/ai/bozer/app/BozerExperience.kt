@@ -506,7 +506,23 @@ internal fun BozerChatExperience(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { memoryOpen = false }) { Text("Fermer", color = BozerInk) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = {
+                            val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            clipboard.setPrimaryClip(
+                                android.content.ClipData.newPlainText(
+                                    "Export mémoire BOZER",
+                                    repository.exportMemoryJson()
+                                )
+                            )
+                            android.widget.Toast.makeText(
+                                activity,
+                                "Export JSON copié dans le presse-papiers.",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }) { Text("Exporter JSON", color = BozerAccent) }
+                        TextButton(onClick = { memoryOpen = false }) { Text("Fermer", color = BozerInk) }
+                    }
                 }
             )
         }
