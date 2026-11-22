@@ -140,6 +140,23 @@ object BozerAlarmScheduler {
         }
     }
 
+    fun cancel(context: Context, alarm: StoredBozerAlarm) {
+        val manager = context.getSystemService(AlarmManager::class.java)
+        val broadcast = Intent(context, BozerAlarmReceiver::class.java)
+            .setAction("ai.bozer.app.ALARM_FIRED")
+            .putExtra("requestCode", alarm.requestCode)
+            .putExtra("label", alarm.label)
+        val operation = PendingIntent.getBroadcast(
+            context,
+            alarm.requestCode,
+            broadcast,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        manager.cancel(operation)
+        operation.cancel()
+        BozerAlarmStore.remove(context, alarm.requestCode)
+    }
+
     internal fun scheduleSaved(context: Context, alarm: StoredBozerAlarm) {
         val manager = context.getSystemService(AlarmManager::class.java)
         val appIntent = Intent(context, MainActivity::class.java)
