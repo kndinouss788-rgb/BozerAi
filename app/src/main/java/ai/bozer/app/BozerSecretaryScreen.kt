@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -58,6 +59,7 @@ internal fun BozerSecretaryScreen(
     onClose: () -> Unit
 ) {
     var draft by remember { mutableStateOf("") }
+    var pendingDelete by remember { mutableStateOf<SecretaryTask?>(null) }
     val completed = tasks.count { it.isCompleted }
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF6F8F9)) {
         Column(Modifier.fillMaxSize()) {
@@ -176,7 +178,7 @@ internal fun BozerSecretaryScreen(
                                         fontSize = 10.sp
                                     )
                                 }
-                                TextButton(onClick = { onDelete(task) }) {
+                                TextButton(onClick = { pendingDelete = task }) {
                                     Text("Supprimer", color = Color(0xFF8B5555), fontSize = 10.sp)
                                 }
                             }
@@ -189,6 +191,33 @@ internal fun BozerSecretaryScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
                 color = SecretaryMuted,
                 fontSize = 10.sp
+            )
+        }
+
+        pendingDelete?.let { task ->
+            AlertDialog(
+                onDismissRequest = { pendingDelete = null },
+                containerColor = Color.White,
+                title = { Text("Supprimer cette tâche ?", color = SecretaryInk) },
+                text = {
+                    Text(
+                        "« ${task.title} » sera retirée de ta liste SECRETARY. Cette suppression ne peut pas être annulée.",
+                        color = SecretaryMuted
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        onDelete(task)
+                        pendingDelete = null
+                    }) {
+                        Text("Supprimer", color = Color(0xFF8B5555))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingDelete = null }) {
+                        Text("Garder", color = SecretaryInk)
+                    }
+                }
             )
         }
     }
