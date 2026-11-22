@@ -148,6 +148,29 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
+    fun secretaryNaturalLanguageCommandsPersistAndListTasks() = runBlocking {
+        val orchestrator = BozerOrchestrator(repository)
+        val addIntent = orchestrator.classify("Ajoute à ma liste : terminer le dossier BOZER")
+        assertTrue(addIntent is BozerIntent.SecretaryAddTask)
+
+        val added = orchestrator.respond(
+            listOf(ChatMessage(role = "user", content = "Ajoute à ma liste : terminer le dossier BOZER")),
+            addIntent
+        )
+        assertTrue(added.contains("ajouté", ignoreCase = true))
+        assertEquals("terminer le dossier BOZER", repository.secretaryTasks().single().title)
+
+        val listIntent = orchestrator.classify("Montre-moi mes tâches")
+        assertTrue(listIntent is BozerIntent.SecretaryListTasks)
+        val listed = orchestrator.respond(
+            listOf(ChatMessage(role = "user", content = "Montre-moi mes tâches")),
+            listIntent
+        )
+        assertTrue(listed.contains("terminer le dossier BOZER"))
+        assertTrue(listed.contains("à faire"))
+    }
+
+    @Test
     fun translatorUsesASeparateLocalPromptAndDoesNotSearchTheWeb() = runBlocking {
         repository.brainMode = BrainMode.AUTO
         repository.internetAvailable = { true }
