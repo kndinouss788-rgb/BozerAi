@@ -39,6 +39,17 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
+    fun explicitMemoryCanBeExportedAsPortableJson() {
+        database.rememberFact("Projet : BOZER")
+        database.rememberFact("Langue : français")
+        val exported = org.json.JSONObject(repository.exportMemoryJson())
+        assertEquals("bozer-memory-export-v1", exported.getString("format"))
+        val memories = exported.getJSONArray("memories")
+        assertEquals(2, memories.length())
+        assertTrue(memories.getString(0).contains("BOZER") || memories.getString(1).contains("BOZER"))
+    }
+
+    @Test
     fun freshInstallDefaultsToAutomaticLocalMode() {
         assertEquals("Une installation neuve doit privilégier le cerveau local.", BrainMode.AUTO, BrainMode.from(null))
         assertEquals("Le dépôt doit démarrer en mode automatique/local.", BrainMode.AUTO, ChatRepository(database, model, search).brainMode)
