@@ -57,10 +57,10 @@ object PhoneActionExecutor {
         if (result.retryable) return "PERMISSION REQUISE"
         if (!result.launched) return "ÉCHEC"
         return when (action) {
-            is PhoneAction.OpenApp -> "OUVERTE"
+            is PhoneAction.OpenApp -> "DEMANDE TRANSMISE"
             is PhoneAction.SetAlarm -> "PROGRAMMÉ"
-            is PhoneAction.DialNumber -> "COMPOSEUR OUVERT"
-            is PhoneAction.ComposeSms -> "BROUILLON OUVERT"
+            is PhoneAction.DialNumber -> "COMPOSEUR DEMANDÉ"
+            is PhoneAction.ComposeSms -> "BROUILLON DEMANDÉ"
         }
     }
 
@@ -135,10 +135,10 @@ object PhoneActionExecutor {
         return try {
             context.startActivity(intent)
             val message = when (action) {
-                is PhoneAction.OpenApp -> "L'application ${action.appName} a été ouverte."
+                is PhoneAction.OpenApp -> "Android a accepté la demande d'ouverture de l'application ${action.appName}."
                 is PhoneAction.SetAlarm -> "L'application Horloge a été ouverte pour préparer le réveil. Vérifie et confirme l'heure dans Horloge."
-                is PhoneAction.DialNumber -> "Le composeur a été ouvert. Aucun appel n'a été passé."
-                is PhoneAction.ComposeSms -> "L'application SMS a été ouverte avec le brouillon. Le message n'a pas été envoyé."
+                is PhoneAction.DialNumber -> "Android a accepté la demande d'ouverture du composeur. Aucun appel n'a été passé."
+                is PhoneAction.ComposeSms -> "Android a accepté la demande d'ouverture d'un brouillon SMS. Le message n'a pas été envoyé."
             }
             ActionExecutionResult(true, message)
         } catch (_: ActivityNotFoundException) {
