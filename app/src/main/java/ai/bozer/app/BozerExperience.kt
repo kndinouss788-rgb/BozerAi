@@ -729,7 +729,7 @@ private fun BozerComposer(
                 inner()
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-            keyboardActions = KeyboardActions(onSend = { onSend() }),
+            keyboardActions = KeyboardActions(onSend = { if (!sending) onSend() }),
             maxLines = 4
         )
         BozerRoundButton(kind = "mic", onClick = onMic, compact = true, modifier = Modifier.testTag("bozer_mic"))
