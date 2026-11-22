@@ -39,9 +39,9 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
-    fun freshInstallDefaultsToOnlineMode() {
-        assertEquals("Une installation neuve doit utiliser le cerveau connecté.", BrainMode.ONLINE, BrainMode.from(null))
-        assertEquals("Le dépôt doit démarrer en mode connecté.", BrainMode.ONLINE, ChatRepository(database, model, search).brainMode)
+    fun freshInstallDefaultsToAutomaticLocalMode() {
+        assertEquals("Une installation neuve doit privilégier le cerveau local.", BrainMode.AUTO, BrainMode.from(null))
+        assertEquals("Le dépôt doit démarrer en mode automatique/local.", BrainMode.AUTO, ChatRepository(database, model, search).brainMode)
     }
 
     @Test
