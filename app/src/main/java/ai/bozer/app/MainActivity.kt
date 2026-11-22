@@ -2494,9 +2494,10 @@ private fun AmbientLiquidBackground(animationsEnabled: Boolean) {
     val drift by transition.animateFloat(
         initialValue = 0f,
         targetValue = if (animationsEnabled) 1f else 0f,
-        animationSpec = if (animationsEnabled) {
-            infiniteRepeatable(tween(12000, easing = FastOutSlowInEasing), RepeatMode.Reverse)
-        } else snap(),
+        animationSpec = infiniteRepeatable(
+            tween(if (animationsEnabled) 12000 else 1, easing = FastOutSlowInEasing),
+            RepeatMode.Reverse
+        ),
         label = "drift"
     )
     Canvas(Modifier.fillMaxSize()) {
@@ -2525,9 +2526,9 @@ private fun BozerSpiralLogo(
     val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = if (animationsEnabled) 360f else 0f,
-        animationSpec = if (animationsEnabled) {
-            infiniteRepeatable(tween(30000, easing = LinearEasing))
-        } else snap(),
+        animationSpec = infiniteRepeatable(
+            tween(if (animationsEnabled) 30000 else 1, easing = LinearEasing)
+        ),
         label = "spiral-rotation"
     )
     Canvas(Modifier.size(size)) {
@@ -2889,9 +2890,9 @@ private fun BozerLabDialog(
     val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = if (animationsEnabled) 360f else 0f,
-        animationSpec = if (animationsEnabled) {
-            infiniteRepeatable(tween(9000, easing = LinearEasing))
-        } else snap(),
+        animationSpec = infiniteRepeatable(
+            tween(if (animationsEnabled) 9000 else 1, easing = LinearEasing)
+        ),
         label = "daily-phase"
     )
 
