@@ -58,7 +58,7 @@ internal fun BozerTerminalSheet(
                 .heightIn(max = 690.dp)
                 .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                 .background(Color(0xFFFAFCFD))
-                .clickable(enabled = false) {}
+                .clickable(onClick = {})
                 .padding(start = 20.dp, end = 20.dp, top = 13.dp, bottom = 26.dp)
         ) {
             Box(
