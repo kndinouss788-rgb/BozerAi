@@ -64,3 +64,5 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
+
+// Keep the Android build configuration explicit for reproducible APK builds.
