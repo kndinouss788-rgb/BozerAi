@@ -134,12 +134,12 @@ internal fun BozerTerminalSheet(
                 )
                 TerminalCommandRow(
                     title = "Organiser",
-                    detail = "Transformer un objectif en étapes",
+                    detail = "Gérer ta liste de tâches SECRETARY",
                     onClick = onSecretary
                 )
                 TerminalCommandRow(
                     title = "Traduire",
-                    detail = "Traduire un texte en gardant le ton",
+                    detail = "Traduction spécialisée avec le cerveau BOZER",
                     onClick = { onCommand("Traduis ce texte en ") }
                 )
                 TerminalCommandRow(
@@ -164,7 +164,7 @@ internal fun BozerTerminalSheet(
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                "Ces raccourcis préparent une demande dans la conversation. Les outils spécialisés sont encore en construction.",
+                "Recherche, actions Android, SECRETARY et TRANSLATOR disposent déjà de fonctions dédiées. Documents, BUSINESS, AGENT et DEVELOPER restent en construction.",
                 color = TerminalMuted,
                 fontSize = 10.sp,
                 lineHeight = 14.sp
