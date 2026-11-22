@@ -428,46 +428,36 @@ private fun BozerChat(
         }
     }
 
-    LaunchedEffect(Unit) {
-        // The French voice is packaged in the APK and extracted locally once.
-        piperBusy = true
-        voiceTtsStatus = "Préparation de la voix française intégrée à BOZER…"
-        try {
-            val directory = withContext(Dispatchers.IO) {
-                piperModelManager.installBundledAssets { downloaded, total ->
-                    scope.launch {
-                        piperProgress = if (total > 0L) {
-                            (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-                        } else 0f
+    LaunchedEffect(voiceRepliesEnabled) {
+        if (voiceRepliesEnabled) {
+            piperBusy = true
+            voiceTtsStatus = "Préparation de la voix française intégrée à BOZER…"
+            try {
+                val directory = withContext(Dispatchers.IO) {
+                    piperModelManager.installBundledAssets { downloaded, total ->
+                        scope.launch {
+                            piperProgress = if (total > 0L) {
+                                (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                            } else 0f
+                        }
                     }
                 }
-            }
-            piperModelInstalled = true
-            voiceTtsStatus = "Voix française BOZER intégrée et vérifiée — disponible hors ligne."
-            directory
-        } catch (error: Exception) {
-            piperModelInstalled = false
-            voiceTtsStatus = "Préparation de la voix intégrée impossible : " + (error.message ?: "erreur inconnue")
-        } finally {
-            piperBusy = false
-        }
-    }
-
-    LaunchedEffect(voiceRepliesEnabled, piperModelInstalled, piperBusy) {
-        if (voiceRepliesEnabled && piperModelInstalled && !piperReady && !piperBusy) {
-            piperBusy = true
-            try {
-                val voiceFilesValid = piperModelManager.verifyInstalled()
-                check(voiceFilesValid) { "Les fichiers de la voix BOZER ne passent pas la vérification." }
-                withContext(Dispatchers.IO) { piperVoiceOutput.initialize(piperModelManager.modelDirectory()) }
+                piperModelInstalled = true
+                withContext(Dispatchers.IO) { piperVoiceOutput.initialize(directory) }
                 piperReady = true
-                voiceTtsStatus = "Voix française BOZER prête — synthèse locale hors ligne."
+                voiceTtsStatus = "Voix française BOZER intégrée et prête — disponible hors ligne."
             } catch (error: Exception) {
-                piperModelInstalled = false
-                voiceTtsStatus = "Chargement de la voix intégrée impossible : " + (error.message ?: "erreur inconnue")
+                piperModelInstalled = withContext(Dispatchers.IO) { piperModelManager.verifyInstalled() }
+                piperReady = false
+                voiceTtsStatus = "Chargement de la voix intégrée impossible : " + (error.message ?: "erreur inconnue") +
+                    ". La voix de secours Android reste disponible."
             } finally {
                 piperBusy = false
             }
+        } else {
+            piperVoiceOutput.stop()
+            activeSpeechMessageAt = null
+            activeSpeechRange = null
         }
     }
 
