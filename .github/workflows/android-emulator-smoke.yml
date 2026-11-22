@@ -1,32 +1,9 @@
-name: BOZER Android emulator and real-brain tests
+name: BOZER Android emulator validation — manual only
 
+# This workflow is intentionally disabled for push/PR events.
+# Do not run it until implementation has reached the planned validation phase.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "app/**"
-      - "build.gradle.kts"
-      - "settings.gradle.kts"
-      - "gradle.properties"
-      - ".github/workflows/android-emulator-smoke.yml"
-      - ".github/scripts/**"
-      - ".github/workflows/android-native.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "app/**"
-      - "build.gradle.kts"
-      - "settings.gradle.kts"
-      - "gradle.properties"
-      - ".github/workflows/android-emulator-smoke.yml"
-      - ".github/scripts/**"
   workflow_dispatch:
-
-concurrency:
-  group: bozer-android-emulator-${{ github.ref }}-validated
-  # The real-GGUF emulator suite can take a long time; never cancel it just because
-  # another useful commit lands on main. Queue the newest run instead.
-  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -49,24 +26,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Restore cached Qwen model
-        uses: actions/cache@v4
-        with:
-          path: .ci-cache/qwen2.5-0.5b-instruct-q4_k_m.gguf
-          key: bozer-qwen-0.5b-74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db
-      - name: Download and verify Qwen model for emulator
+      - name: Prepare the embedded BOZER brain
         run: |
-          mkdir -p .ci-cache
-          if [ ! -s .ci-cache/qwen2.5-0.5b-instruct-q4_k_m.gguf ]; then
-            curl -fL --retry 3 --retry-delay 3 \
-              "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/12145bd1d629190a4d44254073650877954d02c9/qwen2.5-0.5b-instruct-q4_k_m.gguf" \
-              -o .ci-cache/qwen2.5-0.5b-instruct-q4_k_m.gguf
-          fi
-          echo "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db  .ci-cache/qwen2.5-0.5b-instruct-q4_k_m.gguf" | shasum -a 256 -c -
-          printf '%s' '74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db' > .ci-cache/model.sha256
-      - name: Build APK with native llama.cpp
+          chmod +x scripts/prepare_bundled_model.sh
+          scripts/prepare_bundled_model.sh app/src/main/assets
+      - name: Build the BOZER APK
         run: gradle :app:assembleDebug --no-daemon
-      - name: Install, run real inference tests, and capture diagnostics
+      - name: Install and run the instrumented suite
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 33
@@ -74,22 +40,15 @@ jobs:
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 900
-          # GitHub-hosted Ubuntu runners expose KVM; the action otherwise disables it,
-          # causing current Android Emulator builds to exit before creating an ADB device.
           disable-linux-hw-accel: false
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -cores 4
-          script: bash .github/scripts/android-emulator-e2e.sh
-      - name: Upload emulator screenshot and brain test logs
+          script: gradle :app:connectedDebugAndroidTest --no-daemon
+      - name: Upload emulator reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bozer-emulator-brain-e2e
+          name: bozer-emulator-validation
           path: |
-            bozer-smoke.png
-            bozer-emulator-test.log
-            bozer-memory.txt
-            bozer-cpu.txt
-            bozer-battery.txt
             app/build/outputs/androidTest-results/connected/
             app/build/reports/androidTests/connected/
           if-no-files-found: ignore
