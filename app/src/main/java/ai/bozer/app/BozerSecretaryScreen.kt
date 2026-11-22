@@ -85,9 +85,9 @@ internal fun BozerSecretaryScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    SecretaryMetric(tasks.count { !it.isCompleted }.toString(), "À faire")
-                    SecretaryMetric(completed.toString(), "Terminées")
-                    SecretaryMetric(tasks.size.toString(), "Total")
+                    SecretaryMetric(tasks.count { !it.isCompleted }.toString(), "À faire", Modifier.weight(1f))
+                    SecretaryMetric(completed.toString(), "Terminées", Modifier.weight(1f))
+                    SecretaryMetric(tasks.size.toString(), "Total", Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(14.dp))
                 OutlinedTextField(
@@ -159,7 +159,7 @@ internal fun BozerSecretaryScreen(
                             ) {
                                 Checkbox(
                                     checked = task.isCompleted,
-                                    onCheckedChange = { onToggle(task, it }
+                                    onCheckedChange = { checked -> onToggle(task, checked) }
                                 )
                                 Column(Modifier.weight(1f).padding(start = 3.dp)) {
                                     Text(
@@ -195,9 +195,9 @@ internal fun BozerSecretaryScreen(
 }
 
 @Composable
-private fun SecretaryMetric(value: String, label: String) {
+private fun SecretaryMetric(value: String, label: String, modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier.weight(1f)
+        modifier = modifier
             .clip(RoundedCornerShape(15.dp))
             .background(Color.White)
             .border(1.dp, SecretaryLine, RoundedCornerShape(15.dp))
