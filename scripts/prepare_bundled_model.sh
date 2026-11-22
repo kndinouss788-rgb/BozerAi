@@ -4,6 +4,7 @@ set -euo pipefail
 ASSETS_DIR="${1:?Usage: prepare_bundled_model.sh app/src/main/assets}"
 MODEL_URL="https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf?download=true"
 LICENSE_URL="https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/LICENSE"
+EXPECTED_SHA256="6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
 MODEL_FILE="$ASSETS_DIR/bozer-model.gguf"
 METADATA_FILE="$ASSETS_DIR/bozer-model.sha256"
 LICENSE_FILE="$ASSETS_DIR/BOZER_MODEL_LICENSE.txt"
@@ -21,6 +22,12 @@ if [ "$MODEL_SIZE" -lt 900000000 ]; then
 fi
 
 MODEL_SHA256="$(sha256sum "$MODEL_FILE" | awk '{print $1}')"
+if [ "$MODEL_SHA256" != "$EXPECTED_SHA256" ]; then
+  echo "The downloaded model SHA-256 does not match the pinned official file." >&2
+  echo "Expected: $EXPECTED_SHA256" >&2
+  echo "Received: $MODEL_SHA256" >&2
+  exit 1
+fi
 printf '%s %s %s\n' "$MODEL_SHA256" "$MODEL_SIZE" "bozer-model.gguf" > "$METADATA_FILE"
 
 curl --fail --location --retry 3 "$LICENSE_URL" --output "$LICENSE_FILE"
