@@ -68,6 +68,27 @@ class ChatDatabaseInstrumentedTest {
     }
 
     @Test
+    fun actionJournalRecordsResultsWithoutRetainingPrivateMessageContent() {
+        val entry = ActionLogEntry(
+            actionType = "PRÉPARER_SMS",
+            summary = "Préparer un brouillon SMS",
+            status = "BROUILLON OUVERT",
+            detail = "L'application SMS a été ouverte. Le message n'a pas été envoyé.",
+            createdAt = 456L
+        )
+        database.recordAction(entry)
+        val stored = database.actionHistory().single()
+        assertEquals("PRÉPARER_SMS", stored.actionType)
+        assertEquals("Préparer un brouillon SMS", stored.summary)
+        assertEquals("BROUILLON OUVERT", stored.status)
+        assertEquals(456L, stored.createdAt)
+        assertFalse("Le journal ne doit pas contenir le contenu d'un SMS.", stored.detail.contains("Je serai en retard"))
+
+        database.clearActionHistory()
+        assertTrue(database.actionHistory().isEmpty())
+    }
+
+    @Test
     fun versionOneMigrationPreservesExistingMessagesAndAddsMemoryTable() {
         database.close()
         context.deleteDatabase(databaseName)
@@ -96,5 +117,14 @@ class ChatDatabaseInstrumentedTest {
 
         database.rememberFact("Projet : BOZER")
         assertEquals(listOf("Projet : BOZER"), database.rememberedFacts())
+        database.recordAction(
+            ActionLogEntry(
+                actionType = "OUVRIR_APPLICATION",
+                summary = "Ouvrir Paramètres",
+                status = "OUVERTE",
+                detail = "L'application Paramètres a été ouverte."
+            )
+        )
+        assertEquals(1, database.actionHistory().size)
     }
 }
