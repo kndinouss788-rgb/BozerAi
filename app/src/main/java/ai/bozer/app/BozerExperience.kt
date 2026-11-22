@@ -100,6 +100,7 @@ internal fun BozerChatExperience(
     var terminalOpen by remember { mutableStateOf(false) }
     var memoryOpen by remember { mutableStateOf(false) }
     var memoryFacts by remember { mutableStateOf(repository.rememberedFacts()) }
+    var actionRecords by remember { mutableStateOf(repository.actionHistory()) }
     var editingFact by remember { mutableStateOf<String?>(null) }
     var editedFact by remember { mutableStateOf("") }
     var confirmClearHistory by remember { mutableStateOf(false) }
@@ -217,6 +218,16 @@ internal fun BozerChatExperience(
 
     fun cancelPendingPhoneAction() {
         if (pendingPhoneAction != null) {
+            val cancelled = pendingPhoneAction!!
+            repository.recordAction(
+                ActionLogEntry(
+                    actionType = PhoneActionExecutor.actionType(cancelled),
+                    summary = PhoneActionExecutor.actionSummary(cancelled),
+                    status = "ANNULÉE",
+                    detail = "Confirmation refusée. Aucune action Android n'a été lancée."
+                )
+            )
+            actionRecords = repository.actionHistory()
             val status = ChatMessage(role = "assistant", content = "Action annulée. Rien n'a été lancé.")
             messages.add(status)
             repository.save(status)
@@ -398,6 +409,7 @@ internal fun BozerChatExperience(
                     }
                 },
                 rememberedCount = repository.rememberedFacts().size,
+                actionRecords = actionRecords,
                 onManageMemory = {
                     memoryFacts = repository.rememberedFacts()
                     settingsOpen = false
@@ -410,6 +422,10 @@ internal fun BozerChatExperience(
                 onClearMemory = {
                     settingsOpen = false
                     confirmClearMemory = true
+                },
+                onClearActionHistory = {
+                    repository.clearActionHistory()
+                    actionRecords = emptyList()
                 },
                 onClose = { settingsOpen = false }
             )
@@ -559,6 +575,15 @@ internal fun BozerChatExperience(
                 confirmButton = {
                     TextButton(onClick = {
                         val result = PhoneActionExecutor.execute(activity, action, confirmed = true)
+                        repository.recordAction(
+                            ActionLogEntry(
+                                actionType = PhoneActionExecutor.actionType(action),
+                                summary = PhoneActionExecutor.actionSummary(action),
+                                status = PhoneActionExecutor.resultStatus(action, result),
+                                detail = result.message
+                            )
+                        )
+                        actionRecords = repository.actionHistory()
                         val status = ChatMessage(role = "assistant", content = result.message)
                         messages.add(status)
                         repository.save(status)
