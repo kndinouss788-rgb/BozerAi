@@ -53,6 +53,8 @@ internal fun BozerSettingsScreen(
     onVoiceEnabledChange: (Boolean) -> Unit,
     ttsAvailable: Boolean,
     microphoneGranted: Boolean,
+    exactAlarmsAllowed: Boolean,
+    notificationsAllowed: Boolean,
     floatingBubbleEnabled: Boolean,
     overlayPermissionGranted: Boolean,
     onFloatingBubbleChange: (Boolean) -> Unit,
@@ -275,6 +277,8 @@ internal fun BozerSettingsScreen(
 
                 SettingsCard("AUTORISATIONS ANDROID") {
                     StatusLine("Microphone", if (microphoneGranted) "Accordé" else "À demander lors de l'utilisation")
+                    StatusLine("Alarmes exactes", if (exactAlarmsAllowed) "Autorisé" else "Autorisation requise")
+                    StatusLine("Notifications", if (notificationsAllowed) "Autorisées" else "Autorisation requise")
                     StatusLine("Superposition / bulle", if (overlayPermissionGranted) "Autorisé" else "Non autorisé")
                     SettingSwitch(
                         title = "Bulle flottante",
