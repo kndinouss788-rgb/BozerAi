@@ -35,7 +35,9 @@ class ChatRepository(
     fun switchConversation(id: Long): Boolean = database.switchConversation(id)
     fun deleteConversation(id: Long): Boolean = database.deleteConversation(id)
     fun clearHistory() = database.clearHistory()
-    fun save(message: ChatMessage) = database.save(message)
+    fun save(message: ChatMessage): Boolean = database.save(message)
+    fun save(message: ChatMessage, conversationId: Long): Boolean =
+        database.save(message, conversationId)
     fun rememberedFacts(): List<String> = database.rememberedFacts()
     fun clearRememberedFacts() = database.clearRememberedFacts()
     fun forgetRememberedFact(content: String): Boolean = database.forgetRememberedFact(content)
