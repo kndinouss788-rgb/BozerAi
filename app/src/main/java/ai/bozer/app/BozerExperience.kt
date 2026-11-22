@@ -98,6 +98,9 @@ internal fun BozerChatExperience(
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var terminalOpen by remember { mutableStateOf(false) }
+    var historyOpen by remember { mutableStateOf(false) }
+    var historyQuery by remember { mutableStateOf("") }
+    var conversationRecords by remember { mutableStateOf(repository.conversations()) }
     var secretaryOpen by remember { mutableStateOf(false) }
     var secretaryTasks by remember { mutableStateOf(repository.secretaryTasks()) }
     var memoryOpen by remember { mutableStateOf(false) }
@@ -299,11 +302,18 @@ internal fun BozerChatExperience(
                         onSettings = { settingsOpen = true },
                         onTerminal = { terminalOpen = true },
                         onHistory = {
-                            if (messages.isNotEmpty()) {
-                                scope.launch { listState.animateScrollToItem(0) }
-                            }
+                            historyQuery = ""
+                            conversationRecords = repository.conversations()
+                            historyOpen = true
                         },
-                        onNewConversation = { confirmClearHistory = true },
+                        onNewConversation = {
+                            repository.createConversation()
+                            messages.clear()
+                            draft = ""
+                            historyOpen = false
+                            speakingMessageCreatedAt = null
+                            voiceOutput.stop()
+                        },
                         onVoiceToggle = {
                             voiceEnabled = !voiceEnabled
                             preferences.edit().putBoolean("voice_enabled", voiceEnabled).apply()
@@ -440,6 +450,51 @@ internal fun BozerChatExperience(
                     memoryFacts = repository.rememberedFacts()
                     memoryOpen = true
                 }
+            )
+        }
+
+        if (historyOpen) {
+            BozerConversationHistoryScreen(
+                conversations = conversationRecords,
+                onSearch = { query ->
+                    historyQuery = query
+                    conversationRecords = repository.conversations(query)
+                },
+                onOpen = { conversation ->
+                    if (repository.switchConversation(conversation.id)) {
+                        messages.clear()
+                        messages.addAll(repository.history())
+                        draft = ""
+                        historyOpen = false
+                        speakingMessageCreatedAt = null
+                        voiceOutput.stop()
+                        if (messages.isNotEmpty()) {
+                            scope.launch { listState.animateScrollToItem(messages.lastIndex) }
+                        }
+                    }
+                },
+                onDelete = { conversation ->
+                    val wasActive = repository.currentConversationId() == conversation.id
+                    if (repository.deleteConversation(conversation.id)) {
+                        conversationRecords = repository.conversations(historyQuery)
+                        if (wasActive) {
+                            messages.clear()
+                            messages.addAll(repository.history())
+                            draft = ""
+                            speakingMessageCreatedAt = null
+                            voiceOutput.stop()
+                        }
+                    }
+                },
+                onNewConversation = {
+                    repository.createConversation()
+                    messages.clear()
+                    draft = ""
+                    historyOpen = false
+                    speakingMessageCreatedAt = null
+                    voiceOutput.stop()
+                },
+                onClose = { historyOpen = false }
             )
         }
 
