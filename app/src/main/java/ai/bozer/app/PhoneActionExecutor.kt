@@ -54,10 +54,11 @@ object PhoneActionExecutor {
     }
 
     fun resultStatus(action: PhoneAction, result: ActionExecutionResult): String {
+        if (result.retryable) return "PERMISSION REQUISE"
         if (!result.launched) return "ÉCHEC"
         return when (action) {
             is PhoneAction.OpenApp -> "OUVERTE"
-            is PhoneAction.SetAlarm -> "À CONFIRMER"
+            is PhoneAction.SetAlarm -> "PROGRAMMÉ"
             is PhoneAction.DialNumber -> "COMPOSEUR OUVERT"
             is PhoneAction.ComposeSms -> "BROUILLON OUVERT"
         }
@@ -92,6 +93,40 @@ object PhoneActionExecutor {
         if (!confirmed) {
             return ActionExecutionResult(false, "Confirmation requise. Rien n'a été lancé.")
         }
+
+        if (action is PhoneAction.SetAlarm) {
+            val outcome = BozerAlarmScheduler.schedule(context, action)
+            return when (outcome.state) {
+                AlarmScheduleState.SCHEDULED ->
+                    ActionExecutionResult(true, outcome.message)
+                AlarmScheduleState.NEED_EXACT_ALARM_PERMISSION -> {
+                    try {
+                        BozerAlarmScheduler.openExactAlarmSettings(context)
+                        ActionExecutionResult(false, outcome.message, retryable = true)
+                    } catch (error: Exception) {
+                        ActionExecutionResult(
+                            false,
+                            "Impossible d'ouvrir le réglage des alarmes exactes : ${error.message ?: "erreur Android"}.",
+                            retryable = true
+                        )
+                    }
+                }
+                AlarmScheduleState.NEED_NOTIFICATION_PERMISSION -> {
+                    try {
+                        BozerAlarmScheduler.openNotificationSettings(context)
+                        ActionExecutionResult(false, outcome.message, retryable = true)
+                    } catch (error: Exception) {
+                        ActionExecutionResult(
+                            false,
+                            "Impossible d'ouvrir les réglages des notifications : ${error.message ?: "erreur Android"}.",
+                            retryable = true
+                        )
+                    }
+                }
+                AlarmScheduleState.FAILED -> ActionExecutionResult(false, outcome.message)
+            }
+        }
+
         val intent = createIntent(context, action)
             ?: return ActionExecutionResult(false, "Application introuvable. Rien n'a été ouvert.")
         if (intent.resolveActivity(context.packageManager) == null) {
