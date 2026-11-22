@@ -338,9 +338,15 @@ class ChatDatabase(
         val update = ContentValues().apply {
             put("updated_at", System.currentTimeMillis())
             if (message.role == "user") {
-                val title = message.content.trim().replace(Regex("\\s+"), " ")
-                    .take(MAX_CONVERSATION_TITLE)
-                if (title.isNotBlank()) put("title", title)
+                val currentTitle = db.query(
+                    "conversations", arrayOf("title"), "id = ?",
+                    arrayOf(conversationId.toString()), null, null, null, "1"
+                ).use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else "" }
+                if (currentTitle == "Nouvelle conversation" || currentTitle == "Conversation précédente") {
+                    val firstUserMessage = message.content.trim().replace(Regex("\\s+"), " ")
+                        .take(MAX_CONVERSATION_TITLE)
+                    if (firstUserMessage.isNotBlank()) put("title", firstUserMessage)
+                }
             }
         }
         db.update("conversations", update, "id = ?", arrayOf(conversationId.toString()))
