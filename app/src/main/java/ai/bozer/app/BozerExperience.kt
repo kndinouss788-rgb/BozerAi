@@ -368,47 +368,55 @@ internal fun BozerChatExperience(
                         }
                     }
 
+                    // A small independent gesture handle keeps the double-tap
+                    // target at the bottom without intercepting text-field or mic taps.
                     Box(
-                        modifier = Modifier.fillMaxWidth().pointerInput(Unit) {
+                        modifier = Modifier.fillMaxWidth().height(15.dp).pointerInput(Unit) {
                             detectTapGestures(onDoubleTap = { terminalOpen = true })
-                        }
+                        },
+                        contentAlignment = Alignment.Center
                     ) {
-                        BozerComposer(
-                            draft = draft,
-                            sending = sending || (modelBusy && !modelReady),
-                            onDraftChange = { draft = it },
-                            onSend = { send() },
-                            onMic = {
-                                activity.startVoiceInput { spoken ->
-                                    draft = if (draft.isBlank()) spoken else draft.trimEnd() + " " + spoken
-                                }
-                            },
-                            onPlus = { terminalOpen = true },
-                            plusMenuOpen = false,
-                            onDismissPlus = { terminalOpen = false },
-                            onNewConversation = {
-                                terminalOpen = false
-                                confirmClearHistory = true
-                            },
-                            onMemory = {
-                                terminalOpen = false
-                                memoryFacts = repository.rememberedFacts()
-                                memoryOpen = true
-                            },
-                            onSearch = {
-                                terminalOpen = false
-                                prepareCommand("Recherche sur Internet : ")
-                            },
-                            onPhone = {
-                                terminalOpen = false
-                                prepareCommand("Aide-moi à contrôler mon téléphone : ")
-                            },
-                            onAlarm = {
-                                terminalOpen = false
-                                prepareCommand("Crée un réveil à ")
-                            }
+                        Box(
+                            Modifier.width(30.dp).height(3.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFD7E0E3))
                         )
                     }
+                    BozerComposer(
+                        draft = draft,
+                        sending = sending || (modelBusy && !modelReady),
+                        onDraftChange = { draft = it },
+                        onSend = { send() },
+                        onMic = {
+                            activity.startVoiceInput { spoken ->
+                                draft = if (draft.isBlank()) spoken else draft.trimEnd() + " " + spoken
+                            }
+                        },
+                        onPlus = { terminalOpen = true },
+                        plusMenuOpen = false,
+                        onDismissPlus = { terminalOpen = false },
+                        onNewConversation = {
+                            terminalOpen = false
+                            confirmClearHistory = true
+                        },
+                        onMemory = {
+                            terminalOpen = false
+                            memoryFacts = repository.rememberedFacts()
+                            memoryOpen = true
+                        },
+                        onSearch = {
+                            terminalOpen = false
+                            prepareCommand("Recherche sur Internet : ")
+                        },
+                        onPhone = {
+                            terminalOpen = false
+                            prepareCommand("Aide-moi à contrôler mon téléphone : ")
+                        },
+                        onAlarm = {
+                            terminalOpen = false
+                            prepareCommand("Crée un réveil à ")
+                        }
+                    )
                 }
             }
         }
