@@ -101,6 +101,7 @@ internal fun BozerChatExperience(
     var memoryOpen by remember { mutableStateOf(false) }
     var memoryFacts by remember { mutableStateOf(repository.rememberedFacts()) }
     var actionRecords by remember { mutableStateOf(repository.actionHistory()) }
+    var scheduledAlarms by remember { mutableStateOf(BozerAlarmStore.all(activity)) }
     var editingFact by remember { mutableStateOf<String?>(null) }
     var editedFact by remember { mutableStateOf("") }
     var confirmClearHistory by remember { mutableStateOf(false) }
@@ -130,6 +131,10 @@ internal fun BozerChatExperience(
     LaunchedEffect(brainMode) {
         repository.brainMode = brainMode
         preferences.edit().putString("brain_mode_v2", brainMode.name).apply()
+    }
+
+    LaunchedEffect(settingsOpen) {
+        if (settingsOpen) scheduledAlarms = BozerAlarmStore.all(activity)
     }
 
     fun prepareCommand(command: String) {
@@ -451,6 +456,11 @@ internal fun BozerChatExperience(
                 },
                 rememberedCount = repository.rememberedFacts().size,
                 actionRecords = actionRecords,
+                scheduledAlarms = scheduledAlarms,
+                onCancelAlarm = { alarm ->
+                    BozerAlarmScheduler.cancel(activity, alarm)
+                    scheduledAlarms = BozerAlarmStore.all(activity)
+                },
                 onManageMemory = {
                     memoryFacts = repository.rememberedFacts()
                     settingsOpen = false
@@ -641,6 +651,9 @@ internal fun BozerChatExperience(
                             )
                         )
                         actionRecords = repository.actionHistory()
+                        if (action is PhoneAction.SetAlarm && result.launched) {
+                            scheduledAlarms = BozerAlarmStore.all(activity)
+                        }
                         val status = ChatMessage(role = "assistant", content = result.message)
                         messages.add(status)
                         repository.save(status)
