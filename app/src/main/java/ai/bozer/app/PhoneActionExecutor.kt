@@ -35,6 +35,34 @@ object PhoneActionExecutor {
         }
     }
 
+    fun actionType(action: PhoneAction): String = when (action) {
+        is PhoneAction.OpenApp -> "OUVRIR_APPLICATION"
+        is PhoneAction.SetAlarm -> "PRÉPARER_RÉVEIL"
+        is PhoneAction.DialNumber -> "OUVRIR_COMPOSEUR"
+        is PhoneAction.ComposeSms -> "PRÉPARER_SMS"
+    }
+
+    /**
+     * Journal summaries deliberately omit phone numbers and SMS bodies.
+     * The user can still see what kind of action was prepared and what Android returned.
+     */
+    fun actionSummary(action: PhoneAction): String = when (action) {
+        is PhoneAction.OpenApp -> "Ouvrir l'application ${action.appName}"
+        is PhoneAction.SetAlarm -> "Préparer un réveil dans Horloge"
+        is PhoneAction.DialNumber -> "Ouvrir le composeur téléphonique"
+        is PhoneAction.ComposeSms -> "Préparer un brouillon SMS"
+    }
+
+    fun resultStatus(action: PhoneAction, result: ActionExecutionResult): String {
+        if (!result.launched) return "ÉCHEC"
+        return when (action) {
+            is PhoneAction.OpenApp -> "OUVERTE"
+            is PhoneAction.SetAlarm -> "À CONFIRMER"
+            is PhoneAction.DialNumber -> "COMPOSEUR OUVERT"
+            is PhoneAction.ComposeSms -> "BROUILLON OUVERT"
+        }
+    }
+
     fun createIntent(context: Context, action: PhoneAction): Intent? = when (action) {
         is PhoneAction.OpenApp -> launchIntent(context, action.appName)
         is PhoneAction.SetAlarm -> Intent(AlarmClock.ACTION_SET_ALARM).apply {
