@@ -85,3 +85,7 @@ Le propriétaire reçoit un seul APK candidat et un rapport qui précise :
 - le premier téléchargement éventuel du cerveau et la persistance après mise à jour ;
 - les limites connues à tester ;
 - les erreurs de téléphone à regrouper pour une campagne corrective commune.
+
+- La voix française Piper/Sherpa-ONNX est désormais intégrée à l'APK comme asset vérifié SHA-256, puis extraite automatiquement dans le stockage privé au premier lancement ; aucun téléchargement vocal séparé n'est demandé.
+- Le mode silencieux reste un réglage utilisateur ; la voix intégrée est conservée dans l'application et n'est plus supprimable depuis les réglages.
+- Un test instrumenté vérifie l'extraction de l'asset vocal et le chargement réel du moteur Sherpa-ONNX hors ligne.
