@@ -63,11 +63,11 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
         "model_weights_loaded_ms=%lld",
         static_cast<long long>(weights_loaded_ms));
 
-    // Reuse one inference context for the whole session. The full conversation
+    // Reuse one inference context for the whole session. The recent conversation
     // is rebuilt into the prompt on each turn, so the KV cache can be cleared.
     llama_context_params context_params = llama_context_default_params();
-    context_params.n_ctx = 1024;
-    context_params.n_batch = 1024;
+    context_params.n_ctx = 2048;
+    context_params.n_batch = 2048;
     const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
     context_params.n_threads = threads;
     context_params.n_threads_batch = threads;
@@ -114,12 +114,12 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
 
     __android_log_print(ANDROID_LOG_INFO, "BOZER_NATIVE",
         "generation_started; prompt_chars=%zu; max_tokens=%d",
-        prompt.size(), std::min(static_cast<int>(max_tokens), 64));
+        prompt.size(), std::min(static_cast<int>(max_tokens), 128));
     const llama_vocab * vocab = llama_model_get_vocab(model);
     const int32_t needed = -llama_tokenize(vocab, prompt.c_str(),
         static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);
-    // Keep enough room for the native 64-token response cap inside the 1,024-token context.
-    constexpr int32_t max_prompt_tokens = 832;
+    // Keep enough room for a 128-token answer inside the 2,048-token context.
+    constexpr int32_t max_prompt_tokens = 1792;
     if (needed <= 0 || needed > max_prompt_tokens) {
         throw_java(env, "La conversation est trop longue pour le contexte local. Raccourcis le dernier message.");
         return nullptr;
