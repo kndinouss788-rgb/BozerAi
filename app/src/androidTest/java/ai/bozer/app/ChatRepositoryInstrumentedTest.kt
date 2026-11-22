@@ -39,6 +39,25 @@ class ChatRepositoryInstrumentedTest {
     }
 
     @Test
+    fun longConversationAddsBoundedExtractiveRollingContext() = runBlocking {
+        val turns = buildList {
+            add(ChatMessage(role = "user", content = "Notre projet principal s'appelle BOZER et doit rester local."))
+            add(ChatMessage(role = "assistant", content = "Je garde le contexte de ce projet."))
+            repeat(5) { index ->
+                add(ChatMessage(role = "user", content = "Ancien détail numéro $index sur le projet."))
+                add(ChatMessage(role = "assistant", content = "Réponse liée au détail numéro $index."))
+            }
+            add(ChatMessage(role = "user", content = "Rappelle-moi le nom de notre projet."))
+        }
+
+        repository.reply(turns)
+        val prompt = model.prompts.single()
+        assertTrue("Le résumé doit conserver l'objectif initial.", prompt.contains("Notre projet principal s'appelle BOZER"))
+        assertTrue("Le résumé doit être identifiable et explicitement extractif.", prompt.contains("RÉSUMÉ ROULANT EXTRACTIF"))
+        assertTrue("Les derniers messages restent présents.", prompt.contains("Rappelle-moi le nom de notre projet."))
+    }
+
+    @Test
     fun explicitMemoryCanBeExportedAsPortableJson() {
         database.rememberFact("Projet : BOZER")
         database.rememberFact("Langue : français")
