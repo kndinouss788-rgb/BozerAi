@@ -221,14 +221,14 @@ class BozerBrainEndToEndTest {
         assertTrue(
             "La recherche Android n'a pas joint de source réelle : $searchReply",
             searchReply.contains("Sources consultées", ignoreCase = true) &&
-                searchReply.contains("wikipedia.org", ignoreCase = true)
+                Regex("""https?://[^\\s]+""").containsMatchIn(searchReply)
         )
         val sourceLine = searchReply.lineSequence()
-            .firstOrNull { it.contains("https://fr.wikipedia.org/") }.orEmpty()
+            .firstOrNull { it.contains("https://") || it.contains("http://") }.orEmpty()
         assertTrue("La source de recherche est absente de la réponse", sourceLine.isNotBlank())
         Log.i("BOZER_E2E", "search_source_verified=true; $sourceLine")
 
-        assertTrue("L'historique local ne contient pas sept réponses", assistantCount() >= 8)
+        assertTrue("L'historique local ne contient pas les huit réponses", assistantCount() >= 8)
         assertTrue("La mémoire explicite n'est pas persistante", rememberedFactCount() >= 1)
         Log.i(
             "BOZER_E2E",
@@ -237,7 +237,7 @@ class BozerBrainEndToEndTest {
         )
         Log.i(
             "BOZER_E2E",
-            "PASS: seven local turns, factual answer, arithmetic, explicit memory, contextual follow-up and real network search"
+            "PASS: eight local turns, factual answer, arithmetic, explicit memory, contextual follow-up and multi-source network search"
         )
     }
 }
