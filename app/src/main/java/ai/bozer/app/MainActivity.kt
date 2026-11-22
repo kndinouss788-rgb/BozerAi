@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.UUID
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -115,7 +116,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         engine = LocalLlamaEngine()
         voiceOutput = BozerVoiceOutput(applicationContext)
-        val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL)
+        val remoteBrain = RemoteBrainClient(BuildConfig.BOZER_GATEWAY_URL, installationClientId())
         val repository = ChatRepository(ChatDatabase(applicationContext), engine, remoteBrain = remoteBrain)
         repository.internetAvailable = { hasValidatedInternet() }
         val modelManager = LocalModelManager(applicationContext)
@@ -126,6 +127,15 @@ class MainActivity : ComponentActivity() {
             startFloatingBubbleService()
         }
         setContent { BozerChatExperience(this@MainActivity, repository, modelManager, engine, voiceOutput) }
+    }
+
+    private fun installationClientId(): String {
+        val preferences = getPreferences(MODE_PRIVATE)
+        val existing = preferences.getString("bozer_client_id", null)
+        if (!existing.isNullOrBlank()) return existing
+        val generated = UUID.randomUUID().toString()
+        preferences.edit().putString("bozer_client_id", generated).apply()
+        return generated
     }
 
     fun hasFloatingBubblePermission(): Boolean = Settings.canDrawOverlays(this)
