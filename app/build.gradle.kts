@@ -38,6 +38,12 @@ android {
         }
     }
 
+    // Keep the large GGUF model uncompressed inside the APK; Android copies it
+    // from the asset into private app storage before llama.cpp memory-maps it.
+    androidResources {
+        noCompress += "gguf"
+    }
+
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
