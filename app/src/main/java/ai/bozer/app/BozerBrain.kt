@@ -11,6 +11,7 @@ sealed interface BozerIntent {
     data class PublicResearch(val query: String) : BozerIntent
     data class Translation(val targetLanguage: String, val sourceText: String) : BozerIntent
     data class SecretaryAddTask(val title: String) : BozerIntent
+    data class SecretaryCompleteTask(val query: String) : BozerIntent
     data object SecretaryListTasks : BozerIntent
     data class Conversation(val text: String) : BozerIntent
 }
@@ -99,6 +100,14 @@ class BozerTaskPlanner {
                 BozerTaskStep(3, "Confirmer l'enregistrement réel", false, "Tâche relue depuis SQLite")
             )
         )
+        is BozerIntent.SecretaryCompleteTask -> BozerTaskPlan(
+            intent,
+            listOf(
+                BozerTaskStep(1, "Identifier la tâche dans la liste locale", false, "Tâche unique retrouvée"),
+                BozerTaskStep(2, "Enregistrer son état comme terminé", false, "Mise à jour SQLite confirmée"),
+                BozerTaskStep(3, "Relire l'état de la tâche", false, "Tâche marquée terminée dans la liste")
+            )
+        )
         is BozerIntent.SecretaryListTasks -> BozerTaskPlan(
             intent,
             listOf(
@@ -125,6 +134,7 @@ class BozerOrchestrator(
     fun classify(text: String): BozerIntent {
         PhoneActionPlanner.parse(text)?.let { return BozerIntent.AndroidAction(it) }
         extractSecretaryTask(text)?.let { return it }
+        extractSecretaryCompletion(text)?.let { return it }
         extractTranslation(text)?.let { return it }
         if (isSecretaryListRequest(text)) return BozerIntent.SecretaryListTasks
         extractResearchQuery(text)?.let { return BozerIntent.PublicResearch(it) }
@@ -179,6 +189,23 @@ class BozerOrchestrator(
         ).find(text.trim()) ?: return null
         val title = match.groupValues[1].trim().trimEnd('.', '!', '?')
         return title.takeIf { it.length in 2..180 }?.let(BozerIntent::SecretaryAddTask)
+    }
+
+    private fun extractSecretaryCompletion(text: String): BozerIntent.SecretaryCompleteTask? {
+        val patterns = listOf(
+            Regex(
+                """^(?:termine|terminer|coche|marque\s+comme\s+terminée?|marque\s+comme\s+terminee)\s+(?:la\s+)?tâche\s*[:#]?\s*(.+)$""",
+                RegexOption.IGNORE_CASE
+            ),
+            Regex(
+                """^(?:j'ai\s+terminé|j'ai\s+termine)\s+(?:la\s+)?tâche\s*[:#]?\s*(.+)$""",
+                RegexOption.IGNORE_CASE
+            )
+        )
+        val query = patterns.firstNotNullOfOrNull { pattern ->
+            pattern.find(text.trim())?.groupValues?.getOrNull(1)?.trim()
+        } ?: return null
+        return query.takeIf { it.length in 1..180 }?.let(BozerIntent::SecretaryCompleteTask)
     }
 
     private fun isSecretaryListRequest(text: String): Boolean =
