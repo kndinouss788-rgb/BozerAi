@@ -72,20 +72,19 @@ class ProcessRestartPersistenceTest {
             facts.any { it.contains("mon animal préféré est le chat", ignoreCase = true) })
 
         composeRule.onNodeWithTag("bozer_settings").performClick()
+        composeRule.onNodeWithText("Réglages").performClick()
         val settled = waitForUiCondition(180_000) {
-            val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
+            val ready = composeRule.onAllNodesWithText("Cerveau BOZER prêt — fonctionnement local.")
                 .fetchSemanticsNodes().isNotEmpty()
-            val failed = listOf("Chargement impossible", "Installation impossible").any { label ->
-                composeRule.onAllNodesWithText(label, substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-            }
+            val failed = composeRule.onAllNodesWithText("n'a pas démarré", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
             ready || failed
         }
         assertTrue("L'état du cerveau n'a pas été actualisé après le redémarrage.", settled)
-        val ready = composeRule.onAllNodesWithText("Cerveau local prêt sur ce téléphone.")
+        val ready = composeRule.onAllNodesWithText("Cerveau BOZER prêt — fonctionnement local.")
             .fetchSemanticsNodes().isNotEmpty()
         assertTrue("Le modèle local n'a pas été rechargé après redémarrage.", ready)
-        composeRule.onNodeWithText("Fermer").performClick()
+        composeRule.onNodeWithTag("bozer_settings_back").performClick()
 
         val input = composeRule.onNodeWithTag("bozer_input")
         val previous = assistantCount()
