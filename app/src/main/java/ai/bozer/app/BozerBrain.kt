@@ -183,7 +183,7 @@ class BozerOrchestrator(
 
     private fun isSecretaryListRequest(text: String): Boolean =
         Regex(
-            """^(?:montre|affiche|liste|quelles\s+sont)\s+(?:moi\s+)?(?:mes\s+)?(?:tâches|taches|choses\s+à\s+faire|ma\s+liste)\??$""",
+            """^(?:montre|affiche|liste|quelles\s+sont)(?:[-\s]+moi)?\s+(?:mes\s+)?(?:tâches|taches|choses\s+à\s+faire|ma\s+liste)\??$""",
             RegexOption.IGNORE_CASE
         ).matches(text.trim())
 
