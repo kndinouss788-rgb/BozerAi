@@ -20,6 +20,17 @@ class BozerBrainEndToEndTest {
     private val context get() = instrumentation.targetContext
     private val device get() = UiDevice.getInstance(instrumentation)
 
+    /** Relaunch BOZER without force-stopping the instrumentation target package. */
+    private fun launchBozer() {
+        device.pressHome()
+        context.startActivity(
+            Intent(context, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+            )
+        )
+    }
+
     private fun assistantCount(): Int {
         val dbFile = context.getDatabasePath("bozer_chat.db")
         assertTrue("La base de conversations n'existe pas", dbFile.isFile)
@@ -89,8 +100,7 @@ class BozerBrainEndToEndTest {
 
     @Test
     fun remoteGatewayHandlesARealConversationFromTheAndroidApp() {
-        device.executeShellCommand("am force-stop ai.bozer.app")
-        device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
+        launchBozer()
 
         val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 20_000)
         assertNotNull("Champ de saisie BOZER introuvable pour le test distant", field)
@@ -112,8 +122,7 @@ class BozerBrainEndToEndTest {
 
     @Test
     fun realLocalModelHandlesConversationMemoryAndPersistentHistory() {
-        device.executeShellCommand("am force-stop ai.bozer.app")
-        device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
+        launchBozer()
         assertNotNull(
             "Le moteur llama.cpp n'a pas affiché l'état prêt. Vérifier le chargement du GGUF.",
             device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 600_000)
@@ -173,8 +182,7 @@ class BozerBrainEndToEndTest {
                 " search=" + searchMs
         )
 
-        device.executeShellCommand("am force-stop ai.bozer.app")
-        device.executeShellCommand("am start -n ai.bozer.app/.MainActivity")
+        launchBozer()
         assertNotNull(
             "BOZER ne retrouve pas son modèle après redémarrage",
             device.wait(Until.findObject(By.textContains("Cerveau local prêt")), 180_000)
