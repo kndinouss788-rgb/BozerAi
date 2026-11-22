@@ -89,7 +89,7 @@ internal fun BozerChatExperience(
     var sending by remember { mutableStateOf(false) }
     var modelReady by remember { mutableStateOf(false) }
     var modelBusy by remember { mutableStateOf(false) }
-    var modelStatus by remember { mutableStateOf("Le cerveau local n'est pas encore installé.") }
+    var modelStatus by remember { mutableStateOf("Préparation du cerveau intégré…") }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     var memoryOpen by remember { mutableStateOf(false) }
@@ -117,25 +117,7 @@ internal fun BozerChatExperience(
 
     LaunchedEffect(brainMode) {
         repository.brainMode = brainMode
-        preferences.edit().putString("brain_mode", brainMode.name).apply()
-    }
-
-    LaunchedEffect(Unit) {
-        if (modelManager.verifyInstalled()) {
-            modelStatus = "Modèle trouvé. Chargement du cerveau…"
-            modelBusy = true
-            try {
-                val installed = modelManager.installedModel()
-                    ?: throw IllegalStateException("Le fichier du modèle est introuvable.")
-                withContext(Dispatchers.IO) { engine.load(installed.absolutePath) }
-                modelReady = true
-                modelStatus = "Cerveau local prêt sur ce téléphone."
-            } catch (error: Exception) {
-                modelStatus = "Chargement impossible : " + (error.message ?: "erreur inconnue")
-            } finally {
-                modelBusy = false
-            }
-        }
+        preferences.edit().putString("brain_mode_v2", brainMode.name).apply()
     }
 
     fun prepareCommand(command: String) {
@@ -145,32 +127,37 @@ internal fun BozerChatExperience(
     fun installAndLoad() {
         if (modelBusy || modelReady) return
         modelBusy = true
-        modelStatus = "Téléchargement du cerveau local…"
+        modelStatus = "Préparation du cerveau intégré à l'APK…"
         scope.launch {
             try {
                 var lastReportedPercent = -1
-                val file = modelManager.download { downloaded, total ->
-                    val percent = if (total > 0L) ((downloaded * 100L) / total).toInt() else 0
-                    if (percent != lastReportedPercent || downloaded == total) {
+                val file = modelManager.installBundled { copied, total ->
+                    val percent = if (total > 0L) ((copied * 100L) / total).toInt() else 0
+                    if (percent != lastReportedPercent || copied == total) {
                         lastReportedPercent = percent
                         withContext(Dispatchers.Main) {
-                            downloadProgress = if (total > 0L) downloaded.toFloat() / total else 0f
-                            val currentMb = downloaded / (1024L * 1024L)
+                            downloadProgress = if (total > 0L) copied.toFloat() / total else 0f
+                            val currentMb = copied / (1024L * 1024L)
                             val totalMb = total / (1024L * 1024L)
-                            modelStatus = "Téléchargement : " + currentMb + " / " + totalMb + " Mo"
+                            modelStatus = "Préparation locale : " + currentMb + " / " + totalMb + " Mo"
                         }
                     }
                 }
-                modelStatus = "Fichier vérifié. Démarrage du cerveau…"
+                modelStatus = "Cerveau intégré copié. Démarrage du moteur…"
                 withContext(Dispatchers.IO) { engine.load(file.absolutePath) }
                 modelReady = true
-                modelStatus = "Cerveau local prêt sur ce téléphone."
+                modelStatus = "Cerveau BOZER prêt — fonctionnement local."
             } catch (error: Exception) {
-                modelStatus = "Installation impossible : " + (error.message ?: "erreur inconnue")
+                modelStatus = "Le cerveau intégré n'a pas démarré : " +
+                    (error.message ?: "erreur inconnue")
             } finally {
                 modelBusy = false
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        installAndLoad()
     }
 
     fun send() {
