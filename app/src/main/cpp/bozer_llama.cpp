@@ -67,7 +67,7 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeLoadModel(
     // is rebuilt into the prompt on each turn, so the KV cache can be cleared.
     llama_context_params context_params = llama_context_default_params();
     context_params.n_ctx = 2048;
-    context_params.n_batch = 2048;
+    context_params.n_batch = 512;
     const int threads = std::max(2, std::min(4, static_cast<int>(std::thread::hardware_concurrency())));
     context_params.n_threads = threads;
     context_params.n_threads_batch = threads;
@@ -149,7 +149,7 @@ Java_ai_bozer_app_LocalLlamaEngine_nativeGenerate(
     int32_t generated = 0;
     llama_token next_token = 0;
     bool prompt_prefill_logged = false;
-    const int32_t generation_limit = std::min(static_cast<int>(max_tokens), 64);
+    const int32_t generation_limit = std::min(static_cast<int>(max_tokens), 128);
     while (generated < generation_limit) {
         const int decode_status = llama_decode(context, batch);
         if (!prompt_prefill_logged && decode_status == 0) {
