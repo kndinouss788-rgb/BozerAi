@@ -20,6 +20,71 @@ val sherpaAar = layout.buildDirectory.file("third_party/sherpa-onnx-2.0.1.aar")
 val sherpaAarUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.1/sherpa-onnx-2.0.1.aar"
 val sherpaAarSha256 = "a8d09d1d32f3eb8520482c6d3d43fae674681c5b050385967c70a3c2c9bf0ee7"
 
+val bundledVoiceAssets = layout.buildDirectory.dir("generated/bozerVoiceAssets")
+val voiceModelUrl = "https://huggingface.co/XODalG/piper-voices-sherpa/resolve/6df1ed4dba0a0c6d51a92e447ee29fb8474f454f/fr/fr_FR/mls/medium/fr_FR-mls-medium.onnx"
+val voiceTokensUrl = "https://huggingface.co/XODalG/piper-voices-sherpa/resolve/6df1ed4dba0a0c6d51a92e447ee29fb8474f454f/fr/fr_FR/mls/medium/fr_FR-mls-medium.tokens.txt"
+val voiceModelSha256 = "d869ae962adb97da4d044e263df38d0b012e10bba6d0c3c8a3cb61190d657d9b"
+
+val bundleBozerFrenchVoice = tasks.register("bundleBozerFrenchVoice") {
+    val outputDir = bundledVoiceAssets.get().asFile
+    outputs.dir(outputDir)
+    doLast {
+        fun sha256(file: File): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().buffered().use { input ->
+                val buffer = ByteArray(256 * 1024)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    digest.update(buffer, 0, count)
+                }
+            }
+            return digest.digest().joinToString("") { "%02x".format(it) }
+        }
+
+        val voiceDir = File(outputDir, "bozer-voice/fr_FR-mls-medium")
+        voiceDir.mkdirs()
+        fun fetchAsset(url: String, name: String, expectedBytes: Long, expectedSha: String?) {
+            val destination = File(voiceDir, name)
+            if (destination.isFile && destination.length() == expectedBytes &&
+                (expectedSha == null || sha256(destination) == expectedSha)
+            ) return
+            val partial = File(voiceDir, "$name.part")
+            partial.delete()
+            val connection = URL(url).openConnection().apply {
+                connectTimeout = 30_000
+                readTimeout = 180_000
+                setRequestProperty("User-Agent", "BOZER-Android-Build/0.3")
+                setRequestProperty("Accept-Encoding", "identity")
+            }
+            try {
+                connection.getInputStream().use { input ->
+                    partial.outputStream().buffered().use { output -> input.copyTo(output) }
+                }
+                check(partial.length() == expectedBytes) {
+                    "$name size mismatch: expected $expectedBytes, got ${partial.length()}"
+                }
+                if (expectedSha != null) {
+                    check(sha256(partial) == expectedSha) { "$name SHA-256 mismatch; refusing to bundle it." }
+                }
+                if (destination.exists()) check(destination.delete()) { "Cannot replace $name" }
+                check(partial.renameTo(destination)) { "Cannot install bundled asset $name" }
+            } finally {
+                connection.getInputStream().close()
+                partial.takeIf { it.exists() }?.delete()
+            }
+        }
+
+        fetchAsset(
+            voiceModelUrl,
+            "fr_FR-mls-medium.onnx",
+            76_733_935L,
+            voiceModelSha256
+        )
+        fetchAsset(voiceTokensUrl, "tokens.txt", 954L, null)
+    }
+}
+
 val downloadSherpaOnnxAar = tasks.register("downloadSherpaOnnxAar") {
     val output = sherpaAar.get().asFile
     outputs.file(output)
@@ -86,6 +151,8 @@ android {
         }
     }
 
+    sourceSets.getByName("main").assets.srcDir(bundledVoiceAssets)
+    
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -116,7 +183,7 @@ dependencies {
 }
 
 tasks.named("preBuild") {
-    dependsOn(downloadSherpaOnnxAar)
+    dependsOn(downloadSherpaOnnxAar, bundleBozerFrenchVoice)
 }
 tasks.matching { it.name.startsWith("compile") || it.name == "checkDebugAarMetadata" }.configureEach {
     dependsOn(downloadSherpaOnnxAar)
