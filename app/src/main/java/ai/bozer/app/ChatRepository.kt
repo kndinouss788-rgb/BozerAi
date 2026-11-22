@@ -36,6 +36,11 @@ class ChatRepository(
     fun updateRememberedFact(oldContent: String, newContent: String): Boolean =
         database.updateRememberedFact(oldContent, newContent)
     fun clearMemory() = database.clearRememberedFacts()
+    fun exportMemoryJson(): String = org.json.JSONObject()
+        .put("format", "bozer-memory-export-v1")
+        .put("exported_at", System.currentTimeMillis())
+        .put("memories", org.json.JSONArray(database.rememberedFacts()))
+        .toString(2)
     fun actionHistory(limit: Int = 30): List<ActionLogEntry> = database.actionHistory(limit)
     fun recordAction(entry: ActionLogEntry) = database.recordAction(entry)
     fun clearActionHistory() = database.clearActionHistory()
