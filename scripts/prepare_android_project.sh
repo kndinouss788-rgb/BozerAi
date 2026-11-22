@@ -6,7 +6,7 @@ MODEL_URL="https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/q
 MODEL_FILE="$APP_DIR/app/src/main/assets/bozer-model.gguf"
 
 test -f "$MAIN_DIR/MainActivity.kt"
-mkdir -p "$(dirname "$MODEL_FILE")" "$MAIN_DIR"
+mkdir -p "$(dirname "$MODEL_FILE")" "$MAIN_DIR" "$APP_DIR/app/src/test/java/com/example/llama" "$APP_DIR/app/src/androidTest/java/com/example/llama" "$APP_DIR/app/src/main/res/layout" "$APP_DIR/app/src/main/res/drawable" "$APP_DIR/app/src/main/res/values"
 echo "Downloading Qwen2.5-1.5B-Instruct Q4_K_M..."
 curl --fail --location --retry 5 --retry-delay 3 --continue-at - "$MODEL_URL" --output "$MODEL_FILE"
 MODEL_BYTES="$(stat -c%s "$MODEL_FILE")"
