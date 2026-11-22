@@ -453,7 +453,7 @@ private fun BozerChat(
         }
     }
 
-    LaunchedEffect(voiceRepliesEnabled, piperModelInstalled) {
+    LaunchedEffect(voiceRepliesEnabled, piperModelInstalled, piperBusy) {
         if (voiceRepliesEnabled && piperModelInstalled && !piperReady && !piperBusy) {
             piperBusy = true
             try {
