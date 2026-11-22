@@ -99,7 +99,7 @@ internal fun BozerConversationHistoryScreen(
             )
             if (conversations.isEmpty()) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
