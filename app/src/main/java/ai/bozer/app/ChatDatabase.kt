@@ -184,6 +184,7 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
         try {
             writableDatabase.delete("messages", null, null)
             writableDatabase.delete("remembered_facts", null, null)
+            writableDatabase.delete("action_journal", null, null)
             writableDatabase.setTransactionSuccessful()
         } finally {
             writableDatabase.endTransaction()
