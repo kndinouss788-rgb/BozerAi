@@ -2,68 +2,99 @@ name: BOZER Android — embedded brain
 
 on:
   push:
-    branches: [main, bozer-embedded-brain]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: bozer-embedded-android-${{ github.ref }}
+  group: bozer-android-main
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - name: Checkout BOZER
         uses: actions/checkout@v4
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-
       - name: Install Android native build tools
         run: sdkmanager "ndk;29.0.13113456" "cmake;3.31.6"
-
-      - name: Get llama.cpp Android project
+      - name: Get pinned llama.cpp Android runtime
         run: |
-          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git "$RUNNER_TEMP/llama.cpp"
-
-      - name: Bundle BOZER brain into the Android app
+          git init "$RUNNER_TEMP/llama.cpp"
+          git -C "$RUNNER_TEMP/llama.cpp" remote add origin https://github.com/ggml-org/llama.cpp.git
+          git -C "$RUNNER_TEMP/llama.cpp" fetch --depth 1 origin 5bacb7c868a2bc98682de15f447fc1ce17c9c49c
+          git -C "$RUNNER_TEMP/llama.cpp" checkout --detach FETCH_HEAD
+      - name: Prepare BOZER sources and bundled model
         run: |
           chmod +x scripts/prepare_android_project.sh
           scripts/prepare_android_project.sh "$RUNNER_TEMP/llama.cpp/examples/llama.android"
-
-      - name: Build installable debug APK
-        working-directory: ${{ runner.temp }}/llama.cpp/examples/llama.android
+      - name: Run JVM tests and build installable APK
+        working-directory: \${{ runner.temp }}/llama.cpp/examples/llama.android
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME: \${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: \${{ env.ANDROID_HOME }}
         run: |
           chmod +x ./gradlew
-          ./gradlew --no-daemon --stacktrace assembleDebug
-
-      - name: Verify APK exists and contains bundled brain
-        working-directory: ${{ runner.temp }}/llama.cpp/examples/llama.android
-        run: |
+          ./gradlew --no-daemon --stacktrace testDebugUnitTest assembleDebug
           APK="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
           unzip -l "$APK" | grep -E 'assets/bozer-model.gguf'
+          unzip -l "$APK" | grep -E 'lib/arm64-v8a/libai-chat.so'
+          unzip -l "$APK" | grep -E 'lib/x86_64/libai-chat.so'
+          sha256sum "$APK" | tee app/build/bozer-apk.sha256
           ls -lh "$APK"
-
-      - name: Upload one-piece BOZER APK
+      - name: Run real model, database and network tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 6144
+          cores: 4
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            cd "$RUNNER_TEMP/llama.cpp/examples/llama.android"
+            mkdir -p app/build/bozer-results
+            set +e
+            ./gradlew --no-daemon --stacktrace connectedDebugAndroidTest > app/build/bozer-results/instrumented-tests.log 2>&1
+            RESULT=$?
+            adb logcat -d -v time -s BOZER_E2E:I BOZER_PERF:I BOZER_BRAIN:I BOZER_CHAT:E AndroidRuntime:E > app/build/bozer-results/logcat.txt || true
+            adb shell monkey -p com.bozer.ai 1 >/dev/null 2>&1 || true
+            sleep 5
+            adb exec-out screencap -p > app/build/bozer-results/screenshot.png 2>/dev/null || true
+            exit "$RESULT"
+      - name: Upload Android validation reports and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozer-android-validation
+          path: |
+            \${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/reports/**
+            \${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/outputs/androidTest-results/**
+            \${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/bozer-results/**
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload installable BOZER APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: bozer-apk-with-embedded-brain
-          path: ${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            \${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/outputs/apk/debug/app-debug.apk
+            \${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/bozer-apk.sha256
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
