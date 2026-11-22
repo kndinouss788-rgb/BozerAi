@@ -126,30 +126,35 @@ class BozerOrchestrator(
     }
 
     private fun extractTranslation(text: String): BozerIntent.Translation? {
-        val patterns = listOf(
-            Regex(
-                """^(?:traduis|traduire|translate)(?:\s+(?:ce\s+texte|moi))?\s+(?:en|vers)\s+([\p{L}][\p{L}-]{1,39})\s*[:,-]\s*(.+)$""",
-                RegexOption.IGNORE_CASE
-            ),
-            Regex(
-                """^(?:traduis|traduire|translate)\s+(.+?)\s+(?:en|vers)\s+([\p{L}][\p{L}-]{1,39})$""",
-                RegexOption.IGNORE_CASE
-            )
-        )
-        val match = patterns.firstNotNullOfOrNull { it.find(text.trim()) } ?: return null
-        val target = if (match.groups.size == 3 && match.groupValues[1].length < 45 &&
-            patterns.firstOrNull() == patterns[0]
-        ) match.groupValues[1] else match.groupValues[2]
-        val source = if (patterns[0].matches(text.trim())) match.groupValues[2] else match.groupValues[1]
+        val normalized = text.trim()
+        val targetFirst = Regex(
+            """^(?:traduis|traduire|translate)(?:\s+(?:ce\s+texte|moi))?\s+(?:en|vers)\s+([\p{L}][\p{L}-]{1,39})\s*[:,-]\s*(.+)$""",
+            RegexOption.IGNORE_CASE
+        ).find(normalized)
+        if (targetFirst != null) {
+            val target = targetFirst.groupValues[1].trim()
+            val source = targetFirst.groupValues[2].trim()
+            return if (target.isNotBlank() && source.isNotBlank()) {
+                BozerIntent.Translation(target, source)
+            } else null
+        }
+
+        val targetLast = Regex(
+            """^(?:traduis|traduire|translate)\s+(.+?)\s+(?:en|vers)\s+([\p{L}][\p{L}-]{1,39})$""",
+            RegexOption.IGNORE_CASE
+        ).find(normalized) ?: return null
+        val source = targetLast.groupValues[1].trim()
+        val target = targetLast.groupValues[2].trim()
         return if (target.isNotBlank() && source.isNotBlank()) {
-            BozerIntent.Translation(target, source.trim())
+            BozerIntent.Translation(target, source)
         } else null
     }
+
 
     private fun extractResearchQuery(text: String): String? {
         val normalized = text.trim()
         val patterns = listOf(
-            Regex("""^(?:fais\s+une\s+)?(?:recherche|cherche)(?:\s+sur\s+internet)?\s*[:,-]?\s*(.+)$""", RegexOption.IGNORE_CASE),
+            Regex("""^(?:fais\s+une\s+)?(?:recherche|cherche)(?:\s+sur\s+(?:internet|le\s+web))?\s*[:,-]?\s*(.+)$""", RegexOption.IGNORE_CASE),
             Regex("""^(?:trouve|vérifie|verifie)\s+(?:sur\s+internet|sur\s+le\s+web)\s*[:,-]?\s*(.+)$""", RegexOption.IGNORE_CASE)
         )
         return patterns.firstNotNullOfOrNull { pattern ->
