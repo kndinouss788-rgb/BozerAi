@@ -540,7 +540,7 @@ internal fun BozerChatExperience(
                 text = { Text(PhoneActionPlanner.confirmationDescription(action), color = BozerMuted) },
                 confirmButton = {
                     TextButton(onClick = {
-                        val result = PhoneActionPlanner.execute(activity, action, confirmed = true)
+                        val result = PhoneActionExecutor.execute(activity, action, confirmed = true)
                         val status = ChatMessage(role = "assistant", content = result.message)
                         messages.add(status)
                         repository.save(status)
