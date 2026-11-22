@@ -5,4 +5,4 @@
     android:notificationTimeout="120"
     android:canRetrieveWindowContent="true"
     android:canPerformGestures="true"
-    android:description="@string/bozer_accessibility_service_description" />
+    android:description="@string/bozer_a11y_service_description" />
