@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="bozer_a11y_service_description">Permet a BOZER de realiser les actions demandees dans les applications ouvertes. BOZER analyse les elements visibles uniquement pendant une mission active et ne transmet pas le contenu de l'ecran.</string>
+    <string name="bozer_a11y_service_description">Permet a BOZER de realiser les actions demandees dans les applications ouvertes. BOZER analyse les elements visibles uniquement pendant une mission active et ne transmet aucun contenu visible.</string>
 </resources>
