@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : SQLiteOpenHelper(context, databaseName, null, 2) {
+class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : SQLiteOpenHelper(context, databaseName, null, 3) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """CREATE TABLE messages (
@@ -16,10 +16,12 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
             )"""
         )
         createMemoryTable(db)
+        createActionTable(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) createMemoryTable(db)
+        if (oldVersion < 3) createActionTable(db)
     }
 
     private fun createMemoryTable(db: SQLiteDatabase) {
@@ -30,6 +32,55 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
                 created_at INTEGER NOT NULL
             )"""
         )
+    }
+
+    private fun createActionTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS action_journal (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action_type TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                status TEXT NOT NULL,
+                detail TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )"""
+        )
+    }
+
+    fun recordAction(entry: ActionLogEntry) {
+        val values = ContentValues().apply {
+            put("action_type", entry.actionType.take(40))
+            put("summary", entry.summary.take(180))
+            put("status", entry.status.take(40))
+            put("detail", entry.detail.take(280))
+            put("created_at", entry.createdAt)
+        }
+        writableDatabase.insert("action_journal", null, values)
+    }
+
+    fun actionHistory(limit: Int = 30): List<ActionLogEntry> {
+        val result = mutableListOf<ActionLogEntry>()
+        readableDatabase.query(
+            "action_journal",
+            arrayOf("id", "action_type", "summary", "status", "detail", "created_at"),
+            null, null, null, null, "id DESC", limit.coerceIn(1, 100).toString()
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                result += ActionLogEntry(
+                    id = cursor.getLong(0),
+                    actionType = cursor.getString(1),
+                    summary = cursor.getString(2),
+                    status = cursor.getString(3),
+                    detail = cursor.getString(4),
+                    createdAt = cursor.getLong(5)
+                )
+            }
+        }
+        return result
+    }
+
+    fun clearActionHistory() {
+        writableDatabase.delete("action_journal", null, null)
     }
 
     fun history(limit: Int = 60): List<ChatMessage> {
