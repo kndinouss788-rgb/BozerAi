@@ -27,7 +27,7 @@ object SecretaryDateTimeParser {
         var title = titleInput.trim().trimEnd('.', '!', '?')
         if (title.isBlank()) return ParsedSecretaryTaskDetails(title, null)
 
-        val timeMatch = TIME_AT_END.find(normalize(title))
+        val timeMatch = TIME_AT_END.find(title)
         var invalidTimeSuffix = false
         val time = timeMatch?.let { match ->
             val hour = match.groupValues[1].toIntOrNull()
