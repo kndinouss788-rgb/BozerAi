@@ -21,7 +21,8 @@ interface RemoteConversationClient {
  * packaged in the Android APK.
  */
 class RemoteBrainClient(
-    private val endpoint: String
+    private val endpoint: String,
+    private val clientId: String
 ) : RemoteConversationClient {
     override val isConfigured: Boolean get() = endpoint.startsWith("https://")
 
@@ -49,6 +50,7 @@ class RemoteBrainClient(
             readTimeout = 35_000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("X-Bozer-Client", clientId)
         }
         try {
             connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
