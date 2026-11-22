@@ -1,0 +1,67 @@
+name: BOZER Android — embedded brain
+
+on:
+  push:
+    branches: [main, bozer-embedded-brain]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bozer-embedded-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout BOZER
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android native build tools
+        run: sdkmanager "ndk;29.0.13113456" "cmake;3.31.6"
+
+      - name: Get llama.cpp Android project
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git "$RUNNER_TEMP/llama.cpp"
+
+      - name: Bundle BOZER brain into the Android app
+        run: |
+          chmod +x scripts/prepare_android_project.sh
+          scripts/prepare_android_project.sh "$RUNNER_TEMP/llama.cpp/examples/llama.android"
+
+      - name: Build installable debug APK
+        working-directory: ${{ runner.temp }}/llama.cpp/examples/llama.android
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK exists and contains bundled brain
+        working-directory: ${{ runner.temp }}/llama.cpp/examples/llama.android
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          unzip -l "$APK" | grep -E 'assets/bozer-model.gguf'
+          ls -lh "$APK"
+
+      - name: Upload one-piece BOZER APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozer-apk-with-embedded-brain
+          path: ${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
