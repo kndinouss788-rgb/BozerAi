@@ -186,11 +186,13 @@ internal fun BozerChatExperience(
         val text = draft.trim()
         if (text.isEmpty() || sending) return
         draft = ""
+        val conversationIdSnapshot = repository.currentConversationId()
         val userMessage = ChatMessage(role = "user", content = text)
         messages.add(userMessage)
-        repository.save(userMessage)
+        repository.save(userMessage, conversationIdSnapshot)
 
-        // Snapshot Compose state on the UI thread before background inference.
+        // Snapshot both the conversation and its messages on the UI thread.
+        // A later thread switch must never receive this request's reply.
         val historySnapshot = messages.toList()
         val intent = orchestrator.classify(text)
         activeTaskPlan = orchestrator.taskPlanner.plan(intent)
@@ -204,37 +206,47 @@ internal fun BozerChatExperience(
             try {
                 val answer = withContext(Dispatchers.IO) { orchestrator.respond(historySnapshot, intent) }
                 val assistantMessage = ChatMessage(role = "assistant", content = answer)
-                messages.add(assistantMessage)
-                repository.save(assistantMessage)
-                if (voiceEnabled) {
-                    val speechMessageId = assistantMessage.createdAt
-                    speechStart = 0
-                    speechLength = 0
-                    val accepted = voiceOutput.speak(
-                        answer,
-                        onStart = { speakingMessageCreatedAt = speechMessageId },
-                        onRange = { start, length ->
-                            if (speakingMessageCreatedAt == speechMessageId) {
-                                speechStart = start
-                                speechLength = length
+                val saved = repository.save(assistantMessage, conversationIdSnapshot)
+                val stillShowingOriginalThread =
+                    repository.currentConversationId() == conversationIdSnapshot
+                if (stillShowingOriginalThread) {
+                    messages.add(assistantMessage)
+                    if (!saved) {
+                        // The answer remains visible; history diagnostics can report
+                        // that it could not be persisted.
+                    }
+                    if (voiceEnabled) {
+                        val speechMessageId = assistantMessage.createdAt
+                        speechStart = 0
+                        speechLength = 0
+                        val accepted = voiceOutput.speak(
+                            answer,
+                            onStart = { speakingMessageCreatedAt = speechMessageId },
+                            onRange = { start, length ->
+                                if (speakingMessageCreatedAt == speechMessageId) {
+                                    speechStart = start
+                                    speechLength = length
+                                }
+                            },
+                            onDone = {
+                                if (speakingMessageCreatedAt == speechMessageId) {
+                                    speakingMessageCreatedAt = null
+                                    speechStart = 0
+                                    speechLength = 0
+                                }
+                            },
+                            onError = {
+                                if (speakingMessageCreatedAt == speechMessageId) {
+                                    speakingMessageCreatedAt = null
+                                    speechStart = 0
+                                    speechLength = 0
+                                }
                             }
-                        },
-                        onDone = {
-                            if (speakingMessageCreatedAt == speechMessageId) {
-                                speakingMessageCreatedAt = null
-                                speechStart = 0
-                                speechLength = 0
-                            }
-                        },
-                        onError = {
-                            if (speakingMessageCreatedAt == speechMessageId) {
-                                speakingMessageCreatedAt = null
-                                speechStart = 0
-                                speechLength = 0
-                            }
-                        }
-                    )
-                    if (!accepted) speakingMessageCreatedAt = null
+                        )
+                        if (!accepted) speakingMessageCreatedAt = null
+                    }
+                } else {
+                    conversationRecords = repository.conversations(historyQuery)
                 }
                 activeTaskPlan = null
             } catch (error: Exception) {
@@ -245,15 +257,21 @@ internal fun BozerChatExperience(
                         (error.message ?: "une erreur inattendue est survenue") +
                         ". Tu peux réessayer."
                 )
-                messages.add(failure)
+                if (repository.currentConversationId() == conversationIdSnapshot) {
+                    messages.add(failure)
+                }
                 try {
-                    repository.save(failure)
+                    repository.save(failure, conversationIdSnapshot)
                 } catch (_: Exception) {
-                    // Keep the failure visible even if local persistence is unavailable.
+                    // The original conversation may have been deleted while processing.
                 }
             } finally {
                 sending = false
-                if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+                if (messages.isNotEmpty() &&
+                    repository.currentConversationId() == conversationIdSnapshot
+                ) {
+                    listState.animateScrollToItem(messages.lastIndex)
+                }
             }
         }
     }
