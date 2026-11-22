@@ -109,6 +109,9 @@ internal fun BozerChatExperience(
     var plusMenuOpen by remember { mutableStateOf(false) }
     val preferences = remember { activity.getPreferences(Context.MODE_PRIVATE) }
     var voiceEnabled by remember { mutableStateOf(preferences.getBoolean("voice_enabled", true)) }
+    var speakingMessageCreatedAt by remember { mutableStateOf<Long?>(null) }
+    var speechStart by remember { mutableIntStateOf(0) }
+    var speechLength by remember { mutableIntStateOf(0) }
     var floatingBubbleEnabled by remember {
         mutableStateOf(
             preferences.getBoolean("floating_bubble_enabled", false) &&
@@ -193,7 +196,36 @@ internal fun BozerChatExperience(
                 val assistantMessage = ChatMessage(role = "assistant", content = answer)
                 messages.add(assistantMessage)
                 repository.save(assistantMessage)
-                if (voiceEnabled) voiceOutput.speak(answer)
+                if (voiceEnabled) {
+                    val speechMessageId = assistantMessage.createdAt
+                    speechStart = 0
+                    speechLength = 0
+                    val accepted = voiceOutput.speak(
+                        answer,
+                        onStart = { speakingMessageCreatedAt = speechMessageId },
+                        onRange = { start, length ->
+                            if (speakingMessageCreatedAt == speechMessageId) {
+                                speechStart = start
+                                speechLength = length
+                            }
+                        },
+                        onDone = {
+                            if (speakingMessageCreatedAt == speechMessageId) {
+                                speakingMessageCreatedAt = null
+                                speechStart = 0
+                                speechLength = 0
+                            }
+                        },
+                        onError = {
+                            if (speakingMessageCreatedAt == speechMessageId) {
+                                speakingMessageCreatedAt = null
+                                speechStart = 0
+                                speechLength = 0
+                            }
+                        }
+                    )
+                    if (!accepted) speakingMessageCreatedAt = null
+                }
                 activeTaskPlan = null
             } catch (error: Exception) {
                 activeTaskPlan = null
@@ -306,7 +338,16 @@ internal fun BozerChatExperience(
                             contentPadding = PaddingValues(top = 18.dp, bottom = 18.dp),
                             verticalArrangement = Arrangement.spacedBy(18.dp)
                         ) {
-                            items(messages) { message -> BozerMessage(message) }
+                            items(messages) { message ->
+                                val isCurrentSpeech = message.role == "assistant" &&
+                                    message.createdAt == speakingMessageCreatedAt
+                                BozerMessage(
+                                    message,
+                                    highlightedStart = if (isCurrentSpeech) speechStart else null,
+                                    highlightedLength = if (isCurrentSpeech) speechLength else 0,
+                                    speaking = isCurrentSpeech
+                                )
+                            }
                             if (sending) {
                                 item {
                                     Row(
@@ -692,8 +733,30 @@ private fun BozerWelcome() {
 }
 
 @Composable
-private fun BozerMessage(message: ChatMessage) {
+private fun BozerMessage(
+    message: ChatMessage,
+    highlightedStart: Int? = null,
+    highlightedLength: Int = 0,
+    speaking: Boolean = false
+) {
     val isUser = message.role == "user"
+    val styledMessage = remember(message.content, highlightedStart, highlightedLength) {
+        androidx.compose.ui.text.buildAnnotatedString {
+            append(message.content)
+            val start = highlightedStart ?: return@buildAnnotatedString
+            val end = (start + highlightedLength).coerceAtMost(message.content.length)
+            if (start >= 0 && end > start) {
+                addStyle(
+                    androidx.compose.ui.text.SpanStyle(
+                        background = Color(0xFFE6ECEF),
+                        fontWeight = FontWeight.Medium
+                    ),
+                    start,
+                    end
+                )
+            }
+        }
+    }
     AnimatedVisibility(
         visible = true,
         enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(230)) +
@@ -708,7 +771,7 @@ private fun BozerMessage(message: ChatMessage) {
             verticalAlignment = Alignment.Bottom
         ) {
             if (!isUser) {
-                BozerOrb(size = 25.dp, active = false)
+                BozerOrb(size = 25.dp, active = speaking)
                 Spacer(Modifier.width(10.dp))
             }
             Box(
@@ -721,7 +784,7 @@ private fun BozerMessage(message: ChatMessage) {
                     )
                     .padding(horizontal = if (isUser) 15.dp else 0.dp, vertical = if (isUser) 12.dp else 2.dp)
             ) {
-                Text(message.content, color = BozerInk, fontSize = 15.sp, lineHeight = 22.sp)
+                Text(styledMessage, color = BozerInk, fontSize = 15.sp, lineHeight = 22.sp)
             }
         }
     }
