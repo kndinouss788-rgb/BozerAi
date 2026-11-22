@@ -227,11 +227,20 @@ class ChatRepository(
     }
 
     private fun extractSearchQuery(text: String): String? {
-        val match = Regex(
-            """^(?:fais\s+une\s+)?(?:recherche|cherche)(?:\s+sur\s+internet)?\s*[:,-]?\s*(.+)$""",
-            RegexOption.IGNORE_CASE
-        ).find(text.trim()) ?: return null
-        return match.groupValues[1].trim().takeIf { it.length >= 2 }
+        val patterns = listOf(
+            Regex(
+                """^(?:fais\s+une\s+)?(?:recherche|cherche)(?:\s+sur\s+(?:internet|le\s+web))?\s*[:,-]?\s*(.+)$""",
+                RegexOption.IGNORE_CASE
+            ),
+            Regex(
+                """^(?:trouve|vérifie|verifie)\s+(?:sur\s+(?:internet|le\s+web))\s*[:,-]?\s*(.+)$""",
+                RegexOption.IGNORE_CASE
+            )
+        )
+        return patterns.firstNotNullOfOrNull { pattern ->
+            pattern.find(text.trim())?.groupValues?.getOrNull(1)
+                ?.trim()?.takeIf { it.length >= 2 }
+        }
     }
 
     private fun asksToForgetMemory(text: String): Boolean {
