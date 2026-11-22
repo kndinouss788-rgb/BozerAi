@@ -107,6 +107,30 @@ class ChatDatabaseInstrumentedTest {
     }
 
     @Test
+    fun conversationsCanBeSearchedSwitchedAndDeletedIndependently() {
+        val firstId = database.currentConversationId()
+        database.save(ChatMessage(role = "user", content = "Projet BOZER histoire"))
+        database.save(ChatMessage(role = "assistant", content = "Nous construisons BOZER."))
+        val firstRecord = database.conversations().first { it.id == firstId }
+        assertEquals("Projet BOZER histoire", firstRecord.title)
+        assertEquals(2, firstRecord.messageCount)
+
+        val secondId = database.createConversation()
+        database.save(ChatMessage(role = "user", content = "Préparer un voyage"))
+        assertEquals(1, database.history().size)
+        assertEquals("Préparer un voyage", database.conversations().first { it.id == secondId }.title)
+
+        assertTrue(database.switchConversation(firstId))
+        assertEquals(2, database.history().size)
+        assertTrue(database.conversations("histoire").any { it.id == firstId })
+
+        assertTrue(database.deleteConversation(firstId))
+        assertTrue("La suppression du fil actif doit créer une conversation vide.", database.history().isEmpty())
+        assertFalse(database.conversations().any { it.id == firstId })
+        assertTrue("L'autre conversation doit rester intacte.", database.conversations().any { it.id == secondId })
+    }
+
+    @Test
     fun versionOneMigrationPreservesExistingMessagesAndAddsMemoryTable() {
         database.close()
         context.deleteDatabase(databaseName)
