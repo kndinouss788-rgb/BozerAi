@@ -24,10 +24,19 @@ class PhoneActionInstrumentedTest {
 
     @Test
     fun plannerParsesSupportedCommandsAndRejectsInvalidAlarmTimes() {
-        assertEquals(
-            PhoneAction.SetAlarm(7, 30),
-            PhoneActionPlanner.parse("Mets un réveil à 7h30")
-        )
+        val standardAlarm = PhoneActionPlanner.parse("Mets un réveil à 7h30") as? PhoneAction.SetAlarm
+        assertNotNull("La commande de réveil simple n'a pas été comprise.", standardAlarm)
+        assertEquals(7, standardAlarm!!.hour)
+        assertEquals(30, standardAlarm.minute)
+        assertTrue("Le réveil doit viser une heure future.", standardAlarm.triggerAtMillis > System.currentTimeMillis())
+
+        val tomorrowAlarm = PhoneActionPlanner.parse("Réveille-moi demain à 6 h 30") as? PhoneAction.SetAlarm
+        assertNotNull("La date relative « demain » n'a pas été comprise.", tomorrowAlarm)
+        assertEquals(6, tomorrowAlarm!!.hour)
+        assertEquals(30, tomorrowAlarm.minute)
+        val tomorrow = java.time.Instant.ofEpochMilli(tomorrowAlarm.triggerAtMillis)
+            .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        assertEquals(java.time.LocalDate.now().plusDays(1), tomorrow)
         assertEquals(
             PhoneAction.OpenApp("Paramètres"),
             PhoneActionPlanner.parse("Ouvre Paramètres")
@@ -135,35 +144,34 @@ class PhoneActionInstrumentedTest {
     }
 
     @Test
-    fun confirmedAlarmActionOpensClockWithRequestedTime() {
+    fun confirmedAlarmActionUsesExactAlarmManagerAndPermissionGates() {
         val action = PhoneAction.SetAlarm(6, 45)
-        val intent = PhoneActionPlanner.createIntent(context, action)
-        assertNotNull(intent)
-        assertEquals(AlarmClock.ACTION_SET_ALARM, intent!!.action)
-        assertEquals(6, intent.getIntExtra(AlarmClock.EXTRA_HOUR, -1))
-        assertEquals(45, intent.getIntExtra(AlarmClock.EXTRA_MINUTES, -1))
-        assertFalse(intent.getBooleanExtra(AlarmClock.EXTRA_SKIP_UI, true))
+        val result = PhoneActionExecutor.execute(context, action, confirmed = true)
 
-        val resolved = intent.resolveActivity(context.packageManager)
-        assertNotNull("No clock application handles ACTION_SET_ALARM", resolved)
-        val result = PhoneActionPlanner.execute(context, action, confirmed = true)
-        assertTrue(result.message, result.launched)
-
-        // ACTION_SET_ALARM is handled by a short-lived API activity before
-        // Clock opens its main screen. Inspect Android's activity stack rather
-        // than relying on accessibility nodes while System UI is under load.
-        val clockPackage = resolved!!.packageName
-        var activityDump = ""
-        for (attempt in 0 until 40) {
-            activityDump = device.executeShellCommand("dumpsys activity activities")
-            if (activityDump.contains(clockPackage)) break
-            SystemClock.sleep(500)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+            !context.getSystemService(android.app.AlarmManager::class.java).canScheduleExactAlarms()
+        ) {
+            assertFalse(result.launched)
+            assertTrue(result.retryable)
+            assertTrue(result.message.contains("autoriser", ignoreCase = true))
+            return
         }
+
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            assertFalse(result.launched)
+            assertTrue(result.retryable)
+            assertTrue(result.message.contains("notifications", ignoreCase = true))
+            return
+        }
+
+        assertTrue(result.message, result.launched)
+        assertTrue(result.message, result.message.contains("programmé", ignoreCase = true))
         assertTrue(
-            "The Clock application did not appear in Android's activity stack: " +
-                activityDump.takeLast(1_500),
-            activityDump.contains(clockPackage)
+            "L'alarme réellement acceptée par Android doit être conservée pour la restauration après redémarrage.",
+            BozerAlarmStore.all(context).any { it.triggerAtMillis == action.triggerAtMillis }
         )
-        device.pressBack()
     }
 }
