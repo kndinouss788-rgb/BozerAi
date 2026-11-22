@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : SQLiteOpenHelper(context, databaseName, null, 3) {
+class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : SQLiteOpenHelper(context, databaseName, null, 4) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """CREATE TABLE messages (
@@ -17,11 +17,13 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
         )
         createMemoryTable(db)
         createActionTable(db)
+        createSecretaryTaskTable(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) createMemoryTable(db)
         if (oldVersion < 3) createActionTable(db)
+        if (oldVersion < 4) createSecretaryTaskTable(db)
     }
 
     private fun createMemoryTable(db: SQLiteDatabase) {
@@ -81,6 +83,67 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
 
     fun clearActionHistory() {
         writableDatabase.delete("action_journal", null, null)
+    }
+
+    private fun createSecretaryTaskTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS secretary_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                is_completed INTEGER NOT NULL DEFAULT 0,
+                due_at INTEGER,
+                created_at INTEGER NOT NULL
+            )"""
+        )
+    }
+
+    fun addSecretaryTask(title: String, dueAtMillis: Long? = null): Long {
+        val normalized = title.trim().take(180)
+        if (normalized.isBlank()) return -1L
+        val values = ContentValues().apply {
+            put("title", normalized)
+            put("is_completed", 0)
+            if (dueAtMillis != null) put("due_at", dueAtMillis) else putNull("due_at")
+            put("created_at", System.currentTimeMillis())
+        }
+        return writableDatabase.insert("secretary_tasks", null, values)
+    }
+
+    fun secretaryTasks(limit: Int = 100): List<SecretaryTask> {
+        val tasks = mutableListOf<SecretaryTask>()
+        readableDatabase.query(
+            "secretary_tasks",
+            arrayOf("id", "title", "is_completed", "due_at", "created_at"),
+            null, null, null, null,
+            "is_completed ASC, COALESCE(due_at, 9223372036854775807) ASC, id DESC",
+            limit.coerceIn(1, 200).toString()
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                val dueAt = if (cursor.isNull(3)) null else cursor.getLong(3)
+                tasks += SecretaryTask(
+                    id = cursor.getLong(0),
+                    title = cursor.getString(1),
+                    isCompleted = cursor.getInt(2) != 0,
+                    dueAtMillis = dueAt,
+                    createdAt = cursor.getLong(4)
+                )
+            }
+        }
+        return tasks
+    }
+
+    fun setSecretaryTaskCompleted(id: Long, completed: Boolean): Boolean {
+        val values = ContentValues().apply { put("is_completed", if (completed) 1 else 0) }
+        return writableDatabase.update(
+            "secretary_tasks", values, "id = ?", arrayOf(id.toString())
+        ) > 0
+    }
+
+    fun deleteSecretaryTask(id: Long): Boolean =
+        writableDatabase.delete("secretary_tasks", "id = ?", arrayOf(id.toString())) > 0
+
+    fun clearSecretaryTasks() {
+        writableDatabase.delete("secretary_tasks", null, null)
     }
 
     fun history(limit: Int = 60): List<ChatMessage> {
@@ -185,6 +248,7 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
             writableDatabase.delete("messages", null, null)
             writableDatabase.delete("remembered_facts", null, null)
             writableDatabase.delete("action_journal", null, null)
+            writableDatabase.delete("secretary_tasks", null, null)
             writableDatabase.setTransactionSuccessful()
         } finally {
             writableDatabase.endTransaction()
