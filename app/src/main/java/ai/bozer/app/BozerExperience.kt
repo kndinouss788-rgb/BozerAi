@@ -805,7 +805,7 @@ private fun BozerTopBar(
             )
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Historique de cette conversation") },
+                    text = { Text("Historique des conversations") },
                     onClick = { menuOpen = false; onHistory() }
                 )
                 DropdownMenuItem(
