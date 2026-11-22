@@ -206,14 +206,8 @@ object BozerAlarmScheduler {
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(context, CHANNEL_ID)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(context)
-                .setPriority(Notification.PRIORITY_HIGH)
-                .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
-        }
+        // BOZER targets Android 8.0+ (minSdk 26), so a channel-backed builder is always available.
+        val notification = Notification.Builder(context, CHANNEL_ID)
         notification
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("C'est l'heure — BOZER")
