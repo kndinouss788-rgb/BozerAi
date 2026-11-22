@@ -132,7 +132,7 @@ internal fun BozerSecretaryScreen(
                 )
             }
             if (tasks.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Ta liste est vide.", color = SecretaryInk, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                         Text("Ajoute une première tâche pour commencer.", color = SecretaryMuted, fontSize = 12.sp)
