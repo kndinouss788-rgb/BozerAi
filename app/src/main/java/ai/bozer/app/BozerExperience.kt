@@ -109,7 +109,7 @@ internal fun BozerChatExperience(
         )
     }
     var brainMode by remember {
-        mutableStateOf(BrainMode.from(preferences.getString("brain_mode", repository.brainMode.name)))
+        mutableStateOf(BrainMode.from(preferences.getString("brain_mode_v2", repository.brainMode.name)))
     }
 
     val scope = rememberCoroutineScope()
