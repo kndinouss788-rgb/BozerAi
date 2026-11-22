@@ -16,7 +16,8 @@ import java.security.MessageDigest
  * Both asset URLs are pinned to a verified Hugging Face repository revision.
  */
 class BozerPiperModelManager(context: Context) {
-    private val directory = File(context.applicationContext.filesDir, "bozer-voice/fr_FR-mls-medium")
+    private val appContext = context.applicationContext
+    private val directory = File(appContext.filesDir, "bozer-voice/fr_FR-mls-medium")
     private val modelFile get() = File(directory, MODEL_FILE_NAME)
     private val tokensFile get() = File(directory, TOKENS_FILE_NAME)
 
@@ -29,6 +30,93 @@ class BozerPiperModelManager(context: Context) {
     suspend fun verifyInstalled(): Boolean = withContext(Dispatchers.IO) {
         isValidAsset(modelFile, MODEL_BYTES, MODEL_SHA256) &&
             isValidAsset(tokensFile, TOKENS_BYTES, null)
+    }
+
+    /**
+     * Extracts the voice packaged in the APK into app-private storage.
+     * No voice download or network connection is required on the phone.
+     */
+    suspend fun installBundledAssets(
+        onProgress: (downloaded: Long, total: Long) -> Unit = { _, _ -> }
+    ): File = withContext(Dispatchers.IO) {
+        directory.mkdirs()
+        val total = MODEL_BYTES + TOKENS_BYTES
+        copyBundledAsset(
+            "bozer-voice/fr_FR-mls-medium/$MODEL_FILE_NAME",
+            modelFile,
+            MODEL_BYTES,
+            MODEL_SHA256,
+            0L,
+            total,
+            onProgress
+        )
+        copyBundledAsset(
+            "bozer-voice/fr_FR-mls-medium/$TOKENS_FILE_NAME",
+            tokensFile,
+            TOKENS_BYTES,
+            null,
+            MODEL_BYTES,
+            total,
+            onProgress
+        )
+        check(verifyInstalled()) { "La voix BOZER intégrée est incomplète ou invalide." }
+        onProgress(total, total)
+        directory
+    }
+
+    private suspend fun copyBundledAsset(
+        assetPath: String,
+        destination: File,
+        expectedBytes: Long,
+        expectedSha256: String?,
+        completedBefore: Long,
+        totalBytes: Long,
+        onProgress: (Long, Long) -> Unit
+    ) {
+        if (isValidAsset(destination, expectedBytes, expectedSha256)) {
+            onProgress(completedBefore + expectedBytes, totalBytes)
+            return
+        }
+        val partial = File(destination.parentFile, destination.name + ".part")
+        partial.delete()
+        val activeContext = currentCoroutineContext()
+        var copied = 0L
+        try {
+            appContext.assets.open(assetPath).buffered().use { input ->
+                FileOutputStream(partial).buffered().use { output ->
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    while (true) {
+                        activeContext.ensureActive()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        copied += count
+                        check(copied <= expectedBytes) {
+                            "L'asset vocal intégré dépasse la taille attendue."
+                        }
+                        output.write(buffer, 0, count)
+                        if (copied == expectedBytes || copied % PROGRESS_STEP_BYTES < count) {
+                            onProgress(completedBefore + copied, totalBytes)
+                        }
+                    }
+                    output.flush()
+                }
+            }
+            check(copied == expectedBytes) {
+                "Asset vocal incomplet : $copied / $expectedBytes octets."
+            }
+            check(expectedSha256 == null || sha256(partial) == expectedSha256) {
+                "La vérification SHA-256 de l'asset vocal a échoué."
+            }
+            if (destination.exists()) check(destination.delete()) {
+                "Impossible de remplacer le fichier vocal précédent."
+            }
+            check(partial.renameTo(destination)) {
+                "Impossible d'extraire le fichier vocal intégré."
+            }
+        } catch (error: Exception) {
+            partial.delete()
+            throw error
+        }
     }
 
     suspend fun deleteAssets(): Boolean = withContext(Dispatchers.IO) {
