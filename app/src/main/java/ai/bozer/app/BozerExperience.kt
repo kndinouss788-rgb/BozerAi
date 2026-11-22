@@ -455,6 +455,10 @@ internal fun BozerChatExperience(
                 ttsAvailable = voiceOutput.isReady(),
                 microphoneGranted = activity.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
                     android.content.pm.PackageManager.PERMISSION_GRANTED,
+                exactAlarmsAllowed = android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||
+                    activity.getSystemService(android.app.AlarmManager::class.java).canScheduleExactAlarms(),
+                notificationsAllowed = activity.getSystemService(android.app.NotificationManager::class.java)
+                    .areNotificationsEnabled(),
                 floatingBubbleEnabled = floatingBubbleEnabled,
                 overlayPermissionGranted = activity.hasFloatingBubblePermission(),
                 onFloatingBubbleChange = { enabled ->
