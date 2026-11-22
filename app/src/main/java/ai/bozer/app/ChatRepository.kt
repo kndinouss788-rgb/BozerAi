@@ -28,6 +28,11 @@ class ChatRepository(
     @Volatile var internetAvailable: () -> Boolean = { true }
     val remoteConfigured: Boolean get() = remoteBrain?.isConfigured == true
     fun history(): List<ChatMessage> = database.history()
+    fun conversations(searchQuery: String = ""): List<ConversationRecord> =
+        database.conversations(searchQuery)
+    fun createConversation(): Long = database.createConversation()
+    fun switchConversation(id: Long): Boolean = database.switchConversation(id)
+    fun deleteConversation(id: Long): Boolean = database.deleteConversation(id)
     fun clearHistory() = database.clearHistory()
     fun save(message: ChatMessage) = database.save(message)
     fun rememberedFacts(): List<String> = database.rememberedFacts()
