@@ -5,11 +5,22 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : SQLiteOpenHelper(context, databaseName, null, 4) {
+class ChatDatabase(
+    context: Context,
+    private val databaseName: String = "bozer_chat.db"
+) : SQLiteOpenHelper(context, databaseName, null, DATABASE_VERSION) {
+
+    private val sessionPreferences = context.getSharedPreferences(
+        "bozer_chat_session_$databaseName",
+        Context.MODE_PRIVATE
+    )
+
     override fun onCreate(db: SQLiteDatabase) {
+        createConversationTable(db)
         db.execSQL(
             """CREATE TABLE messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                conversation_id INTEGER NOT NULL DEFAULT 1,
                 role TEXT NOT NULL CHECK(role IN ('user','assistant')),
                 content TEXT NOT NULL,
                 created_at INTEGER NOT NULL
@@ -24,6 +35,151 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
         if (oldVersion < 2) createMemoryTable(db)
         if (oldVersion < 3) createActionTable(db)
         if (oldVersion < 4) createSecretaryTaskTable(db)
+        if (oldVersion < 5) {
+            createConversationTable(db)
+            db.execSQL(
+                "ALTER TABLE messages ADD COLUMN conversation_id INTEGER NOT NULL DEFAULT 1"
+            )
+            db.execSQL(
+                """INSERT OR IGNORE INTO conversations(id, title, created_at, updated_at)
+                   VALUES(1, 'Conversation précédente', ${System.currentTimeMillis()}, ${System.currentTimeMillis()})"""
+            )
+        }
+    }
+
+    private fun createConversationTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS conversations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )"""
+        )
+        db.execSQL(
+            """INSERT OR IGNORE INTO conversations(id, title, created_at, updated_at)
+               VALUES(1, 'Nouvelle conversation', ${System.currentTimeMillis()}, ${System.currentTimeMillis()})"""
+        )
+    }
+
+    private fun ensureActiveConversation(db: SQLiteDatabase): Long {
+        val saved = sessionPreferences.getLong(KEY_ACTIVE_CONVERSATION, -1L)
+        if (saved > 0L) {
+            db.query(
+                "conversations", arrayOf("id"), "id = ?", arrayOf(saved.toString()),
+                null, null, null, "1"
+            ).use { cursor ->
+                if (cursor.moveToFirst()) return saved
+            }
+        }
+
+        val latest = db.query(
+            "conversations", arrayOf("id"), null, null, null, null, "updated_at DESC, id DESC", "1"
+        ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else -1L }
+
+        val selected = if (latest > 0L) latest else insertConversation(db, "Nouvelle conversation")
+        sessionPreferences.edit().putLong(KEY_ACTIVE_CONVERSATION, selected).apply()
+        return selected
+    }
+
+    private fun insertConversation(db: SQLiteDatabase, title: String): Long {
+        val now = System.currentTimeMillis()
+        val values = ContentValues().apply {
+            put("title", title.take(MAX_CONVERSATION_TITLE))
+            put("created_at", now)
+            put("updated_at", now)
+        }
+        return db.insert("conversations", null, values)
+    }
+
+    fun currentConversationId(): Long = ensureActiveConversation(writableDatabase)
+
+    fun createConversation(): Long {
+        val db = writableDatabase
+        val id = insertConversation(db, "Nouvelle conversation")
+        if (id > 0L) {
+            sessionPreferences.edit().putLong(KEY_ACTIVE_CONVERSATION, id).apply()
+        }
+        return id
+    }
+
+    fun switchConversation(id: Long): Boolean {
+        if (id <= 0L) return false
+        val exists = readableDatabase.query(
+            "conversations", arrayOf("id"), "id = ?", arrayOf(id.toString()),
+            null, null, null, "1"
+        ).use { it.moveToFirst() }
+        if (exists) sessionPreferences.edit().putLong(KEY_ACTIVE_CONVERSATION, id).apply()
+        return exists
+    }
+
+    fun conversations(searchQuery: String = "", limit: Int = 100): List<ConversationRecord> {
+        val cleanQuery = searchQuery.trim().take(120)
+        val selection: String?
+        val args: Array<String>?
+        if (cleanQuery.isBlank()) {
+            selection = null
+            args = null
+        } else {
+            selection = "c.title LIKE ? OR EXISTS (" +
+                "SELECT 1 FROM messages m WHERE m.conversation_id = c.id AND m.content LIKE ?)"
+            val like = "%$cleanQuery%"
+            args = arrayOf(like, like)
+        }
+
+        val result = mutableListOf<ConversationRecord>()
+        readableDatabase.rawQuery(
+            """SELECT c.id, c.title, c.created_at, c.updated_at,
+                 COALESCE((SELECT m.content FROM messages m
+                    WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1), '') AS preview,
+                 (SELECT COUNT(*) FROM messages count_m WHERE count_m.conversation_id = c.id) AS message_count
+               FROM conversations c
+               ${if (selection == null) "" else "WHERE $selection"}
+               ORDER BY c.updated_at DESC, c.id DESC LIMIT ?""",
+            if (args == null) arrayOf(limit.coerceIn(1, 200).toString())
+            else args + limit.coerceIn(1, 200).toString()
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                result += ConversationRecord(
+                    id = cursor.getLong(0),
+                    title = cursor.getString(1),
+                    preview = cursor.getString(4),
+                    messageCount = cursor.getInt(5),
+                    createdAt = cursor.getLong(2),
+                    updatedAt = cursor.getLong(3)
+                )
+            }
+        }
+        return result
+    }
+
+    /**
+     * Deletes only the selected conversation and its messages. If it was active,
+     * BOZER automatically creates a fresh empty conversation rather than
+     * redirecting writes into another conversation silently.
+     */
+    fun deleteConversation(id: Long): Boolean {
+        if (id <= 0L) return false
+        val activeId = ensureActiveConversation(writableDatabase)
+        val db = writableDatabase
+        db.beginTransaction()
+        val deleted: Boolean
+        try {
+            db.delete("messages", "conversation_id = ?", arrayOf(id.toString()))
+            deleted = db.delete("conversations", "id = ?", arrayOf(id.toString())) > 0
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+
+        if (deleted && activeId == id) {
+            val replacement = insertConversation(db, "Nouvelle conversation")
+            sessionPreferences.edit().putLong(KEY_ACTIVE_CONVERSATION, replacement).apply()
+        } else if (deleted && conversations(limit = 1).isEmpty()) {
+            val replacement = insertConversation(db, "Nouvelle conversation")
+            sessionPreferences.edit().putLong(KEY_ACTIVE_CONVERSATION, replacement).apply()
+        }
+        return deleted
     }
 
     private fun createMemoryTable(db: SQLiteDatabase) {
@@ -148,29 +304,46 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
 
     fun history(limit: Int = 60): List<ChatMessage> {
         val result = mutableListOf<ChatMessage>()
+        val conversationId = ensureActiveConversation(readableDatabase)
         readableDatabase.query(
             "messages", arrayOf("id", "role", "content", "created_at"),
-            null, null, null, null, "id DESC", limit.toString()
+            "conversation_id = ?", arrayOf(conversationId.toString()),
+            null, null, "id DESC", limit.coerceIn(1, 200).toString()
         ).use { cursor ->
             while (cursor.moveToNext()) {
-                result.add(ChatMessage(
-                    id = cursor.getLong(0),
-                    role = cursor.getString(1),
-                    content = cursor.getString(2),
-                    createdAt = cursor.getLong(3)
-                ))
+                result.add(
+                    ChatMessage(
+                        id = cursor.getLong(0),
+                        role = cursor.getString(1),
+                        content = cursor.getString(2),
+                        createdAt = cursor.getLong(3)
+                    )
+                )
             }
         }
         return result.asReversed()
     }
 
     fun save(message: ChatMessage) {
+        val db = writableDatabase
+        val conversationId = ensureActiveConversation(db)
         val values = ContentValues().apply {
+            put("conversation_id", conversationId)
             put("role", message.role)
             put("content", message.content)
             put("created_at", message.createdAt)
         }
-        writableDatabase.insert("messages", null, values)
+        db.insert("messages", null, values)
+
+        val update = ContentValues().apply {
+            put("updated_at", System.currentTimeMillis())
+            if (message.role == "user") {
+                val title = message.content.trim().replace(Regex("\\s+"), " ")
+                    .take(MAX_CONVERSATION_TITLE)
+                if (title.isNotBlank()) put("title", title)
+            }
+        }
+        db.update("conversations", update, "id = ?", arrayOf(conversationId.toString()))
     }
 
     /** Save only facts the user explicitly asks BOZER to remember. */
@@ -190,7 +363,7 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
         val facts = mutableListOf<String>()
         readableDatabase.query(
             "remembered_facts", arrayOf("content"), null, null, null, null,
-            "created_at DESC", limit.toString()
+            "created_at DESC", limit.coerceIn(1, 100).toString()
         ).use { cursor ->
             while (cursor.moveToNext()) facts.add(cursor.getString(0))
         }
@@ -232,9 +405,16 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
         return writableDatabase.delete("remembered_facts", "content = ?", arrayOf(value)) > 0
     }
 
-    /** Clear chat turns while preserving explicitly remembered facts. */
+    /** Clear only the active conversation while preserving other threads and saved memories. */
     fun clearHistory() {
-        writableDatabase.delete("messages", null, null)
+        val db = writableDatabase
+        val conversationId = ensureActiveConversation(db)
+        db.delete("messages", "conversation_id = ?", arrayOf(conversationId.toString()))
+        val values = ContentValues().apply {
+            put("title", "Nouvelle conversation")
+            put("updated_at", System.currentTimeMillis())
+        }
+        db.update("conversations", values, "id = ?", arrayOf(conversationId.toString()))
     }
 
     fun clearRememberedFacts() {
@@ -243,15 +423,28 @@ class ChatDatabase(context: Context, databaseName: String = "bozer_chat.db") : S
 
     /** Clear all local conversation data in one atomic transaction. */
     fun clearAllLocalData() {
-        writableDatabase.beginTransaction()
+        val db = writableDatabase
+        db.beginTransaction()
+        var replacementId = -1L
         try {
-            writableDatabase.delete("messages", null, null)
-            writableDatabase.delete("remembered_facts", null, null)
-            writableDatabase.delete("action_journal", null, null)
-            writableDatabase.delete("secretary_tasks", null, null)
-            writableDatabase.setTransactionSuccessful()
+            db.delete("messages", null, null)
+            db.delete("conversations", null, null)
+            db.delete("remembered_facts", null, null)
+            db.delete("action_journal", null, null)
+            db.delete("secretary_tasks", null, null)
+            replacementId = insertConversation(db, "Nouvelle conversation")
+            db.setTransactionSuccessful()
         } finally {
-            writableDatabase.endTransaction()
+            db.endTransaction()
         }
+        if (replacementId > 0L) {
+            sessionPreferences.edit().putLong(KEY_ACTIVE_CONVERSATION, replacementId).apply()
+        }
+    }
+
+    private companion object {
+        const val DATABASE_VERSION = 5
+        const val KEY_ACTIVE_CONVERSATION = "active_conversation_id"
+        const val MAX_CONVERSATION_TITLE = 56
     }
 }
