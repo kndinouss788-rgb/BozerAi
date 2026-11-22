@@ -587,9 +587,11 @@ internal fun BozerChatExperience(
                         val status = ChatMessage(role = "assistant", content = result.message)
                         messages.add(status)
                         repository.save(status)
-                        pendingPhoneAction = null
-                        activeTaskPlan = null
-                    }) { Text("Confirmer", color = BozerInk) }
+                        if (!result.retryable) {
+                            pendingPhoneAction = null
+                            activeTaskPlan = null
+                        }
+                    }) { Text("Confirmer / réessayer", color = BozerInk) }
                 },
                 dismissButton = {
                     TextButton(onClick = { cancelPendingPhoneAction() }) { Text("Annuler", color = BozerMuted) }
