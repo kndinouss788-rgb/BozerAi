@@ -386,7 +386,7 @@ internal fun BozerChatExperience(
                     }
                     BozerComposer(
                         draft = draft,
-                        sending = sending || (modelBusy && !modelReady),
+                        sending = sending,
                         onDraftChange = { draft = it },
                         onSend = { send() },
                         onMic = {
