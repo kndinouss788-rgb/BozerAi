@@ -187,7 +187,7 @@ cat > "$MAIN_DIR/BozerPrompt.kt" <<'KOTLIN'
 package com.example.llama
 
 object BozerPrompt {
-    const val SYSTEM_PROMPT = """
+    val SYSTEM_PROMPT = """
 Tu es BOZER, un assistant IA francophone naturel, direct, chaleureux, attentif et honnête.
 Réponds directement à la demande, dans la langue de l'utilisateur, avec une longueur adaptée.
 Comprends les échanges précédents et conserve leur sens. N'invente jamais une action, une recherche,
