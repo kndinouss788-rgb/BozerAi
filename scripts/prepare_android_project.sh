@@ -87,7 +87,7 @@ class BozerStore(context: Context, databaseName: String = "bozer_local.db") :
         if (terms.isEmpty()) return facts.take(limit)
         val matches = facts.map { fact -> fact to terms.count { (fact.key + " " + fact.value).lowercase().contains(it) } }
             .filter { it.second > 0 }.sortedByDescending { it.second }.map { it.first }
-        return if (matches.isEmpty()) facts.take(minOf(3,limit)) else matches.take(limit)
+        return matches.take(limit)
     }
     fun deleteFact(key: String) = writableDatabase.delete("facts","fact_key=?",arrayOf(key.trim())) > 0
     fun forgetMatching(query: String): Int {
@@ -233,6 +233,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
@@ -277,6 +278,10 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 engine = withContext(Dispatchers.IO) { AiChat.getInferenceEngine(applicationContext) }
+                val initialState = engine.state.first {
+                    it is InferenceEngine.State.Initialized || it is InferenceEngine.State.ModelReady || it is InferenceEngine.State.Error
+                }
+                if (initialState is InferenceEngine.State.Error) throw initialState.exception
                 val model = withContext(Dispatchers.IO) { ensureBundledModel() }
                 if (engine.state.value !is InferenceEngine.State.ModelReady) {
                     if (engine.state.value is InferenceEngine.State.Error) engine.cleanUp()
@@ -456,6 +461,20 @@ import org.junit.Test
 import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class BozerStoreInstrumentedTest {
+    @Test fun memoryCommandsRememberCorrectAndForgetWithoutLeakingUnrelatedFacts() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val name = "bozer-memory-command-" + System.nanoTime() + ".db"
+        val store = BozerStore(context,name)
+        assertTrue(BozerMemoryCommand.apply(store,"Mémorise que mon projet principal s'appelle BOZER"))
+        assertEquals(1,store.relevantFacts("Quel est mon projet principal ?").size)
+        assertTrue(BozerMemoryCommand.apply(store,"Corrige mémoire projet -> Mon projet principal est BOZER AI"))
+        assertTrue(store.relevantFacts("Quel est mon projet principal ?").any { it.value.contains("BOZER AI") })
+        assertTrue(BozerMemoryCommand.apply(store,"Oublie mémoire sur projet principal"))
+        assertTrue(store.relevantFacts("Quel est mon projet principal ?").isEmpty())
+        store.close()
+        context.deleteDatabase(name)
+    }
+
     @Test fun historyAndMemoryPersistAndCanBeCorrectedOrDeleted() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val name = "bozer-test-" + System.nanoTime() + ".db"
@@ -505,6 +524,7 @@ import com.arm.aichat.AiChat
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -527,6 +547,12 @@ class BozerRealModelE2ETest {
             assertTrue(model.length() > 900_000_000L)
             val engine = AiChat.getInferenceEngine(context)
             try {
+                val initialState = engine.state.first {
+                    it is com.arm.aichat.InferenceEngine.State.Initialized ||
+                        it is com.arm.aichat.InferenceEngine.State.ModelReady ||
+                        it is com.arm.aichat.InferenceEngine.State.Error
+                }
+                if (initialState is com.arm.aichat.InferenceEngine.State.Error) throw initialState.exception
                 engine.loadModel(model.absolutePath)
                 engine.setSystemPrompt(BozerPrompt.SYSTEM_PROMPT)
                 val turns = listOf(
