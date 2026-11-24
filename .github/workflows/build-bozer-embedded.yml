@@ -57,6 +57,11 @@ jobs:
           ls -lh "$APK"
       - name: Run real model, database and network tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # GitHub-hosted Linux runners do not expose KVM. The emulator otherwise
+          # exits immediately with "-accel off is not supported"; explicitly opt
+          # into the emulator's software CPU translator instead of waiting 10 min.
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: 35
           target: google_apis
