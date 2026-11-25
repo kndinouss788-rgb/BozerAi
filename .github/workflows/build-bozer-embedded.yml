@@ -2,14 +2,14 @@ name: BOZER Android — embedded brain
 
 on:
   push:
-    branches: [main]
+    branches: [main, diagnose-emulator-validation]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: bozer-android-main
+  group: bozer-android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -58,9 +58,6 @@ jobs:
       - name: Run real model, database and network tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         env:
-          # GitHub-hosted Linux runners do not expose KVM. The emulator otherwise
-          # exits immediately with "-accel off is not supported"; explicitly opt
-          # into the emulator's software CPU translator instead of waiting 10 min.
           ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: 35
@@ -74,9 +71,23 @@ jobs:
           script: |
             cd "$RUNNER_TEMP/llama.cpp/examples/llama.android"
             mkdir -p app/build/bozer-results
+            {
+              echo "=== diagnostics ==="
+              pwd
+              ls -la
+              ls -la ./gradlew
+              command -v java || true
+              java -version || true
+              command -v adb || true
+              adb version || true
+              adb devices -l || true
+              echo "=== instrumentation ==="
+            } > app/build/bozer-results/environment.txt 2>&1
             set +e
-            ./gradlew --no-daemon --stacktrace connectedDebugAndroidTest > app/build/bozer-results/instrumented-tests.log 2>&1
+            bash ./gradlew --no-daemon --stacktrace connectedDebugAndroidTest > app/build/bozer-results/instrumented-tests.log 2>&1
             RESULT=$?
+            echo "Gradle instrumentation exit code: $RESULT" >> app/build/bozer-results/environment.txt
+            cat app/build/bozer-results/instrumented-tests.log || true
             adb logcat -d -v time -s BOZER_E2E:I BOZER_PERF:I BOZER_BRAIN:I BOZER_CHAT:E AndroidRuntime:E > app/build/bozer-results/logcat.txt || true
             adb shell monkey -p com.bozer.ai 1 >/dev/null 2>&1 || true
             sleep 5
@@ -103,5 +114,3 @@ jobs:
             ${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/bozer-apk.sha256
           if-no-files-found: error
           retention-days: 30
-
-# validation trigger
