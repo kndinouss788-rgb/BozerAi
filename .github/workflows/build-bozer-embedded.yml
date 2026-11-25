@@ -2,7 +2,7 @@ name: BOZER Android — embedded brain
 
 on:
   push:
-    branches: [main, diagnose-emulator-validation]
+    branches: [main, diagnose-emulator-validation, apk-artifact-on-validation-failure]
   workflow_dispatch:
 
 permissions:
@@ -41,6 +41,7 @@ jobs:
           chmod +x scripts/prepare_android_project.sh
           scripts/prepare_android_project.sh "$RUNNER_TEMP/llama.cpp/examples/llama.android"
       - name: Run JVM tests and build installable APK
+        id: build_apk
         working-directory: ${{ runner.temp }}/llama.cpp/examples/llama.android
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
@@ -105,7 +106,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
       - name: Upload installable BOZER APK
-        if: success()
+        if: ${{ always() && steps.build_apk.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: bozer-apk-with-embedded-brain
