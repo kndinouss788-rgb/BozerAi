@@ -183,6 +183,125 @@ object BozerSearch {
 }
 KOTLIN
 
+cat > "$MAIN_DIR/BozerAppActions.kt" <<'KOTLIN'
+package com.example.llama
+
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import java.text.Normalizer
+
+/**
+ * Exécute les commandes Android locales qui ne nécessitent pas le modèle IA.
+ * Cette première version ouvre uniquement des applications déjà installées.
+ */
+object BozerAppActions {
+    private val openCommand = Regex(
+        "(?iu)^(?:s'il te plaît[,]?\\s*)?(?:ouvre(?:-moi)?|lance|démarre|demarre|affiche)\\s+" +
+            "(?:(?:l'application|l'appli|l'app|application|appli|app)\\s+)?(.+?)\\s*[.!?]*$"
+    )
+
+    private val aliasGroups = listOf(
+        listOf("whatsapp", "whats app"),
+        listOf("téléphone", "telephone", "phone", "dialer", "appels"),
+        listOf("messages", "message", "sms", "messagerie"),
+        listOf("paramètres", "parametres", "réglages", "reglages", "settings"),
+        listOf("chrome", "navigateur", "browser", "internet"),
+        listOf("appareil photo", "caméra", "camera", "photo"),
+        listOf("galerie", "gallery", "photos"),
+        listOf("horloge", "clock", "réveil", "reveil", "alarme"),
+        listOf("calculatrice", "calculator"),
+        listOf("maps", "google maps", "cartes", "navigation"),
+        listOf("gmail", "mail", "courriel"),
+        listOf("play store", "google play", "playstore", "boutique"),
+        listOf("youtube"),
+        listOf("facebook"),
+        listOf("instagram"),
+        listOf("tiktok"),
+        listOf("telegram"),
+        listOf("contacts", "contact")
+    )
+
+    /**
+     * Retourne null si le message n'est pas une demande d'ouverture d'application.
+     * Sinon, retourne une réponse correspondant au résultat de l'action Android.
+     */
+    fun execute(activity: Activity, message: String): String? {
+        val command = openCommand.matchEntire(message.trim()) ?: return null
+        var target = command.groupValues[1].trim()
+        target = target.replace(Regex("(?iu)\\s+(?:s'il te plaît|svp|stp)$"), "")
+        target = target.replace(Regex("(?iu)^(?:le|la|les|mon|ma|mes)\\s+"), "").trim()
+
+        if (target.isBlank()) return "Quelle application veux-tu que j'ouvre ?"
+
+        val normalizedTarget = normalize(target)
+        val aliases = aliasGroups.firstOrNull { group ->
+            group.any { normalize(it) == normalizedTarget }
+        }?.map { normalize(it) } ?: listOf(normalizedTarget)
+
+        val packageManager = activity.packageManager
+        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val installedLaunchers = packageManager.queryIntentActivities(
+            launcherIntent,
+            PackageManager.MATCH_DEFAULT_ONLY
+        )
+
+        val selected = installedLaunchers
+            .asSequence()
+            .filter { it.activityInfo != null && it.activityInfo.packageName != activity.packageName }
+            .map { info ->
+                val label = normalize(info.loadLabel(packageManager).toString())
+                val packageName = normalize(info.activityInfo.packageName)
+                val score = when {
+                    label == normalizedTarget || aliases.contains(label) -> 0
+                    aliases.any { packageName == it } -> 0
+                    aliases.any { label.contains(it) } -> 1
+                    aliases.any { packageName.contains(it) } -> 2
+                    aliases.any { it.contains(label) && label.length >= 4 } -> 3
+                    else -> 99
+                }
+                info to score
+            }
+            .filter { it.second < 99 }
+            .sortedWith(
+                compareBy<Pair<ResolveInfo, Int>> { it.second }
+                    .thenBy { normalize(it.first.loadLabel(packageManager).toString()) }
+            )
+            .firstOrNull()
+            ?.first
+
+        if (selected == null) {
+            return "Je ne trouve pas d'application installée correspondant à « " + target + " »."
+        }
+
+        val packageName = selected.activityInfo.packageName
+        val appLabel = selected.loadLabel(packageManager).toString()
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            ?: Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_LAUNCHER)
+                .setClassName(packageName, selected.activityInfo.name)
+
+        return try {
+            activity.startActivity(launchIntent)
+            "C'est fait, j'ai ouvert " + appLabel + "."
+        } catch (_: ActivityNotFoundException) {
+            "L'application " + appLabel + " est installée, mais Android n'a pas pu l'ouvrir."
+        } catch (_: SecurityException) {
+            "Android a refusé l'ouverture de " + appLabel + "."
+        }
+    }
+
+    private fun normalize(value: String): String {
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "")
+            .lowercase()
+            .replace(Regex("[^a-z0-9]"), "")
+    }
+}
+KOTLIN
+
 cat > "$MAIN_DIR/BozerPrompt.kt" <<'KOTLIN'
 package com.example.llama
 
@@ -268,8 +387,9 @@ class MainActivity : AppCompatActivity() {
                 (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
             if (send) { sendMessage(); true } else false
         }
-        inputView.isEnabled = false
-        sendButton.isEnabled = false
+        // Les actions Android locales restent accessibles pendant le chargement du modèle.
+        inputView.isEnabled = true
+        sendButton.isEnabled = true
         statusView.text = "Préparation du cerveau local..."
         initializeBrain()
     }
@@ -324,8 +444,34 @@ class MainActivity : AppCompatActivity() {
 
     private fun sendMessage() {
         val userText = inputView.text.toString().trim()
-        if (userText.isEmpty() || !::engine.isInitialized ||
-            engine.state.value !is InferenceEngine.State.ModelReady || generationJob?.isActive == true) return
+        if (userText.isEmpty() || generationJob?.isActive == true) return
+
+        // Une commande téléphone simple ne doit pas attendre le chargement du cerveau local.
+        val phoneActionReply = BozerAppActions.execute(this, userText)
+        if (phoneActionReply != null) {
+            inputView.setText("")
+            val userIndex = messages.size
+            messages.add(Message(UUID.randomUUID().toString(), userText, true))
+            val assistantIndex = messages.size
+            messages.add(Message(UUID.randomUUID().toString(), phoneActionReply, false))
+            adapter.notifyItemRangeInserted(userIndex, 2)
+            messagesView.scrollToPosition(assistantIndex)
+            statusView.text = "BOZER — commande téléphone"
+            lifecycleScope.launch {
+                try {
+                    withContext(Dispatchers.IO) { store.saveTurn(userText, phoneActionReply) }
+                } catch (error: Exception) {
+                    Log.e("BOZER_STORE", "Unable to save phone action", error)
+                }
+            }
+            return
+        }
+
+        if (!::engine.isInitialized || engine.state.value !is InferenceEngine.State.ModelReady) {
+            statusView.text = "Le cerveau local termine son chargement..."
+            Toast.makeText(this, "Le cerveau de BOZER n'est pas encore prêt. Les commandes d'ouverture d'applications restent disponibles.", Toast.LENGTH_LONG).show()
+            return
+        }
         inputView.setText("")
         inputView.isEnabled = false
         sendButton.isEnabled = false
@@ -695,6 +841,15 @@ text = manifest.read_text()
 if "android.permission.INTERNET" not in text:
     text = text.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
         '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />',1)
+if "android.intent.category.LAUNCHER" not in text:
+    launcher_visibility = """    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+"""
+    text = text.replace("<application", launcher_visibility + "    <application", 1)
 text = text.replace('android:allowBackup="true"','android:allowBackup="false"')
 manifest.write_text(text)
 
