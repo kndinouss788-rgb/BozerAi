@@ -245,7 +245,7 @@ object BozerAppActions {
         val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val installedLaunchers = packageManager.queryIntentActivities(
             launcherIntent,
-            PackageManager.MATCH_DEFAULT_ONLY
+            0
         )
 
         val selected = installedLaunchers
