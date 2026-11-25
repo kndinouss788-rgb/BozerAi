@@ -917,8 +917,8 @@ if "android.permission.INTERNET" not in text or "com.android.alarm.permission.SE
         additions.append('<uses-permission android:name="android.permission.INTERNET" />')
     if "com.android.alarm.permission.SET_ALARM" not in text:
         additions.append('<uses-permission android:name="com.android.alarm.permission.SET_ALARM" />')
-    text = text.replace(opening, opening + "\\n    " + "\\n    ".join(additions), 1)
-if "android.intent.category.LAUNCHER" not in text:
+    text = text.replace(opening, opening + "\n    " + "\n    ".join(additions), 1)
+if "android.intent.category.LAUNCHER" not in text or "android.intent.action.SET_ALARM" not in text:
     launcher_visibility = """    <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -929,7 +929,14 @@ if "android.intent.category.LAUNCHER" not in text:
         </intent>
     </queries>
 """
-    text = text.replace("<application", launcher_visibility + "    <application", 1)
+    if "<queries>" in text:
+        if "android.intent.action.SET_ALARM" not in text:
+            text = text.replace("</queries>", """        <intent>
+            <action android:name="android.intent.action.SET_ALARM" />
+        </intent>
+    </queries>""", 1)
+    else:
+        text = text.replace("<application", launcher_visibility + "    <application", 1)
 text = text.replace('android:allowBackup="true"','android:allowBackup="false"')
 manifest.write_text(text)
 
