@@ -55,13 +55,23 @@ jobs:
           unzip -l "$APK" | grep -E 'lib/x86_64/libai-chat.so'
           sha256sum "$APK" | tee app/build/bozer-apk.sha256
           ls -lh "$APK"
+      - name: Enable KVM for the Android emulator when available
+        run: |
+          set +e
+          if [ -e /dev/kvm ]; then
+            echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+            sudo udevadm control --reload-rules
+            sudo udevadm trigger --name-match=kvm
+            sudo udevadm settle
+          fi
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "KVM is available; Android emulator will use hardware acceleration."
+          else
+            echo "::warning::KVM is unavailable; Android emulator will use slow TCG software emulation."
+            echo "ANDROID_I_WANT_MY_TCG=yes" >> "$GITHUB_ENV"
+          fi
       - name: Run real model, database and network tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
-        env:
-          # GitHub-hosted Linux runners do not expose KVM. The emulator otherwise
-          # exits immediately with "-accel off is not supported"; explicitly opt
-          # into the emulator's software CPU translator instead of waiting 10 min.
-          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: 35
           target: google_apis
@@ -69,8 +79,10 @@ jobs:
           profile: pixel_6
           ram-size: 6144M
           cores: 4
+          emulator-boot-timeout: 900
+          disable-linux-hw-accel: auto
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
           script: |
             cd "$RUNNER_TEMP/llama.cpp/examples/llama.android"
             mkdir -p app/build/bozer-results
