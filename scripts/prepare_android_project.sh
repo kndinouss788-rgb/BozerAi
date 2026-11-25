@@ -188,19 +188,21 @@ package com.example.llama
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.provider.AlarmClock
 import java.text.Normalizer
 
-/**
- * Exécute les commandes Android locales qui ne nécessitent pas le modèle IA.
- * Cette première version ouvre uniquement des applications déjà installées.
- */
+data class PreparedAppLaunch(val intent: Intent, val label: String)
+
 object BozerAppActions {
     private val openCommand = Regex(
         "(?iu)^(?:s'il te plaît[,]?\\s*)?(?:ouvre(?:-moi)?|lance|démarre|demarre|affiche)\\s+" +
             "(?:(?:l'application|l'appli|l'app|application|appli|app)\\s+)?(.+?)\\s*[.!?]*$"
+    )
+    private val alarmCommand = Regex(
+        "(?iu)\\b(?:alarme|réveil|reveil|réveille-moi|reveille-moi)\\b.*?(?:à|a|pour)?\\s*(\\d{1,2})(?:\\s*[:h]\\s*(\\d{2}))?\\b"
     )
 
     private val aliasGroups = listOf(
@@ -224,33 +226,41 @@ object BozerAppActions {
         listOf("contacts", "contact")
     )
 
-    /**
-     * Retourne null si le message n'est pas une demande d'ouverture d'application.
-     * Sinon, retourne une réponse correspondant au résultat de l'action Android.
-     */
-    fun execute(activity: Activity, message: String): String? {
-        val command = openCommand.matchEntire(message.trim()) ?: return null
-        var target = command.groupValues[1].trim()
-        target = target.replace(Regex("(?iu)\\s+(?:s'il te plaît|svp|stp)$"), "")
-        target = target.replace(Regex("(?iu)^(?:le|la|les|mon|ma|mes)\\s+"), "").trim()
+    fun createAlarmIntent(message: String): Intent? {
+        val match = alarmCommand.find(message.trim()) ?: return null
+        val hour = match.groupValues[1].toIntOrNull() ?: return null
+        val minute = match.groupValues[2].takeIf { it.isNotBlank() }?.toIntOrNull() ?: 0
+        if (hour !in 0..23 || minute !in 0..59) return null
+        return Intent(AlarmClock.ACTION_SET_ALARM)
+            .putExtra(AlarmClock.EXTRA_HOUR, hour)
+            .putExtra(AlarmClock.EXTRA_MINUTES, minute)
+            .putExtra(AlarmClock.EXTRA_MESSAGE, "BOZER")
+            // L'application Horloge affiche son écran de validation : BOZER n'enregistre
+            // jamais silencieusement une alarme à la place de l'utilisateur.
+            .putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+    }
 
-        if (target.isBlank()) return "Quelle application veux-tu que j'ouvre ?"
+    fun openTargetFrom(message: String): String? {
+        val match = openCommand.matchEntire(message.trim()) ?: return null
+        return match.groupValues[1].trim()
+            .replace(Regex("(?iu)\\s+(?:s'il te plaît|svp|stp)$"), "")
+            .replace(Regex("(?iu)^(?:le|la|les|mon|ma|mes)\\s+"), "")
+            .trim()
+            .takeIf { it.isNotBlank() }
+    }
 
+    fun prepareOpenIntent(context: Context, message: String): PreparedAppLaunch? {
+        val target = openTargetFrom(message) ?: return null
         val normalizedTarget = normalize(target)
         val aliases = aliasGroups.firstOrNull { group ->
             group.any { normalize(it) == normalizedTarget }
         }?.map { normalize(it) } ?: listOf(normalizedTarget)
 
-        val packageManager = activity.packageManager
+        val packageManager = context.packageManager
         val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val installedLaunchers = packageManager.queryIntentActivities(
-            launcherIntent,
-            0
-        )
-
-        val selected = installedLaunchers
+        val selected = packageManager.queryIntentActivities(launcherIntent, 0)
             .asSequence()
-            .filter { it.activityInfo != null && it.activityInfo.packageName != activity.packageName }
+            .filter { it.activityInfo != null && it.activityInfo.packageName != context.packageName }
             .map { info ->
                 val label = normalize(info.loadLabel(packageManager).toString())
                 val packageName = normalize(info.activityInfo.packageName)
@@ -270,26 +280,42 @@ object BozerAppActions {
                     .thenBy { normalize(it.first.loadLabel(packageManager).toString()) }
             )
             .firstOrNull()
-            ?.first
-
-        if (selected == null) {
-            return "Je ne trouve pas d'application installée correspondant à « " + target + " »."
-        }
+            ?.first ?: return null
 
         val packageName = selected.activityInfo.packageName
-        val appLabel = selected.loadLabel(packageManager).toString()
+        val label = selected.loadLabel(packageManager).toString()
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             ?: Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LAUNCHER)
                 .setClassName(packageName, selected.activityInfo.name)
+        return PreparedAppLaunch(launchIntent, label)
+    }
 
+    fun execute(activity: Activity, message: String): String? {
+        val alarmIntent = createAlarmIntent(message)
+        if (alarmIntent != null) {
+            return try {
+                activity.startActivity(alarmIntent)
+                val hour = alarmIntent.getIntExtra(AlarmClock.EXTRA_HOUR, 0)
+                val minute = alarmIntent.getIntExtra(AlarmClock.EXTRA_MINUTES, 0)
+                "J'ai ouvert l'Horloge avec une alarme préremplie à %02d:%02d. Vérifie puis confirme son enregistrement dans Android.".format(hour, minute)
+            } catch (_: ActivityNotFoundException) {
+                "Aucune application Horloge compatible n'est disponible pour préparer cette alarme."
+            } catch (_: SecurityException) {
+                "Android n'a pas autorisé l'ouverture de l'écran de création d'alarme."
+            }
+        }
+
+        val target = openTargetFrom(message) ?: return null
+        val prepared = prepareOpenIntent(activity, message)
+            ?: return "Je ne trouve pas d'application installée correspondant à « " + target + " »."
         return try {
-            activity.startActivity(launchIntent)
-            "C'est fait, j'ai ouvert " + appLabel + "."
+            activity.startActivity(prepared.intent)
+            "J'ai ouvert " + prepared.label + "."
         } catch (_: ActivityNotFoundException) {
-            "L'application " + appLabel + " est installée, mais Android n'a pas pu l'ouvrir."
+            "L'application " + prepared.label + " est installée, mais Android n'a pas pu l'ouvrir."
         } catch (_: SecurityException) {
-            "Android a refusé l'ouverture de " + appLabel + "."
+            "Android a refusé l'ouverture de " + prepared.label + "."
         }
     }
 
@@ -660,6 +686,52 @@ class BozerNetworkInstrumentedTest {
 }
 KOTLIN
 
+cat > "$APP_DIR/app/src/androidTest/java/com/example/llama/BozerActionsInstrumentedTest.kt" <<'KOTLIN'
+package com.example.llama
+
+import android.content.Intent
+import android.provider.AlarmClock
+import android.util.Log
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class BozerActionsInstrumentedTest {
+    @Test fun openingSettingsBuildsAndLaunchesARealAndroidActivity() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val prepared = BozerAppActions.prepareOpenIntent(context, "Ouvre les paramètres")
+        assertNotNull("Android Settings launcher was not found", prepared)
+        val launch = prepared!!.intent
+        assertNotNull("Prepared app intent does not resolve", launch.resolveActivity(context.packageManager))
+        context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        Log.i("BOZER_ACTION_TEST", "opened_application=" + prepared.label + " package=" + launch.component?.packageName)
+    }
+
+    @Test fun alarmIsPassedToAndroidClockAndRequiresItsConfirmationScreen() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val intent = BozerAppActions.createAlarmIntent("Mets une alarme à 7h30")
+        assertNotNull("Alarm command was not parsed", intent)
+        assertEquals(AlarmClock.ACTION_SET_ALARM, intent!!.action)
+        assertEquals(7, intent.getIntExtra(AlarmClock.EXTRA_HOUR, -1))
+        assertEquals(30, intent.getIntExtra(AlarmClock.EXTRA_MINUTES, -1))
+        assertFalse("BOZER must not bypass the Clock confirmation UI", intent.getBooleanExtra(AlarmClock.EXTRA_SKIP_UI, false))
+        assertNotNull("No Android Clock activity can handle SET_ALARM", intent.resolveActivity(context.packageManager))
+        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        Log.i("BOZER_ACTION_TEST", "alarm_intent_opened=true hour=7 minute=30 skip_ui=false")
+    }
+
+    @Test fun invalidTimesAndSensitivePhoneRequestsAreNotExecutedAsSupportedActions() {
+        assertNull(BozerAppActions.createAlarmIntent("Mets une alarme à 25h90"))
+        assertNull(BozerAppActions.createAlarmIntent("Appelle Ali"))
+        assertNull(BozerAppActions.openTargetFrom("Appelle Ali"))
+        assertNull(BozerAppActions.openTargetFrom("Envoie un SMS à Ali"))
+    }
+}
+KOTLIN
+
 cat > "$APP_DIR/app/src/androidTest/java/com/example/llama/BozerRealModelE2ETest.kt" <<'KOTLIN'
 package com.example.llama
 import android.os.SystemClock
@@ -838,14 +910,22 @@ cpp.write_text(text)
 
 manifest = app / "app/src/main/AndroidManifest.xml"
 text = manifest.read_text()
-if "android.permission.INTERNET" not in text:
-    text = text.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
-        '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />',1)
+if "android.permission.INTERNET" not in text or "com.android.alarm.permission.SET_ALARM" not in text:
+    opening = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+    additions = []
+    if "android.permission.INTERNET" not in text:
+        additions.append('<uses-permission android:name="android.permission.INTERNET" />')
+    if "com.android.alarm.permission.SET_ALARM" not in text:
+        additions.append('<uses-permission android:name="com.android.alarm.permission.SET_ALARM" />')
+    text = text.replace(opening, opening + "\\n    " + "\\n    ".join(additions), 1)
 if "android.intent.category.LAUNCHER" not in text:
     launcher_visibility = """    <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SET_ALARM" />
         </intent>
     </queries>
 """
