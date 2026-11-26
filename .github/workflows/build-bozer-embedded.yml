@@ -84,16 +84,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
           script: |
-            cd "$RUNNER_TEMP/llama.cpp/examples/llama.android"
-            mkdir -p app/build/bozer-results
-            set +e
-            ./gradlew --no-daemon --stacktrace connectedDebugAndroidTest > app/build/bozer-results/instrumented-tests.log 2>&1
-            RESULT=$?
-            adb logcat -d -v time -s BOZER_E2E:I BOZER_PERF:I BOZER_BRAIN:I BOZER_CHAT:E AndroidRuntime:E > app/build/bozer-results/logcat.txt || true
-            adb shell monkey -p com.bozer.ai 1 >/dev/null 2>&1 || true
-            sleep 5
-            adb exec-out screencap -p > app/build/bozer-results/screenshot.png 2>/dev/null || true
-            exit "$RESULT"
+            bash -c 'cd "$RUNNER_TEMP/llama.cpp/examples/llama.android" && mkdir -p app/build/bozer-results && set +e; ./gradlew --no-daemon --stacktrace connectedDebugAndroidTest > app/build/bozer-results/instrumented-tests.log 2>&1; RESULT=$?; adb logcat -d -v time -s BOZER_E2E:I BOZER_PERF:I BOZER_BRAIN:I BOZER_CHAT:E AndroidRuntime:E > app/build/bozer-results/logcat.txt || true; adb shell monkey -p com.bozer.ai 1 >/dev/null 2>&1 || true; sleep 5; adb exec-out screencap -p > app/build/bozer-results/screenshot.png 2>/dev/null || true; exit "$RESULT"'
       - name: Upload Android validation reports and logs
         if: always()
         uses: actions/upload-artifact@v4
