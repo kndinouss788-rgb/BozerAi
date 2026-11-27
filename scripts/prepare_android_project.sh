@@ -940,6 +940,16 @@ if "android.intent.category.LAUNCHER" not in text or "android.intent.action.SET_
 text = text.replace('android:allowBackup="true"','android:allowBackup="false"')
 manifest.write_text(text)
 
+lib_gradle = app / "lib/build.gradle.kts"
+text = lib_gradle.read_text()
+if 'androidTestImplementation("androidx.test:runner:' not in text:
+    text = text.replace(
+        '    androidTestImplementation(libs.androidx.junit)\n',
+        '    androidTestImplementation(libs.androidx.junit)\n    androidTestImplementation("androidx.test:runner:1.6.2")\n    androidTestImplementation("androidx.test:core:1.6.1")\n',
+        1
+    )
+    lib_gradle.write_text(text)
+
 gradle = app / "app/build.gradle.kts"
 text = gradle.read_text()
 text = text.replace('applicationId = "com.example.llama.aichat"','applicationId = "com.bozer.ai"',1)
