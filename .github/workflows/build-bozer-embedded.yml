@@ -94,6 +94,8 @@ jobs:
             ${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/reports/**
             ${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/outputs/androidTest-results/**
             ${{ runner.temp }}/llama.cpp/examples/llama.android/app/build/bozer-results/**
+            ${{ runner.temp }}/llama.cpp/examples/llama.android/lib/build/reports/**
+            ${{ runner.temp }}/llama.cpp/examples/llama.android/lib/build/outputs/androidTest-results/**
           if-no-files-found: warn
           retention-days: 30
       - name: Upload installable BOZER APK
