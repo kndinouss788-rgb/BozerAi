@@ -950,6 +950,20 @@ if 'androidTestImplementation("androidx.test:runner:' not in text:
     )
     lib_gradle.write_text(text)
 
+# Correct the upstream sample's stale test-package expectation after changing
+# its namespace to com.arm.aichat. Keep the assertion; align it with the
+# actual generated instrumentation application ID.
+lib_test = app / "lib/src/androidTest/java/android/llama/cpp/ExampleInstrumentedTest.kt"
+if lib_test.exists():
+    test_text = lib_test.read_text()
+    old_expectation = 'assertEquals("android.llama.cpp.test", appContext.packageName)'
+    new_expectation = 'assertEquals("com.arm.aichat.test", appContext.packageName)'
+    if old_expectation in test_text:
+        test_text = test_text.replace(old_expectation, new_expectation, 1)
+        lib_test.write_text(test_text)
+    elif new_expectation not in test_text:
+        raise SystemExit("Upstream instrumented package assertion changed; review it before proceeding")
+
 gradle = app / "app/build.gradle.kts"
 text = gradle.read_text()
 text = text.replace('applicationId = "com.example.llama.aichat"','applicationId = "com.bozer.ai"',1)
